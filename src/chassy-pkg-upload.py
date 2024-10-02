@@ -1,6 +1,12 @@
 import sys
 import glob
 
+valid_types = ["CONTAINER", "FILE", "ARCHIVE", "RFSIMAGE", "FIRMWARE"]
+valid_architectures = ["AMD64", "ARM64", "ARMv6", "ARMv7", "RISCV", "UNKNOWN"]
+valid_os_id = ["ubuntu", "unknown"]
+valid_os_version = ["20.04", "22.04", "24.04", "unknown"]
+
+
 # Function to easily write to github output.
 def write_to_github_output(key, value):
     """
@@ -20,7 +26,6 @@ def write_to_github_output(key, value):
         print(f"Successfully wrote {key}={value} to $GITHUB_OUTPUT")
     else:
         print("Error: $GITHUB_OUTPUT is not set in the environment")
-
 
 
 def find_file(file_pattern):
@@ -47,11 +52,18 @@ def find_file(file_pattern):
     return os.path.abspath(files_found[0])
 
 
+def validate_parameter(input_param, param_list):
+    if input_param not in param_list:
+        raise ValueError(f"Error: '{input_param}' is not a valid type.")
+
+    return True
+
+
 def main():
     # Check if the correct number of arguments are passed
     if len(sys.argv) != 5:
         print("Usage: python pkg_upload.py <inputs.artifact> <inputs.type> <inputs.architecture> <inputs.osID> <inputs.osVersion>")
-        sys.exit(1)
+        return 1
 
     # Store arguments in variables
     artifact = sys.argv[1]
@@ -59,6 +71,20 @@ def main():
     architecture = sys.argv[3]
     osID = sys.argv[4]
     osVersion = sys.argv[5]
+
+    # validate parameters
+    try:
+        validate_parameter(type, valid_types)
+        validate_parameter(architecture, valid_architectures)
+        
+        # check if optional parameters are set before validating them
+        if osID is not None:
+            validate_parameter(osID, valid_os_id)
+        if osVersion is not None:
+            validate_parameter(osVersion, valid_os_version)
+    
+    except ValueError:
+            return 2
 
     # Print the variables (optional)
     print(f"artifact: {artifact}")
