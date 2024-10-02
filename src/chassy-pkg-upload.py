@@ -1,5 +1,8 @@
+import os
 import sys
 import glob
+
+root_dir = "/github/workspace"
 
 valid_types = ["CONTAINER", "FILE", "ARCHIVE", "RFSIMAGE", "FIRMWARE"]
 valid_architectures = ["AMD64", "ARM64", "ARMv6", "ARMv7", "RISCV", "UNKNOWN"]
@@ -42,7 +45,7 @@ def find_file(file_pattern):
     
     # Use glob to search for the file pattern
     # The '**' pattern in glob searches recursively in subdirectories.
-    files_found = glob.glob(file_pattern, recursive=True)
+    files_found = glob.glob(os.path.join(root_dir, '**', file_pattern), recursive=True)
 
     # If no files are found, return None.    
     if len(files_found) != 1:
