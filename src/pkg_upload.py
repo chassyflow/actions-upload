@@ -38,13 +38,13 @@ def find_file(file_pattern):
     # Use glob to search for the file pattern
     # The '**' pattern in glob searches recursively in subdirectories.
     files_found = glob.glob(file_pattern, recursive=True)
-    
-    if files_found:
-        # If files are found, return the absolute path of the first one found
-        return os.path.abspath(files_found[0])
-    else:
-        # If no files are found, return None
+
+    # If no files are found, return None.    
+    if len(files_found) != 1:
         return None
+
+    # If files are found, return the absolute path
+    return os.path.abspath(files_found[0])
 
 
 def main():
@@ -69,9 +69,14 @@ def main():
 
     artifact_path = find_file(artifact)
 
+    # if nothing was returned, send an error
+    if artifact_path is None:
+        return 1
+    
     # output to github the setatus
     write_to_github_output("status", artifact_path)
-
+    
+    return 0
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
