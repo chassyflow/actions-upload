@@ -4,6 +4,9 @@ FROM alpine:3.12.0
 # Ensure python3 and pip is installed and configured
 RUN apk add py3-pip
 
+# Set the working directory to where GitHub Actions checks out the code
+WORKDIR /github/workspace
+
 # Copy bake entrypoint routine
 COPY ./src/chassy-package-upload.py /usr/local/bin/chassy-package-upload
 
