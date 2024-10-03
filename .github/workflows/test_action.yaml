@@ -6,7 +6,9 @@ on:
       - master
       - somik/test-gha
   workflow_dispatch:  # Allows manual trigger from the Actions tab
-    
+  pull_request:
+    branches:
+      - somik/test-gha   
 jobs:
   test:
     runs-on: ubuntu-latest
