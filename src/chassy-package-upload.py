@@ -65,7 +65,7 @@ def validate_parameter(input_param, param_list):
 
 def main():
     # Check if the correct number of arguments are passed
-    if len(sys.argv) != 5:
+    if len(sys.argv) != 6:
         print("Usage: python pkg_upload.py <inputs.artifact> <inputs.type> <inputs.architecture> <inputs.osID> <inputs.osVersion>")
         return 1
 
