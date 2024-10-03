@@ -5,7 +5,7 @@ FROM alpine:3.12.0
 RUN apk add py3-pip
 
 # Copy bake entrypoint routine
-COPY src/chassy-package-upload.py /usr/local/bin/chassy-package-upload
+COPY ./src/chassy-package-upload.py /usr/local/bin/chassy-package-upload
 
 # Ensure file is executable
 RUN chmod +x /usr/local/bin/chassy-package-upload
