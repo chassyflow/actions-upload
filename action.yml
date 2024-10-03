@@ -20,9 +20,9 @@ inputs:
     required: false
   # note: may have to add api base url or chassy token here, but we will ignore that until req'd    
 
-  outputs:
-    status:
-      description: 'A log/status message denoting the success of the upload'
+outputs:
+  status:
+    description: 'A log/status message denoting the success of the upload'
 
 runs:
   using: 'docker'
