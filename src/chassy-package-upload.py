@@ -58,6 +58,7 @@ def find_file(file_pattern):
 
 def validate_parameter(input_param, param_list):
     if input_param not in param_list:
+        print(f"Error: '{input_param}' is not a valid type.")
         raise ValueError(f"Error: '{input_param}' is not a valid type.")
 
     return True
