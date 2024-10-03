@@ -88,6 +88,7 @@ def main():
             validate_parameter(osVersion, valid_os_version)
     
     except ValueError:
+            print ("Incorrect input param")
             return 2
 
     # Print the variables (optional)
