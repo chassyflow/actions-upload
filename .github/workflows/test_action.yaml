@@ -23,3 +23,5 @@ jobs:
           artifact: "foo.bar"  
           type: "CONTAINER"
           architecture: "ARM64"
+          osID: "Ubuntu"
+          osVersion: "22.04"
