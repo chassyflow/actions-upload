@@ -50,6 +50,7 @@ def find_file(file_pattern):
 
     # If no files are found, return None.    
     if len(files_found) != 1:
+        print(f"files found: {len(files_found)}")
         return None
 
     print(f"found file {files_found[0]}")
