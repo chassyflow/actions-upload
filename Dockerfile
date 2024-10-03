@@ -8,7 +8,7 @@ RUN apk add py3-pip
 WORKDIR /github/workspace
 
 # Copy bake entrypoint routine
-COPY src/chassy-package-upload.py /usr/local/bin/chassy-package-upload
+COPY src/chassy-pkg-upload.py /usr/local/bin/chassy-package-upload
 
 # Ensure file is executable
 RUN chmod +x /usr/local/bin/chassy-package-upload
