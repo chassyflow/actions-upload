@@ -52,15 +52,14 @@ def find_file(file_pattern):
     if len(files_found) != 1:
         return None
 
+    print(f"found file {files_found[0]}")
     # If files are found, return the absolute path
     return os.path.abspath(files_found[0])
 
 
 def validate_parameter(input_param, param_list):
     if input_param not in param_list:
-        print(f"Error: '{input_param}' is not a valid type.")
         raise ValueError(f"Error: '{input_param}' is not a valid type.")
-
     return True
 
 
@@ -103,6 +102,7 @@ def main():
 
     # if nothing was returned, send an error
     if artifact_path is None:
+        print("No artifact found")
         return 1
     
     # output to github the setatus
