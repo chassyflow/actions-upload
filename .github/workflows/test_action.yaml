@@ -1,0 +1,22 @@
+name: Test GitHub Action
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:  # Allows manual trigger from the Actions tab
+    
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      
+      - name: Run your custom action
+        uses: ./
+        with:
+          artifact: "foo.bar"  
+          type: "CONTAINER"
+          architecture: "ARM64"
