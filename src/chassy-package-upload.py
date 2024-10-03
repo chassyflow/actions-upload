@@ -71,11 +71,11 @@ def main():
         return 1
 
     # Store arguments in variables
-    artifact = sys.argv[1]
-    type = sys.argv[2]
-    architecture = sys.argv[3]
-    osID = sys.argv[4]
-    osVersion = sys.argv[5]
+    artifact = sys.argv[3]
+    type = sys.argv[4]
+    architecture = sys.argv[5]
+    osID = sys.argv[6]
+    osVersion = sys.argv[7]
 
     # validate parameters
     try:
