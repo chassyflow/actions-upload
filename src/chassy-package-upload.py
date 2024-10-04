@@ -11,6 +11,24 @@ valid_os_id = ["ubuntu", "unknown"]
 valid_os_version = ["20.04", "22.04", "24.04", "unknown"]
 
 
+def print_directory_contents(path):
+    try:
+        entries = os.listdir(path)
+        
+        print(f"Contents of directory '{path}':")
+        for entry in entries:
+            print(entry)
+    
+    except FileNotFoundError:
+        print(f"Error: The directory '{path}' does not exist.")
+    except NotADirectoryError:
+        print(f"Error: The path '{path}' is not a directory.")
+    except PermissionError:
+        print(f"Error: Permission denied for accessing '{path}'.")
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
+
+
 # Function to easily write to github output.
 def write_to_github_output(key, value):
     """
@@ -98,6 +116,8 @@ def main():
     print(f"architecture: {architecture}")
     print(f"osID: {osID}")
     print(f"osVersion: {osVersion}")
+
+    print_directory_contents(root_dir)
 
     artifact_path = find_file(artifact)
 
