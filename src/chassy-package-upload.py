@@ -120,8 +120,6 @@ def main():
     print(f"osID: {osID}")
     print(f"osVersion: {osVersion}")
 
-    print_directory_contents_recursive(root_dir)
-
     artifact_path = find_file(artifact)
 
     # if nothing was returned, send an error

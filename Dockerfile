@@ -10,12 +10,6 @@ WORKDIR /github/workspace
 # Copy bake entrypoint routine
 COPY src/chassy-package-upload.py /usr/local/bin/chassy-package-upload
 
-# For testing
-RUN touch /github/workspace/foo.bar
-RUN echo "Hello world" > foo.bar
-RUN ls
-
-
 # Ensure file is executable
 RUN chmod +x /usr/local/bin/chassy-package-upload
 
