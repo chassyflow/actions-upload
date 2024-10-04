@@ -11,14 +11,17 @@ valid_os_id = ["ubuntu", "unknown"]
 valid_os_version = ["20.04", "22.04", "24.04", "unknown"]
 
 
-def print_directory_contents(path):
+def print_directory_contents_recursive(path):
+    print("python printing directory contents")
     try:
-        entries = os.listdir(path)
-        
-        print(f"Contents of directory '{path}':")
-        for entry in entries:
-            print(entry)
-    
+        for root, dirs, files in os.walk(path):
+            # Calculate the depth by counting the number of separators
+            depth = root.replace(path, '').count(os.sep)
+            indent = ' ' * 4 * depth  # 4 spaces per level
+            print(f"{indent}{os.path.basename(root)}/")
+            subindent = ' ' * 4 * (depth + 1)
+            for file in files:
+                print(f"{subindent}{file}")
     except FileNotFoundError:
         print(f"Error: The directory '{path}' does not exist.")
     except NotADirectoryError:
@@ -117,7 +120,7 @@ def main():
     print(f"osID: {osID}")
     print(f"osVersion: {osVersion}")
 
-    print_directory_contents(root_dir)
+    print_directory_contents_recursive(root_dir)
 
     artifact_path = find_file(artifact)
 
