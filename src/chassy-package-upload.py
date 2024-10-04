@@ -71,10 +71,8 @@ def find_file(file_pattern):
 
     # If no files are found, return None.    
     if len(files_found) != 1:
-        print(f"files found: {len(files_found)}")
         return None
 
-    print(f"found file {files_found[0]}")
     # If files are found, return the absolute path
     return os.path.abspath(files_found[0])
 
@@ -87,6 +85,7 @@ def validate_parameter(input_param, param_list):
 
 def main():
     # Check if the correct number of arguments are passed
+    # we have 5 input args, and the first 2 are python chassy-package-upload.py
     if len(sys.argv) != 2+5:
         print("Usage: python pkg_upload.py <inputs.artifact> <inputs.type> <inputs.architecture> <inputs.osID> <inputs.osVersion>")
         return 1
@@ -110,7 +109,6 @@ def main():
             validate_parameter(osVersion, valid_os_version)
     
     except ValueError:
-            print ("Incorrect input param")
             return 2
 
     # Print the variables (optional)
