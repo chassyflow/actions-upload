@@ -35,5 +35,5 @@ runs:
     - ${{ inputs.type }}
     - ${{ inputs.class }}
     - ${{ inputs.mode }}
-    - ${{ inputs.dryrun }
+    - ${{ inputs.dryrun }}
 
