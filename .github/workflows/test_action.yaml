@@ -21,7 +21,7 @@ jobs:
         uses: ./
         with:
           architecture: "-a ARM64"
-          os: "-o ubuntu"
-          version: "-i 20.04"
-          type: "-t FILE"
-          path: "-p **/README.md"
+          os: "--os ubuntu"
+          version: "--version 20.04"
+          type: "--type FILE"
+          path: "--path **/README.md"
