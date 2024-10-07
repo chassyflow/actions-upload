@@ -28,7 +28,6 @@ runs:
   using: 'docker'
   image: 'Dockerfile'
   args:
-    - pkg_upload
     - ${{ inputs.path }}
     - ${{ inputs.architecture }}
     - ${{ inputs.os }}
@@ -36,4 +35,5 @@ runs:
     - ${{ inputs.type }}
     - ${{ inputs.class }}
     - ${{ inputs.mode }}
-    - ${{ inputs.dryrun }}
+    - ${{ inputs.dryrun }
+
