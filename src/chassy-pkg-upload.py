@@ -140,7 +140,7 @@ def _handler(args) -> int:
     else:
         logger.setLevel(logging.INFO)
 
-    if (args.type == 'IMAGE'):
+    if args.type == 'IMAGE':
         return _image_uploads(args)
     else:
         return _file_uploads(args)
