@@ -171,7 +171,7 @@ def main() -> int:
                         action='store',
                         required=True,
                         help='operating system name for compatibility tracking')
-    parser.add_argument('-i',
+    parser.add_argument('-v',
                         '--version',
                         action='store',
                         required=True,
