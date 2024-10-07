@@ -1,9 +1,6 @@
 #!/usr/bin/env python3
-<<<<<<< HEAD:src/chassy-package-upload.py
-=======
 
 import argparse
->>>>>>> chuka/args:src/chassy-pkg-upload.py
 import os
 import pathlib
 import sys
