@@ -203,12 +203,6 @@ def main() -> int:
                         choices=["FILE", "ARCHIVE", "IMAGE", "FIRMWARE"],
                         required=True,
                         help='what is the artifact type')
-    parser.add_argument('-d',
-                          '--dryrun',
-                          action='store_true',
-                          help='determine if we should run in dryrun mode or not',
-                          required=False,
-                          default=False)    
     parser.add_argument('-c',
                         '--class',
                         action='store',
@@ -221,7 +215,12 @@ def main() -> int:
                         required=False,
                         default='INFO',
                         help='determine if we should run in debug or standard info mode')
-
+    parser.add_argument('-d',
+                          '--dryrun',
+                          action='store_true',
+                          help='determine if we should run in dryrun mode or not',
+                          required=False,
+                          default=False)    
     args = parser.parse_args()
     return args.func(args)
 

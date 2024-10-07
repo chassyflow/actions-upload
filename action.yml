@@ -29,8 +29,11 @@ runs:
   image: 'Dockerfile'
   args:
     - pkg_upload
-    - ${{ inputs.artifact }}
-    - ${{ inputs.type }}
+    - ${{ inputs.path }}
     - ${{ inputs.architecture }}
-    - ${{ inputs.osID }}
-    - ${{ inputs.osVersion }}
+    - ${{ inputs.os }}
+    - ${{ inputs.version }}
+    - ${{ inputs.type }}
+    - ${{ inputs.class }}
+    - ${{ inputs.mode }}
+    - ${{ inputs.dryrun }}
