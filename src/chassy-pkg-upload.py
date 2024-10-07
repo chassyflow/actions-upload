@@ -28,9 +28,9 @@ def _write_to_github_output(key, value):
         # Open the file in append mode and write the key=value pair
         with open(github_output, 'a') as output_file:
             output_file.write(f"{key}={value}\n")
-        print(f"Successfully wrote {key}={value} to $GITHUB_OUTPUT")
+        logger.debug(f"Successfully wrote {key}={value} to $GITHUB_OUTPUT")
     else:
-        print("Error: $GITHUB_OUTPUT is not set in the environment")
+        logger.debug("Error: $GITHUB_OUTPUT is not set in the environment")
 
 
 def _check_preconditions(required_vars=None):
