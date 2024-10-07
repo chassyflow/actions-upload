@@ -20,8 +20,8 @@ jobs:
       - name: Run your custom action
         uses: ./
         with:
-          artifact: "**/README.md"  
-          type: "CONTAINER"
-          architecture: "ARM64"
-          osID: "ubuntu"
-          osVersion: "22.04"
+          architecture: "-a ARM64"
+          os: "-o ubuntu"
+          version: "-i 20.04"
+          type: "-t FILE"
+          path: "-p **/README.md"
