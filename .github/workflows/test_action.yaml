@@ -4,11 +4,11 @@ on:
   push:
     branches:
       - master
-      - somik/test-gha
+      - somik/merge-branch-test
   workflow_dispatch:  # Allows manual trigger from the Actions tab
   pull_request:
     branches:
-      - somik/test-gha   
+      - somik/merge-branch-test   
 jobs:
   test:
     runs-on: ubuntu-latest
