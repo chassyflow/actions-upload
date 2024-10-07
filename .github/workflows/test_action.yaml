@@ -20,7 +20,7 @@ jobs:
       - name: Run your custom action
         uses: ./
         with:
-          architecture: "-a ARM64"
+          architecture: "-aARM64"
           os: "--os ubuntu"
           version: "--version 20.04"
           type: "--type FILE"
