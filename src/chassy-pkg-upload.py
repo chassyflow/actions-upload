@@ -154,12 +154,12 @@ def main() -> int:
     parser = argparse.ArgumentParser(prog='chassy-upload',
                                      description='chassy artifact and image uploader')
     parser.set_defaults(func=_handler)
-    parser.add_argument('-d',
-                          '--dryrun',
-                          action='store_true',
-                          help='determine if we should run in dryrun mode or not',
-                          required=False,
-                          default=False)
+    parser.add_argument('-p',
+                          '--path',
+                          required=True,
+                          action='store',
+                          type=pathlib.Path,
+                          help='fully qualified path to image file or a glob search path for image')
     parser.add_argument('-a',
                           '--architecture',
                           choices=["AMD64", "ARM64", "ARMv6", "ARMv7", "RISCV", "UNKNOWN"],
@@ -171,7 +171,7 @@ def main() -> int:
                         action='store',
                         required=True,
                         help='operating system name for compatibility tracking')
-    parser.add_argument('-v',
+    parser.add_argument('-i',
                         '--version',
                         action='store',
                         required=True,
@@ -188,19 +188,18 @@ def main() -> int:
                         choices=["EXECUTABLE", "CONFIG", "DATA", "BUNDLE"],
                         required=False,
                         help='for file and archives, what is the class of artifact')
-    parser.add_argument('-p',
-                          '--path',
-                          required=True,
-                          action='store',
-                          type=pathlib.Path,
-                          help='fully qualified path to image file or a glob search path for image')
     parser.add_argument('-m',
                         '--mode',
                         choices=['DEBUG', 'INFO'],
                         required=False,
                         default='INFO',
                         help='determine if we should run in debug or standard info mode')
-
+    parser.add_argument('-d',
+                          '--dryrun',
+                          action='store_true',
+                          help='determine if we should run in dryrun mode or not',
+                          required=False,
+                          default=False)    
     args = parser.parse_args()
     return args.func(args)
 
