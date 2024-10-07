@@ -25,3 +25,6 @@ jobs:
           version: "--version 20.04"
           type: "--type FILE"
           path: "--path **/README.md"
+          class: "--class DATA"
+          mode: "--mode INFO"
+          dryrun: "--dryrun false"
