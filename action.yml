@@ -1,0 +1,42 @@
+name: 'Package Upload'
+description: 'Uploads a package to Chassy Index'
+author: 'Chassy'
+
+inputs:
+  path:
+    description: "fully qualified path to image file or a glob search path for image"
+    required: true
+  architecture:
+    description: 'architecture of image to be uploaded'
+    required: true
+  os:
+    description: 'operating system name for compatibility tracking'
+    required: true    
+  type:
+    description: 'what is the artifact type'
+    required: true
+  class:
+    description: 'for file and archives, what is the class of artifact'
+    required: false
+  mode:
+    description: 'determine if we should run in debug or standard info mode'
+    required: false
+  dryrun:
+    description: 'determine if we should run in dryrun mode or note'
+    required: false
+outputs:
+  status:
+    description: 'A log/status message denoting the success of the upload'
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  args:
+    - ${{ inputs.path }}
+    - ${{ inputs.architecture }}
+    - ${{ inputs.os }}
+    - ${{ inputs.version }}
+    - ${{ inputs.type }}
+    - ${{ inputs.class }}
+    - ${{ inputs.mode }}
+    - ${{ inputs.dryrun }}
+

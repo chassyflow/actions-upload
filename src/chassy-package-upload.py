@@ -12,6 +12,27 @@ root_dir = "/github/workspace"
 logger = logging.getLogger()
 logger.addHandler(logging.StreamHandler())
 
+def print_directory_contents_recursive(path):
+    print("python printing directory contents")
+    try:
+        for root, dirs, files in os.walk(path):
+            # Calculate the depth by counting the number of separators
+            depth = root.replace(path, '').count(os.sep)
+            indent = ' ' * 4 * depth  # 4 spaces per level
+            print(f"{indent}{os.path.basename(root)}/")
+            subindent = ' ' * 4 * (depth + 1)
+            for file in files:
+                print(f"{subindent}{file}")
+    except FileNotFoundError:
+        print(f"Error: The directory '{path}' does not exist.")
+    except NotADirectoryError:
+        print(f"Error: The path '{path}' is not a directory.")
+    except PermissionError:
+        print(f"Error: Permission denied for accessing '{path}'.")
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
+
+
 # Function to easily write to github output.
 def _write_to_github_output(key, value):
     """
