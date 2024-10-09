@@ -31,12 +31,12 @@ runs:
   using: 'docker'
   image: 'Dockerfile'
   args:
-    - ${{ inputs.path }}
-    - ${{ inputs.architecture }}
-    - ${{ inputs.os }}
-    - ${{ inputs.version }}
-    - ${{ inputs.type }}
-    - ${{ inputs.class }}
-    - ${{ inputs.mode }}
-    - ${{ inputs.dryrun }}
+    # - ${{ inputs.path }}
+    # - ${{ inputs.architecture }}
+    # - ${{ inputs.os }}
+    # - ${{ inputs.version }}
+    # - ${{ inputs.type }}
+    # - ${{ inputs.class }}
+    # - ${{ inputs.mode }}
+    # - ${{ inputs.dryrun }}
 

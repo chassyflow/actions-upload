@@ -11,8 +11,11 @@ RUN python3 -m pip install --no-cache-dir -r requirements.txt
 
 # Copy bake entrypoint routine
 COPY src/chassy-package-upload.py /usr/local/bin/chassy-package-upload
+COPY src/test_script.sh /usr/local/bin/test_script
 
 # Ensure file is executable
 RUN chmod +x /usr/local/bin/chassy-package-upload
+RUN chmod +x /usr/local/bin/test_script
 
-ENTRYPOINT ["/usr/local/bin/chassy-package-upload"]
+# ENTRYPOINT ["/usr/local/bin/chassy-package-upload"]
+ENTRYPOINT ["/usr/local/bin/test_script"]
