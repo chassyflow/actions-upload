@@ -14,28 +14,6 @@ api_base_url = 'https://api.test.chassy.dev/v1',
 logger = logging.getLogger()
 logger.addHandler(logging.StreamHandler())
 
-
-def print_directory_contents_recursive(path):
-    print("python printing directory contents")
-    try:
-        for root, dirs, files in os.walk(path):
-            # Calculate the depth by counting the number of separators
-            depth = root.replace(path, '').count(os.sep)
-            indent = ' ' * 4 * depth  # 4 spaces per level
-            print(f"{indent}{os.path.basename(root)}/")
-            subindent = ' ' * 4 * (depth + 1)
-            for file in files:
-                print(f"{subindent}{file}")
-    except FileNotFoundError:
-        print(f"Error: The directory '{path}' does not exist.")
-    except NotADirectoryError:
-        print(f"Error: The path '{path}' is not a directory.")
-    except PermissionError:
-        print(f"Error: Permission denied for accessing '{path}'.")
-    except Exception as e:
-        print(f"An unexpected error occurred: {e}")
-
-
 # Function to easily write to github output.
 def _write_to_github_output(key, value):
     """
@@ -43,7 +21,7 @@ def _write_to_github_output(key, value):
     
     Args:
         key (str): The key of the output. This must match the string in output section of actions.yml
-        valu (str): The value to assign to the string
+        value (str): The value to assign to the string
     """    
     # Get the path of the $GITHUB_OUTPUT environment variable
     github_output = os.getenv('GITHUB_OUTPUT')
@@ -155,6 +133,13 @@ def _get_upload_url(credentials: str,
 
 
 def _put_a_file(upload_url, file_path):
+    """
+    This function takes a destination URL and a fully qualified file path and uploads the file to the URL as a PUT request
+    
+    Args:
+        upload_url (str): the URL to upload the file to.
+        file_path (str): the fully qualified file path to upload to
+    """
     with open(file_path, 'rb') as file:
         headers = {'Content-Type': 'application/octet-stream'}
         logger.debug(f"starting upload of file {file_path} to {upload_url}")
@@ -166,7 +151,8 @@ def _put_a_file(upload_url, file_path):
     else:
         logger.debug(f'Failed to upload file. Status code: {response.status_code}')
         logger.debug('Response:', response.text)
-
+        # raise an http error since things aren't okay
+        response.raise_for_status()
 
 def _image_uploads(args):
     """
@@ -218,6 +204,10 @@ def _handler(args) -> int:
         logger.setLevel(logging.DEBUG)
     else:
         logger.setLevel(logging.INFO)
+
+    _check_preconditions("GITHUB_OUTPUT")
+    _check_preconditions("CHASSY_TOKEN")
+    _check_preconditions("CHASSY_ENDPOINT")        
 
     if args.type == 'IMAGE':
         return _image_uploads(args)
