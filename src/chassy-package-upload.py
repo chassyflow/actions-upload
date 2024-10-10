@@ -9,8 +9,11 @@ import logging
 import requests
 
 root_dir = "/github/workspace"
+api_base_url = 'https://api.test.chassy.dev/v1',
+
 logger = logging.getLogger()
 logger.addHandler(logging.StreamHandler())
+
 
 def print_directory_contents_recursive(path):
     print("python printing directory contents")
@@ -89,7 +92,32 @@ def _find_files(file_pattern):
 
 
 def _get_credentials():
-    return 'todo'
+    chassy_refresh_token_b64 = os.getenv('CHASSY_TOKEN')
+    if chassy_refresh_token_b64 is None or chassy_refresh_token_b64 is '':
+        raise KeyError("Environment variable 'CHASSY_TOKEN' not found.")
+    
+    logger.debug("making request to refresh token")
+
+    refresh_token_url = f"{api_base_url}/token/user"
+    token_request_body = {
+        "token": chassy_refresh_token_b64
+    }
+
+    try:
+        response = requests.post(
+            refresh_token_url,
+            headers={"Content-Type": "application/json"},
+            json=token_request_body
+        )
+        # Raises HTTPError for bad responses (4xx or 5xx)
+        response.raise_for_status()  
+        refresh_token_response = response.json()
+    except requests.exceptions.HTTPError as http_err:
+        logger.critical(f"HTTP error occurred: {http_err}")  # HTTP error
+    except Exception as err:
+        logger.critical(f"An error occurred: {err}")  # Other errors
+
+    return refresh_token_response
 
 
 def _get_upload_url(credentials: str,
@@ -113,17 +141,31 @@ def _get_upload_url(credentials: str,
                              json={
                                 'name': name,
                                 'compatibility': {
-                                    'os_version': os_version,
-                                    'os_name': os_name,
+                                    'versionID': os_version,
+                                    'osID': os_name,
                                     'architecture': architecture
                                 },
-                                'type': 'RFSIMAGE',
-                                'provenance': os.getenv('GITHUB_REF', 'N/A'),
+                                'type': type,
+                                'provenanceURI': os.getenv('GITHUB_REF', 'N/A'),
                              },
                              headers={
                                  'Authorization': credentials
                              })
-    return 'todo'
+    return response.uploadURI
+
+
+def _put_a_file(upload_url, file_path):
+    with open(file_path, 'rb') as file:
+        headers = {'Content-Type': 'application/octet-stream'}
+        logger.debug(f"starting upload of file {file_path} to {upload_url}")
+        response = requests.put(upload_url, data=file, headers=headers)
+
+    # Check the response status
+    if response.ok:
+        logger.debug('File uploaded successfully.')
+    else:
+        logger.debug(f'Failed to upload file. Status code: {response.status_code}')
+        logger.debug('Response:', response.text)
 
 
 def _image_uploads(args):
@@ -144,7 +186,8 @@ def _image_uploads(args):
         logger.debug(f"logical name of image is {file_name}")
         authorization_token = _get_credentials()
 
-    return 0
+        upload_url = _get_upload_url(authorization_token, _f, args.architecture)
+        _put_a_file(upload_url, args.path)
 
 
 def _file_uploads(args):
@@ -153,7 +196,22 @@ def _file_uploads(args):
     :param args:
     :return:
     """
+    for file in _find_files(str(args.path)):
+        logger.debug(f"discovered {file} to be processed")
+        _f = pathlib.Path(file)
+        file_name = _f.name    
+
+        # remove any suffixes e.g .img from file to extract canonical name
+        if _f.suffix:
+            file_name = file_name.strip(_f.suffix)
+
+        logger.debug(f"logical name of image is {file_name}")
+        authorization_token = _get_credentials()
+        upload_url = _get_upload_url(authorization_token, _f, args.architecture)
+        _put_a_file(upload_url, args.path)
+
     return 0
+
 
 def _handler(args) -> int:
     if args.mode == 'DEBUG':
