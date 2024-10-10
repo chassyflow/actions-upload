@@ -174,6 +174,8 @@ def _image_uploads(args):
 
         upload_url = _get_upload_url(authorization_token, _f, args.architecture)
         _put_a_file(upload_url, args.path)
+   
+    return True
 
 
 def _file_uploads(args):
@@ -196,7 +198,7 @@ def _file_uploads(args):
         upload_url = _get_upload_url(authorization_token, _f, args.architecture)
         _put_a_file(upload_url, args.path)
 
-    return 0
+    return True
 
 
 def _handler(args) -> int:
@@ -210,10 +212,12 @@ def _handler(args) -> int:
     _check_preconditions("CHASSY_ENDPOINT")        
 
     if args.type == 'IMAGE':
-        return _image_uploads(args)
+        status = _image_uploads(args)
     else:
-        return _file_uploads(args)
+        status = _file_uploads(args)
 
+    if status is True:
+        _write_to_github_output("Status", "Successfully uploaded file.")
 
 def main() -> int:
     """
