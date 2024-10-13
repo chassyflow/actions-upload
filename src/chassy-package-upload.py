@@ -224,6 +224,8 @@ def main() -> int:
     initiates execution of this application, chiefly responsible for parsing parameters.
     :return:
     """
+    print("\n\nCommand-line arguments:", sys.argv)  # Print the raw arguments
+
     parser = argparse.ArgumentParser(prog='chassy-upload',
                                      description='chassy artifact and image uploader')
     parser.set_defaults(func=_handler)
