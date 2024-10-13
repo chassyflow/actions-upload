@@ -22,8 +22,6 @@ class Args:
         self.mode = "DEBUG"
 
 
-args = Args()
-
 # Function to easily write to github output.
 def _write_to_github_output(key, value):
     """
@@ -235,6 +233,9 @@ def main() -> int:
     :return:
     """
     print("\n\nCommand-line arguments:", sys.argv)  # Print the raw arguments
+
+    args = Args()
+    return _handler(args)
 
     # parser = argparse.ArgumentParser(prog='chassy-package-upload',
     #                                  description='chassy artifact and image uploader')
