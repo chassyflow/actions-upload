@@ -11,11 +11,14 @@ inputs:
     required: true
   os:
     description: 'operating system name for compatibility tracking'
-    required: true    
+    required: true
+  version:
+    description: 'operating system version for compatibility tracking'
+    required: true   
   type:
     description: 'what is the artifact type'
     required: true
-  class:
+  classification:
     description: 'for file and archives, what is the class of artifact'
     required: false
   mode:
@@ -36,6 +39,6 @@ runs:
     - ${{ inputs.os }}
     - ${{ inputs.version }}
     - ${{ inputs.type }}
-    - ${{ inputs.class }}
+    - ${{ inputs.classification }}
     - ${{ inputs.mode }}
     - ${{ inputs.dryrun }}
