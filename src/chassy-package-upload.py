@@ -88,14 +88,14 @@ def _get_credentials():
             json=token_request_body
         )
         # Raises HTTPError for bad responses (4xx or 5xx)
-        response.raise_for_status()  
+        response.raise_for_status()
         refresh_token_response = response.json()
     except requests.exceptions.HTTPError as http_err:
         logger.critical(f"HTTP error occurred: {http_err}")  # HTTP error
     except Exception as err:
         logger.critical(f"An error occurred: {err}")  # Other errors
 
-    return refresh_token_response
+    return refresh_token_response.idToken
 
 
 def _get_upload_url(credentials: str,
