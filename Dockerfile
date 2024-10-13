@@ -18,4 +18,4 @@ RUN chmod +x /usr/local/bin/chassy-package-upload
 RUN chmod +x /usr/local/bin/test_script
 
 # ENTRYPOINT ["/usr/local/bin/chassy-package-upload"]
-ENTRYPOINT ["python3" "/usr/local/bin/chassy-package-upload"]
+ENTRYPOINT ["/usr/local/bin/chassy-package-upload"]
