@@ -52,6 +52,7 @@ def _check_preconditions(required_vars=None):
     if required_vars is None:
         required_vars = []
     for value in required_vars:
+        logger.error(f"env var {value} has value of {os.getenv(value)}")
         if os.getenv(value) is None:
             logger.error(f"critical variable {value} is missing.")
             raise Exception(f"could not find required value {value}.")
@@ -215,7 +216,7 @@ def _handler(args) -> int:
     else:
         logger.setLevel(logging.INFO)
 
-    _check_preconditions("GITHUB_OUTPUT")
+    # _check_preconditions("GITHUB_OUTPUT")
     _check_preconditions("CHASSY_TOKEN")
     _check_preconditions("CHASSY_ENDPOINT")        
 
