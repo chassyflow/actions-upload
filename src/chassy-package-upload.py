@@ -84,8 +84,9 @@ def _find_files(file_pattern):
 
 
 def _get_credentials():
-    # chassy_refresh_token_b64 = os.getenv('CHASSY_TOKEN')
-    chassy_refresh_token_b64 = chassy_token
+    # @ghoshsomik test code
+    return chassy_token
+    chassy_refresh_token_b64 = os.getenv('CHASSY_TOKEN')
     if chassy_refresh_token_b64 in (None, ''):
         raise KeyError("Environment variable 'CHASSY_TOKEN' not found.")
     
