@@ -256,7 +256,7 @@ def main() -> int:
                         required=True,
                         help='what is the artifact type')
     parser.add_argument('-c',
-                        '--class',
+                        '--classifcation',
                         action='store',
                         choices=["EXECUTABLE", "CONFIG", "DATA", "BUNDLE"],
                         required=False,
