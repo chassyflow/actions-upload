@@ -11,6 +11,9 @@ import requests
 root_dir = "/github/workspace"
 api_base_url = 'https://api.test.chassy.dev/v1',
 
+chassy_token = "eyJraWQiOiJ6a2QrV3FsNUg5S2J0dG1UYUJMcEdISUFuVDBEaDBNc3ByQ1wvU3NxRm9hWT0iLCJhbGciOiJSUzI1NiJ9.eyJhdF9oYXNoIjoiYlc5dmZjZW42YmhxSTRWaDZUN210QSIsInN1YiI6IjAyODZlMTczLWM3ZDMtNGE0Ny04ODc2LTA0MGY3OWZhNjI0ZCIsImNvZ25pdG86Z3JvdXBzIjpbInVzLXdlc3QtMl9hVGowbFpVdnJfR29vZ2xlIl0sImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJpc3MiOiJodHRwczpcL1wvY29nbml0by1pZHAudXMtd2VzdC0yLmFtYXpvbmF3cy5jb21cL3VzLXdlc3QtMl9hVGowbFpVdnIiLCJjb2duaXRvOnVzZXJuYW1lIjoiR29vZ2xlXzExMzMwNzA1NTc3NDE4NDk1NDk5OCIsImdpdmVuX25hbWUiOiJTb21payIsIm5vbmNlIjoicnFuMk5ORTJpRmMyMlFjX0h3M2tmQzRXRTRIN1FMMHQtOTMyNWd6YTd2bmxsSUlTRUk3aE9PQjQzd09NaFVFNGRCR3JNRlRuZHRKTHpDSzRBZVBTNkFyOUVzRmdFZFAzbF8wdkhIZnk1TVRpZE1UU1ZSSmZvQWpCajVndkJjaG9WMVhSYVJjRGkteVhuMUt5OHlobDltU3FpdEVNUkNLU3k3cFJxT1NZbjljIiwicGljdHVyZSI6Imh0dHBzOlwvXC9saDMuZ29vZ2xldXNlcmNvbnRlbnQuY29tXC9hXC9BQ2c4b2NLTzJrMy0zTVI0M0N4dk9LaTJYRTdZUllJSFJZYmt4TWE5WF9yYk1OOTBCNDdXNXc9czk2LWMiLCJvcmlnaW5fanRpIjoiYmJjOWRjZGEtOThkZS00YTQ1LTg5ODItNTJhODMyMDMzZjZjIiwiYXVkIjoiM2Y4anFtZWdrZzgycW5pc3JhZnFvN3JpM2oiLCJpZGVudGl0aWVzIjpbeyJ1c2VySWQiOiIxMTMzMDcwNTU3NzQxODQ5NTQ5OTgiLCJwcm92aWRlck5hbWUiOiJHb29nbGUiLCJwcm92aWRlclR5cGUiOiJHb29nbGUiLCJpc3N1ZXIiOm51bGwsInByaW1hcnkiOiJ0cnVlIiwiZGF0ZUNyZWF0ZWQiOiIxNzIzNDgxNTA4NzY2In1dLCJ0b2tlbl91c2UiOiJpZCIsImF1dGhfdGltZSI6MTcyODgzOTA2OCwiZXhwIjoxNzI4ODgyMjY4LCJpYXQiOjE3Mjg4MzkwNjgsImZhbWlseV9uYW1lIjoiR2hvc2giLCJqdGkiOiI1MjQ1OThkZS04NTgwLTQwNTYtYmNkOC1mMDJmYTkxNWQ1ZDAiLCJlbWFpbCI6InNvbWlrQGNoYXNzeS5pbyJ9.fTbOnnSDyv05_ron_7U1ShZZB84mQWn-JW7O1xtsMU2qeJEijGPsxRiNfh8TJiArzc6NGx7YkM4a7TsAg73Q3VvuP4SAzF3KUIcSH20tDvLky3dWt5MJdXLfkuoPGnTmB7KacmIOQI4-fH94lqVe6xk4U1vkXiYAe8B4RB4MN_dbJezkdL5m7tLlJCQkCr7NMJfLuPhqLjV7lY0d9Qu8VEwG_oA7mVwdQ21XyQTjRaW-_TZgqkV80JQuxqhZr3ApDDvuO8OtiaOinJVoU2gFw77AZBNeT1MZUgsACajQOIpfM2EuK5PeRHSIQEqMdZoaPxx0RhHzkqc96B3yT8IhPg"
+chassy_endpoint_dev = "https://api.test.chassy.dev"
+
 logger = logging.getLogger()
 logger.addHandler(logging.StreamHandler())
 
@@ -31,16 +34,18 @@ def _write_to_github_output(key, value):
         key (str): The key of the output. This must match the string in output section of actions.yml
         value (str): The value to assign to the string
     """    
-    # Get the path of the $GITHUB_OUTPUT environment variable
-    github_output = os.getenv('GITHUB_OUTPUT')
+    logger.error(f"Successfully wrote {key}={value} to $GITHUB_OUTPUT")
+    return
+    # # Get the path of the $GITHUB_OUTPUT environment variable
+    # github_output = os.getenv('GITHUB_OUTPUT')
     
-    if github_output:
-        # Open the file in append mode and write the key=value pair
-        with open(github_output, 'a') as output_file:
-            output_file.write(f"{key}={value}\n")
-        logger.debug(f"Successfully wrote {key}={value} to $GITHUB_OUTPUT")
-    else:
-        logger.debug("Error: $GITHUB_OUTPUT is not set in the environment")
+    # if github_output:
+    #     # Open the file in append mode and write the key=value pair
+    #     with open(github_output, 'a') as output_file:
+    #         output_file.write(f"{key}={value}\n")
+    #     logger.debug(f"Successfully wrote {key}={value} to $GITHUB_OUTPUT")
+    # else:
+    #     logger.debug("Error: $GITHUB_OUTPUT is not set in the environment")
 
 
 def _check_preconditions(required_vars=None):
@@ -79,7 +84,8 @@ def _find_files(file_pattern):
 
 
 def _get_credentials():
-    chassy_refresh_token_b64 = os.getenv('CHASSY_TOKEN')
+    # chassy_refresh_token_b64 = os.getenv('CHASSY_TOKEN')
+    chassy_refresh_token_b64 = chassy_token
     if chassy_refresh_token_b64 in (None, ''):
         raise KeyError("Environment variable 'CHASSY_TOKEN' not found.")
     
@@ -114,11 +120,11 @@ def _get_upload_url(credentials: str,
                     os_version: str,
                     type: str):
     base_url, url = None, None
-    if os.getenv('CHASSY_ENDPOINT') is None:
-        base_url = 'https://api.chassy.io'
-    else:
-        base_url = os.getenv('CHASSY_ENDPOINT')
-
+    # if os.getenv('CHASSY_ENDPOINT') is None:
+    #     base_url = 'https://api.chassy.io'
+    # else:
+    #     base_url = os.getenv('CHASSY_ENDPOINT')
+    base_url = chassy_endpoint_dev
     if type == 'IMAGE':
         url = base_url + '/v1/image'
     else:
@@ -217,8 +223,8 @@ def _handler(args) -> int:
         logger.setLevel(logging.INFO)
 
     # _check_preconditions("GITHUB_OUTPUT")
-    _check_preconditions("CHASSY_TOKEN")
-    _check_preconditions("CHASSY_ENDPOINT")        
+    # _check_preconditions("CHASSY_TOKEN")
+    # _check_preconditions("CHASSY_ENDPOINT")        
 
     if args.type == 'IMAGE':
         status = _image_uploads(args)
