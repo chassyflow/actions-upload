@@ -282,9 +282,9 @@ def _handler(args) -> int:
     # _check_preconditions("CHASSY_TOKEN")
     # _check_preconditions("CHASSY_ENDPOINT")        
 
-    if args.upload_type == 'IMAGE':
+    if args.type == 'IMAGE':
         status = _image_uploads(args)
-    elif args.upload_type == 'PACKAGE':
+    elif args.type == 'PACKAGE':
         status = _package_uploads(args)
     else:
         raise ValueError("Unsupported Upload Type")
@@ -307,49 +307,49 @@ def main() -> int:
     parser.set_defaults(func=_handler)
     parser.add_argument('-p',
                           '--path',
-                          required=True,
+                        #   required=True,
                           action='store',
                           type=pathlib.Path,
                           help='fully qualified path to image file or a glob search path for image')
     parser.add_argument('-a',
                           '--architecture',
                           choices=["AMD64", "ARM64", "ARMv6", "ARMv7", "RISCV", "UNKNOWN"],
-                          required=True,
+                        #   required=True,
                           action='store',
                           help='architecture of image to be uploaded')
     parser.add_argument('-o',
                         '--os',
                         action='store',
-                        required=True,
+                        # required=True,
                         help='operating system name for compatibility tracking')
     parser.add_argument('-i',
                         '--version',
                         action='store',
-                        required=True,
+                        # required=True,
                         help='operating system version for compatibility tracking')
     parser.add_argument('-t',
                         '--type',
                         action='store',
                         choices=["FILE", "ARCHIVE", "IMAGE", "FIRMWARE"],
-                        required=True,
+                        # required=True,
                         help='what is the artifact type')
     parser.add_argument('-c',
                         '--classification',
                         action='store',
                         choices=["EXECUTABLE", "CONFIG", "DATA", "BUNDLE"],
-                        required=False,
+                        # required=False,
                         help='for file and archives, what is the class of artifact')
     parser.add_argument('-m',
                         '--mode',
                         choices=['DEBUG', 'INFO'],
-                        required=False,
+                        # required=False,
                         default='INFO',
                         help='determine if we should run in debug or standard info mode')
     parser.add_argument('-d',
                           '--dryrun',
                           action='store_true',
                           help='determine if we should run in dryrun mode or not',
-                          required=False,
+                        #   required=False,
                           default=False)    
     args = parser.parse_args()
     return args.func(args)
