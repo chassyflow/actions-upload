@@ -287,9 +287,7 @@ def _handler(args) -> int:
     else:
         logger.setLevel(logging.INFO)
 
-    # _check_preconditions("INPUT_GITHUB_OUTPUT")
-    _check_preconditions("INPUT_CHASSY_TOKEN")
-    _check_preconditions("INPUT_CHASSY_ENDPOINT")        
+    # _check_preconditions(["CHASSY_TOKEN", "CHASSY_ENDPOINT", "GITHUB_OUTPUT"])
 
     if args.upload_type == 'IMAGE':
         status = _image_uploads(args)
