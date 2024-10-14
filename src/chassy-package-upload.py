@@ -350,8 +350,10 @@ def main() -> int:
                           action='store_true',
                           help='determine if we should run in dryrun mode or not',
                         #   required=False,
-                          default=False)    
+                          default=False)   
+    print("Printing all arg parse args:\n") 
     args = parser.parse_args()
+    print(args)
     return args.func(args)
 
 
