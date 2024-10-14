@@ -297,7 +297,7 @@ def main() -> int:
     initiates execution of this application, chiefly responsible for parsing parameters.
     :return:
     """
-    print("\n\nCommand-line arguments:", sys.argv)  # Print the raw arguments
+    print("\n\nCommand-line arguments:", sys.argv, "\n\n")  # Print the raw arguments
 
     # args = Args()
     # return _handler(args)
@@ -305,52 +305,48 @@ def main() -> int:
     parser = argparse.ArgumentParser(prog='chassy-package-upload',
                                      description='chassy artifact and image uploader')
     parser.set_defaults(func=_handler)
-    parser.add_argument('-p',
-                          '--path',
-                        #   required=True,
-                          action='store',
-                          type=pathlib.Path,
-                          help='fully qualified path to image file or a glob search path for image')
-    parser.add_argument('-a',
-                          '--architecture',
-                          choices=["AMD64", "ARM64", "ARMv6", "ARMv7", "RISCV", "UNKNOWN"],
-                        #   required=True,
-                          action='store',
-                          help='architecture of image to be uploaded')
-    parser.add_argument('-o',
-                        '--os',
-                        action='store',
-                        # required=True,
+    # Required arguments
+    parser.add_argument('-p', '--path', 
+                        required=True, 
+                        type=str,
+                        help='fully qualified path to image file or a glob search path for image')
+    parser.add_argument('-a', '--architecture', 
+                        required=True,
+                        type=str,
+                        choices=["AMD64", "ARM64", "ARMv6", "ARMv7", "RISCV", "UNKNOWN"],
+                        help='architecture of image to be uploaded')
+    parser.add_argument('-o', '--os', 
+                        required=True,
+                        type=str,
                         help='operating system name for compatibility tracking')
-    parser.add_argument('-i',
-                        '--version',
-                        action='store',
-                        # required=True,
+    parser.add_argument('-i', '--version',
+                        required=True, 
+                        type=str,
                         help='operating system version for compatibility tracking')
-    parser.add_argument('-t',
-                        '--type',
-                        action='store',
+    parser.add_argument('-t', '--type',
+                        required=True,                        
+                        type=str,
                         choices=["FILE", "ARCHIVE", "IMAGE", "FIRMWARE"],
-                        # required=True,
                         help='what is the artifact type')
-    parser.add_argument('-c',
-                        '--classification',
-                        action='store',
+
+    # Optional arguments
+    parser.add_argument('-c', '--classification',
+                        required=False,
+                        type=str,
                         choices=["EXECUTABLE", "CONFIG", "DATA", "BUNDLE"],
-                        # required=False,
-                        help='for file and archives, what is the class of artifact')
-    parser.add_argument('-m',
-                        '--mode',
+                        help='for file and archives, what is the class of artifact (optional).')
+    parser.add_argument('-m', '--mode', 
+                        required=False, 
+                        type=str, 
                         choices=['DEBUG', 'INFO'],
-                        # required=False,
                         default='INFO',
                         help='determine if we should run in debug or standard info mode')
-    parser.add_argument('-d',
-                          '--dryrun',
-                          action='store_true',
-                          help='determine if we should run in dryrun mode or not',
-                        #   required=False,
-                          default=False)   
+    parser.add_argument('-d', '--dryrun', 
+                        required=False,
+                        action='store_true',
+                        default=False,
+                        help='determine if we should run in dryrun mode or not (optional)')
+    
     print("Printing all arg parse args:\n") 
     args = parser.parse_args()
     print(args)
