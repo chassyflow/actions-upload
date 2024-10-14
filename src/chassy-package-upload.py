@@ -20,7 +20,8 @@ logger.addHandler(logging.StreamHandler())
 class Args:
     def __init__(self):
         self.architecture = "ARM64"
-        self.upload_type = "RFSIMAGE"
+        self.upload_type = "PACKAGE"
+        self.subtype = "FILE"
         self.path = "/github/workspace/src/firmware/blinker.c"
         self.mode = "DEBUG"
         self.os_name = "ubuntu"
@@ -167,7 +168,8 @@ def _get_upload_url_package(credentials: str,
                     architecture: str,
                     os_name: str,
                     os_version: str,
-                    type: str):
+                    type: str,
+                    package_class : str):
     base_url, url = None, None
     # if os.getenv('CHASSY_ENDPOINT') is None:
     #     base_url = 'https://api.chassy.io'
@@ -185,7 +187,7 @@ def _get_upload_url_package(credentials: str,
         },
         'type': type,
         'provenanceURI': os.getenv('GITHUB_REF', 'N/A'),
-        'packageClass' : "DATA"
+        'packageClass' : package_class
     }
 
     # Log payload for debugging
@@ -249,7 +251,7 @@ def _image_uploads(args):
         logger.debug(f"logical name of image is {file_name}")
         authorization_token = _get_credentials()
 
-        upload_url = _get_upload_url_image(authorization_token, file_name, args.architecture, args.os_name, args.os_version, args.upload_type)
+        upload_url = _get_upload_url_image(authorization_token, file_name, args.architecture, args.os_name, args.os_version, args.subtype)
         _put_a_file(upload_url, args.path)
    
     return True
@@ -272,7 +274,7 @@ def _file_uploads(args):
 
         logger.debug(f"logical name of image is {file_name}")
         authorization_token = _get_credentials()
-        upload_url = _get_upload_url_package(authorization_token, file_name, args.architecture, args.os_name, args.os_version, args.upload_type)
+        upload_url = _get_upload_url_package(authorization_token, file_name, args.architecture, args.os_name, args.os_version, args.upload_type, "DATA")
         _put_a_file(upload_url, args.path)
 
     return True
