@@ -302,8 +302,7 @@ def main() -> int:
     # args = Args()
     # return _handler(args)
 
-    parser = argparse.ArgumentParser(prog='chassy-package-upload',
-                                     description='chassy artifact and image uploader')
+    parser = argparse.ArgumentParser(description='chassy artifact and image uploader')
     parser.set_defaults(func=_handler)
     # Required arguments
     parser.add_argument('-p', '--path', 
@@ -347,9 +346,7 @@ def main() -> int:
                         default=False,
                         help='determine if we should run in dryrun mode or not (optional)')
     
-    print("Printing all arg parse args:\n") 
     args = parser.parse_args()
-    print(args)
     return args.func(args)
 
 
