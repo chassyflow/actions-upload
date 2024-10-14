@@ -190,7 +190,7 @@ def _image_uploads(args):
         logger.debug(f"logical name of image is {file_name}")
         authorization_token = _get_credentials()
 
-        upload_url = _get_upload_url(authorization_token, _f, args.architecture, args.os_name, args.os_version, args.upload_type)
+        upload_url = _get_upload_url(authorization_token, file_name, args.architecture, args.os_name, args.os_version, args.upload_type)
         _put_a_file(upload_url, args.path)
    
     return True
@@ -213,7 +213,7 @@ def _file_uploads(args):
 
         logger.debug(f"logical name of image is {file_name}")
         authorization_token = _get_credentials()
-        upload_url = _get_upload_url(authorization_token, _f, args.architecture, args.os_name, args.os_version, args.upload_type)
+        upload_url = _get_upload_url(authorization_token, file_name, args.architecture, args.os_name, args.os_version, args.upload_type)
         _put_a_file(upload_url, args.path)
 
     return True
