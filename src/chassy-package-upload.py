@@ -287,7 +287,7 @@ def _handler(args) -> int:
     else:
         logger.setLevel(logging.INFO)
 
-    _check_preconditions("INPUT_GITHUB_OUTPUT")
+    # _check_preconditions("INPUT_GITHUB_OUTPUT")
     _check_preconditions("INPUT_CHASSY_TOKEN")
     _check_preconditions("INPUT_CHASSY_ENDPOINT")        
 
