@@ -312,7 +312,7 @@ def main() -> int:
     parser.add_argument('-a', '--architecture', 
                         required=True,
                         type=str,
-                        choices=["AMD64", "ARM64", "ARMv6", "ARMv7", "RISCV", "UNKNOWN"],
+                        # choices=["AMD64", "ARM64", "ARMv6", "ARMv7", "RISCV", "UNKNOWN"],
                         help='architecture of image to be uploaded')
     parser.add_argument('-o', '--os', 
                         required=True,
@@ -325,19 +325,19 @@ def main() -> int:
     parser.add_argument('-t', '--type',
                         required=True,                        
                         type=str,
-                        choices=["FILE", "ARCHIVE", "IMAGE", "FIRMWARE"],
+                        # choices=["FILE", "ARCHIVE", "IMAGE", "FIRMWARE"],
                         help='what is the artifact type')
 
     # Optional arguments
     parser.add_argument('-c', '--classification',
                         required=False,
                         type=str,
-                        choices=["EXECUTABLE", "CONFIG", "DATA", "BUNDLE"],
+                        # choices=["EXECUTABLE", "CONFIG", "DATA", "BUNDLE"],
                         help='for file and archives, what is the class of artifact (optional).')
     parser.add_argument('-m', '--mode', 
                         required=False, 
                         type=str, 
-                        choices=['DEBUG', 'INFO'],
+                        # choices=['DEBUG', 'INFO'],
                         default='INFO',
                         help='determine if we should run in debug or standard info mode')
     parser.add_argument('-d', '--dryrun', 
