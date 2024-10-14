@@ -129,25 +129,40 @@ def _get_upload_url(credentials: str,
     #     base_url = os.getenv('CHASSY_ENDPOINT')
     base_url = chassy_endpoint_dev
     if type == 'IMAGE':
-        url = base_url + '/v1/image'
+        url = f"{base_url}/image"
     else:
-        url = base_url + '/v1/package'
+        url = f"{base_url}/package"
 
-    response = requests.post(url,
-                             json={
-                                'name': name,
-                                'compatibility': {
-                                    'versionID': os_version,
-                                    'osID': os_name,
-                                    'architecture': architecture
-                                },
-                                'type': type,
-                                'provenanceURI': os.getenv('GITHUB_REF', 'N/A'),
-                             },
-                             headers={
-                                 'Authorization': credentials
-                             })
-    return response.uploadURI
+    json_payload = {
+        'name': name,
+        'compatibility': {
+            'versionID': os_version,
+            'osID': os_name,
+            'architecture': architecture
+        },
+        'type': type,
+        'provenanceURI': os.getenv('GITHUB_REF', 'N/A'),
+    }
+
+    # Log payload for debugging
+    logger.debug("JSON Payload:")
+    for key, value in json_payload.items():
+        logger.debug(f"  {key}: {value} (type: {type(value)})")
+
+    try:
+        response = requests.post(url,
+                                 json=json_payload,
+                                 headers={
+                                     'Authorization': credentials
+                                 })
+        response.raise_for_status()  # Raises HTTPError for bad responses
+        response_data = response.json()
+        logger.debug(f"Response JSON: {response_data}")
+        return response_data.get('uploadURI')  # Adjust based on actual response structure
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Request failed: {e}")
+        logger.debug(f"Response Content: {response.text}")
+        return None
 
 
 def _put_a_file(upload_url, file_path):
