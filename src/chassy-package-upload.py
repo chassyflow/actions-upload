@@ -123,7 +123,6 @@ def _get_upload_url_image(credentials: str,
                     os_name: str,
                     os_version: str,
                     type: str):
-    base_url, url = None, None
 
     base_url = os.getenv('CHASSY_ENDPOINT')
     url = f"{base_url}/image"
@@ -167,12 +166,8 @@ def _get_upload_url_package(credentials: str,
                     os_version: str,
                     type: str,
                     package_class : str):
-    base_url, url = None, None
-    # if os.getenv('CHASSY_ENDPOINT') is None:
-    #     base_url = 'https://api.chassy.io'
-    # else:
-    #     base_url = os.getenv('CHASSY_ENDPOINT')
-    base_url = chassy_endpoint_dev
+
+    base_url = os.getenv('CHASSY_ENDPOINT')
     url = f"{base_url}/package"
 
     json_payload = {
