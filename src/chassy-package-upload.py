@@ -116,7 +116,7 @@ def _get_credentials():
     return refresh_token_response.idToken
 
 
-def _get_upload_url(credentials: str,
+def _get_upload_url_image(credentials: str,
                     name: str,
                     architecture: str,
                     os_name: str,
@@ -128,10 +128,7 @@ def _get_upload_url(credentials: str,
     # else:
     #     base_url = os.getenv('CHASSY_ENDPOINT')
     base_url = chassy_endpoint_dev
-    if type == 'IMAGE':
-        url = f"{base_url}/image"
-    else:
-        url = f"{base_url}/package"
+    url = f"{base_url}/image"
 
     json_payload = {
         'name': name,
@@ -142,6 +139,53 @@ def _get_upload_url(credentials: str,
         },
         'type': type,
         'provenanceURI': os.getenv('GITHUB_REF', 'N/A'),
+    }
+
+    # Log payload for debugging
+    # logger.debug("JSON Payload:")
+    # for key, value in json_payload.items():
+    #     logger.debug(f"  {key}: {value} (type: {type(value)})")
+
+    try:
+        response = requests.post(url,
+                                 json=json_payload,
+                                 headers={
+                                     'Authorization': credentials
+                                 })
+        response_data = response.json()        
+        # logger.debug(f"Response JSON: {response_data}")        
+        response.raise_for_status()  # Raises HTTPError for bad responses
+        return response_data.get('uploadURI')  # Adjust based on actual response structure
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Request failed: {e}")
+        logger.debug(f"Response Content: {response.text}")
+        return None
+
+
+def _get_upload_url_package(credentials: str,
+                    name: str,
+                    architecture: str,
+                    os_name: str,
+                    os_version: str,
+                    type: str):
+    base_url, url = None, None
+    # if os.getenv('CHASSY_ENDPOINT') is None:
+    #     base_url = 'https://api.chassy.io'
+    # else:
+    #     base_url = os.getenv('CHASSY_ENDPOINT')
+    base_url = chassy_endpoint_dev
+    url = f"{base_url}/package"
+
+    json_payload = {
+        'name': name,
+        'compatibility': {
+            'versionID': os_version,
+            'osID': os_name,
+            'architecture': architecture,
+        },
+        'type': type,
+        'provenanceURI': os.getenv('GITHUB_REF', 'N/A'),
+        'packageClass' : "DATA"
     }
 
     # Log payload for debugging
@@ -205,7 +249,7 @@ def _image_uploads(args):
         logger.debug(f"logical name of image is {file_name}")
         authorization_token = _get_credentials()
 
-        upload_url = _get_upload_url(authorization_token, file_name, args.architecture, args.os_name, args.os_version, args.upload_type)
+        upload_url = _get_upload_url_image(authorization_token, file_name, args.architecture, args.os_name, args.os_version, args.upload_type)
         _put_a_file(upload_url, args.path)
    
     return True
@@ -228,7 +272,7 @@ def _file_uploads(args):
 
         logger.debug(f"logical name of image is {file_name}")
         authorization_token = _get_credentials()
-        upload_url = _get_upload_url(authorization_token, file_name, args.architecture, args.os_name, args.os_version, args.upload_type)
+        upload_url = _get_upload_url_package(authorization_token, file_name, args.architecture, args.os_name, args.os_version, args.upload_type)
         _put_a_file(upload_url, args.path)
 
     return True
