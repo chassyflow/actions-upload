@@ -21,11 +21,12 @@ class Args:
     def __init__(self):
         self.architecture = "ARM64"
         self.upload_type = "IMAGE"
-        self.subtype = "RFSIMAGE"
-        self.path = "/github/workspace/src/firmware/blinker.c"
+        self.classification = "RFSIMAGE"
+        self.path = "**/blinker.c"
         self.mode = "DEBUG"
         self.os_name = "ubuntu"
         self.os_version = "22.04"
+        self.dryrun = False
 
 
 # Function to easily write to github output.
@@ -251,13 +252,13 @@ def _image_uploads(args):
         logger.debug(f"logical name of image is {file_name}")
         authorization_token = _get_credentials()
 
-        upload_url = _get_upload_url_image(authorization_token, file_name, args.architecture, args.os_name, args.os_version, args.subtype)
+        upload_url = _get_upload_url_image(authorization_token, file_name, args.architecture, args.os_name, args.os_version, args.classification)
         _put_a_file(upload_url, args.path)
    
     return True
 
 
-def _file_uploads(args):
+def _package_uploads(args):
     """
     Core routine responsible for uploading binaries/files/archives to Chassy registry
     :param args:
@@ -274,7 +275,7 @@ def _file_uploads(args):
 
         logger.debug(f"logical name of image is {file_name}")
         authorization_token = _get_credentials()
-        upload_url = _get_upload_url_package(authorization_token, file_name, args.architecture, args.os_name, args.os_version, args.subtype, "DATA")
+        upload_url = _get_upload_url_package(authorization_token, file_name, args.architecture, args.os_name, args.os_version, args.classification, "DATA")
         _put_a_file(upload_url, args.path)
 
     return True
@@ -292,8 +293,10 @@ def _handler(args) -> int:
 
     if args.upload_type == 'IMAGE':
         status = _image_uploads(args)
+    elif args.upload_type == 'PACKAGE':
+        status = _package_uploads(args)
     else:
-        status = _file_uploads(args)
+        raise ValueError("Unsupported Upload Type")
 
     if status is True:
         _write_to_github_output("Status", "Successfully uploaded file.")
