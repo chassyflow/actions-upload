@@ -20,8 +20,8 @@ logger.addHandler(logging.StreamHandler())
 class Args:
     def __init__(self):
         self.architecture = "ARM64"
-        self.upload_type = "PACKAGE"
-        self.subtype = "FILE"
+        self.upload_type = "IMAGE"
+        self.subtype = "RFSIMAGE"
         self.path = "/github/workspace/src/firmware/blinker.c"
         self.mode = "DEBUG"
         self.os_name = "ubuntu"
