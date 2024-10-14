@@ -17,16 +17,17 @@ chassy_endpoint_dev = "https://api.test.chassy.dev/v1"
 logger = logging.getLogger()
 logger.addHandler(logging.StreamHandler())
 
-class Args:
-    def __init__(self):
-        self.architecture = "ARM64"
-        self.upload_type = "IMAGE"
-        self.classification = "RFSIMAGE"
-        self.path = "**/blinker.c"
-        self.mode = "DEBUG"
-        self.os_name = "ubuntu"
-        self.os_version = "22.04"
-        self.dryrun = False
+# test class for args... this wont be used. 
+# class Args:
+#     def __init__(self):
+#         self.architecture = "ARM64"
+#         self.upload_type = "IMAGE"
+#         self.classification = "RFSIMAGE"
+#         self.path = "**/blinker.c"
+#         self.mode = "DEBUG"
+#         self.os_name = "ubuntu"
+#         self.os_version = "22.04"
+#         self.dryrun = False
 
 
 # Function to easily write to github output.
@@ -143,11 +144,6 @@ def _get_upload_url_image(credentials: str,
         'provenanceURI': os.getenv('GITHUB_REF', 'N/A'),
     }
 
-    # Log payload for debugging
-    # logger.debug("JSON Payload:")
-    # for key, value in json_payload.items():
-    #     logger.debug(f"  {key}: {value} (type: {type(value)})")
-
     try:
         response = requests.post(url,
                                  json=json_payload,
@@ -190,11 +186,6 @@ def _get_upload_url_package(credentials: str,
         'provenanceURI': os.getenv('GITHUB_REF', 'N/A'),
         'packageClass' : package_class
     }
-
-    # Log payload for debugging
-    # logger.debug("JSON Payload:")
-    # for key, value in json_payload.items():
-    #     logger.debug(f"  {key}: {value} (type: {type(value)})")
 
     try:
         response = requests.post(url,
@@ -308,60 +299,60 @@ def main() -> int:
     """
     print("\n\nCommand-line arguments:", sys.argv)  # Print the raw arguments
 
-    args = Args()
-    return _handler(args)
+    # args = Args()
+    # return _handler(args)
 
-    # parser = argparse.ArgumentParser(prog='chassy-package-upload',
-    #                                  description='chassy artifact and image uploader')
-    # parser.set_defaults(func=_handler)
-    # parser.add_argument('-p',
-    #                       '--path',
-    #                       required=True,
-    #                       action='store',
-    #                       type=pathlib.Path,
-    #                       help='fully qualified path to image file or a glob search path for image')
-    # parser.add_argument('-a',
-    #                       '--architecture',
-    #                       choices=["AMD64", "ARM64", "ARMv6", "ARMv7", "RISCV", "UNKNOWN"],
-    #                       required=True,
-    #                       action='store',
-    #                       help='architecture of image to be uploaded')
-    # parser.add_argument('-o',
-    #                     '--os',
-    #                     action='store',
-    #                     required=True,
-    #                     help='operating system name for compatibility tracking')
-    # parser.add_argument('-i',
-    #                     '--version',
-    #                     action='store',
-    #                     required=True,
-    #                     help='operating system version for compatibility tracking')
-    # parser.add_argument('-t',
-    #                     '--type',
-    #                     action='store',
-    #                     choices=["FILE", "ARCHIVE", "IMAGE", "FIRMWARE"],
-    #                     required=True,
-    #                     help='what is the artifact type')
-    # parser.add_argument('-c',
-    #                     '--classification',
-    #                     action='store',
-    #                     choices=["EXECUTABLE", "CONFIG", "DATA", "BUNDLE"],
-    #                     required=False,
-    #                     help='for file and archives, what is the class of artifact')
-    # parser.add_argument('-m',
-    #                     '--mode',
-    #                     choices=['DEBUG', 'INFO'],
-    #                     required=False,
-    #                     default='INFO',
-    #                     help='determine if we should run in debug or standard info mode')
-    # parser.add_argument('-d',
-    #                       '--dryrun',
-    #                       action='store_true',
-    #                       help='determine if we should run in dryrun mode or not',
-    #                       required=False,
-    #                       default=False)    
-    # args = parser.parse_args()
-    # return args.func(args)
+    parser = argparse.ArgumentParser(prog='chassy-package-upload',
+                                     description='chassy artifact and image uploader')
+    parser.set_defaults(func=_handler)
+    parser.add_argument('-p',
+                          '--path',
+                          required=True,
+                          action='store',
+                          type=pathlib.Path,
+                          help='fully qualified path to image file or a glob search path for image')
+    parser.add_argument('-a',
+                          '--architecture',
+                          choices=["AMD64", "ARM64", "ARMv6", "ARMv7", "RISCV", "UNKNOWN"],
+                          required=True,
+                          action='store',
+                          help='architecture of image to be uploaded')
+    parser.add_argument('-o',
+                        '--os',
+                        action='store',
+                        required=True,
+                        help='operating system name for compatibility tracking')
+    parser.add_argument('-i',
+                        '--version',
+                        action='store',
+                        required=True,
+                        help='operating system version for compatibility tracking')
+    parser.add_argument('-t',
+                        '--type',
+                        action='store',
+                        choices=["FILE", "ARCHIVE", "IMAGE", "FIRMWARE"],
+                        required=True,
+                        help='what is the artifact type')
+    parser.add_argument('-c',
+                        '--classification',
+                        action='store',
+                        choices=["EXECUTABLE", "CONFIG", "DATA", "BUNDLE"],
+                        required=False,
+                        help='for file and archives, what is the class of artifact')
+    parser.add_argument('-m',
+                        '--mode',
+                        choices=['DEBUG', 'INFO'],
+                        required=False,
+                        default='INFO',
+                        help='determine if we should run in debug or standard info mode')
+    parser.add_argument('-d',
+                          '--dryrun',
+                          action='store_true',
+                          help='determine if we should run in dryrun mode or not',
+                          required=False,
+                          default=False)    
+    args = parser.parse_args()
+    return args.func(args)
 
 
 if __name__ == "__main__":
