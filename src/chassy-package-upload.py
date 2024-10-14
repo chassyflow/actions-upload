@@ -20,7 +20,7 @@ logger.addHandler(logging.StreamHandler())
 class Args:
     def __init__(self):
         self.architecture = "ARM64"
-        self.upload_type = "FILE"
+        self.upload_type = "RFSIMAGE"
         self.path = "/github/workspace/src/firmware/blinker.c"
         self.mode = "DEBUG"
         self.os_name = "ubuntu"
@@ -145,9 +145,9 @@ def _get_upload_url(credentials: str,
     }
 
     # Log payload for debugging
-    logger.debug("JSON Payload:")
-    for key, value in json_payload.items():
-        logger.debug(f"  {key}: {value} (type: {type(value)})")
+    # logger.debug("JSON Payload:")
+    # for key, value in json_payload.items():
+    #     logger.debug(f"  {key}: {value} (type: {type(value)})")
 
     try:
         response = requests.post(url,
@@ -155,9 +155,9 @@ def _get_upload_url(credentials: str,
                                  headers={
                                      'Authorization': credentials
                                  })
+        response_data = response.json()        
+        # logger.debug(f"Response JSON: {response_data}")        
         response.raise_for_status()  # Raises HTTPError for bad responses
-        response_data = response.json()
-        logger.debug(f"Response JSON: {response_data}")
         return response_data.get('uploadURI')  # Adjust based on actual response structure
     except requests.exceptions.RequestException as e:
         logger.error(f"Request failed: {e}")
