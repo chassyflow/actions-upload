@@ -141,7 +141,7 @@ def _get_upload_url(credentials: str,
             'architecture': architecture
         },
         'type': type,
-        'provenanceURI': os.getenv('GITHUB_REF', 'N/A'),
+        'uploadURI': os.getenv('GITHUB_REF', 'N/A'),
     }
 
     # Log payload for debugging
