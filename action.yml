@@ -22,7 +22,7 @@ inputs:
     description: 'determine if we should run in debug or standard info mode'
     required: false
   dryrun:
-    description: 'determine if we should run in dryrun mode or note'
+    description: 'determine if we should run in dryrun mode or not'
     required: false
 outputs:
   status:
