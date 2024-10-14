@@ -17,8 +17,6 @@ COPY src/test_script.sh /usr/local/bin/test_script
 RUN chmod +x /usr/local/bin/chassy-package-upload
 RUN chmod +x /usr/local/bin/test_script
 
-#ENTRYPOINT ["python3", "/usr/local/bin/chassy-package-upload"]
-#CMD ["--help"]  # Default command
-
-ENTRYPOINT ["sh", "/usr/local/bin/test_script"]
+ENTRYPOINT ["python3", "/usr/local/bin/chassy-package-upload"]
+#ENTRYPOINT ["sh", "/usr/local/bin/test_script"]
 CMD ["--help"]  # Default command

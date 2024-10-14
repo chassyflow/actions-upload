@@ -287,6 +287,16 @@ def _handler(args) -> int:
     else:
         logger.setLevel(logging.INFO)
 
+    print("printing all envars")
+    for name, value in os.environ.items():
+        print("{0}: {1}".format(name, value))
+
+    chassy_token = os.getenv('CHASSY_TOKEN')
+    print(f"chassy token {chassy_token}")
+
+    github_output = os.getenv('GITHUB_OUTPUT')
+    print(f"github output {github_output}")
+
     # _check_preconditions(["CHASSY_TOKEN", "CHASSY_ENDPOINT", "GITHUB_OUTPUT"])
 
     if args.upload_type == 'IMAGE':
