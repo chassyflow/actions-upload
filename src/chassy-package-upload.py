@@ -11,9 +11,6 @@ import requests
 root_dir = "/github/workspace"
 api_base_url = "https://api.test.chassy.dev/v1"
 
-#chassy_token = "eyJraWQiOiJ6a2QrV3FsNUg5S2J0dG1UYUJMcEdISUFuVDBEaDBNc3ByQ1wvU3NxRm9hWT0iLCJhbGciOiJSUzI1NiJ9.eyJhdF9oYXNoIjoiZWdsakhzMzhKaXZWM29DZ3prU0w5dyIsInN1YiI6IjAyODZlMTczLWM3ZDMtNGE0Ny04ODc2LTA0MGY3OWZhNjI0ZCIsImNvZ25pdG86Z3JvdXBzIjpbInVzLXdlc3QtMl9hVGowbFpVdnJfR29vZ2xlIl0sImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJpc3MiOiJodHRwczpcL1wvY29nbml0by1pZHAudXMtd2VzdC0yLmFtYXpvbmF3cy5jb21cL3VzLXdlc3QtMl9hVGowbFpVdnIiLCJjb2duaXRvOnVzZXJuYW1lIjoiR29vZ2xlXzExMzMwNzA1NTc3NDE4NDk1NDk5OCIsImdpdmVuX25hbWUiOiJTb21payIsInBpY3R1cmUiOiJodHRwczpcL1wvbGgzLmdvb2dsZXVzZXJjb250ZW50LmNvbVwvYVwvQUNnOG9jS08yazMtM01SNDNDeHZPS2kyWEU3WVJZSUhSWWJreE1hOVhfcmJNTjkwQjQ3VzV3PXM5Ni1jIiwib3JpZ2luX2p0aSI6ImJiYzlkY2RhLTk4ZGUtNGE0NS04OTgyLTUyYTgzMjAzM2Y2YyIsImF1ZCI6IjNmOGpxbWVna2c4MnFuaXNyYWZxbzdyaTNqIiwiaWRlbnRpdGllcyI6W3sidXNlcklkIjoiMTEzMzA3MDU1Nzc0MTg0OTU0OTk4IiwicHJvdmlkZXJOYW1lIjoiR29vZ2xlIiwicHJvdmlkZXJUeXBlIjoiR29vZ2xlIiwiaXNzdWVyIjpudWxsLCJwcmltYXJ5IjoidHJ1ZSIsImRhdGVDcmVhdGVkIjoiMTcyMzQ4MTUwODc2NiJ9XSwidG9rZW5fdXNlIjoiaWQiLCJhdXRoX3RpbWUiOjE3Mjg4MzkwNjgsImV4cCI6MTcyODkzMTgwMCwiaWF0IjoxNzI4ODg4NjAwLCJmYW1pbHlfbmFtZSI6Ikdob3NoIiwianRpIjoiYzg0ZDc5OTctNDM3YS00MTY1LWIxOTktYTk5NDIwYmQ3MWI3IiwiZW1haWwiOiJzb21pa0BjaGFzc3kuaW8ifQ.mHgDQEtEJrSH8aRE_9FzskoArnfnpPTayz-qwetwoXMlyBTUfrGiCIXuY_fSni0LIqkWL0TGUqfD_saacUckKDN5OVlZxD_RsBxx84fesLi46DTimaCGaL06bTdGQ3BLhAiNQyP6TT0iO6dbYSuvrlXmXRyOgTno0TE3UUHqlwUek-7QfGhNH9tMg0-xm1OUrK8RQb-XWqmvScj5jBAq6YpN7wGeRB9pwyS-GDGmKI_kZkK27f5tO1NOAbu1T_qwaygXeychWqkQKWslUNEU0zwYYs2_40Ork7elPyCm_JB679pc2rU4ACSjnhn3_aLrCJ8EAFPamkgDUonUGbnxdQ"
-#chassy_endpoint_dev = "https://api.test.chassy.dev/v1"
-
 logger = logging.getLogger()
 logger.addHandler(logging.StreamHandler())
 
@@ -38,7 +35,7 @@ def _write_to_github_output(key, value):
         key (str): The key of the output. This must match the string in output section of actions.yml
         value (str): The value to assign to the string
     """    
-    logger.error(f"Successfully wrote {key}={value} to $GITHUB_OUTPUT")
+    logger.info(f"Successfully wrote {key}={value} to $GITHUB_OUTPUT")
     return
     # # Get the path of the $GITHUB_OUTPUT environment variable
     # github_output = os.getenv('GITHUB_OUTPUT')
@@ -65,6 +62,7 @@ def _check_preconditions(required_vars=None):
         if os.getenv(value) is None:
             logger.error(f"critical variable {value} is missing.")
             raise Exception(f"could not find required value {value}.")
+    print("check preconditions passed\n")
 
 
 def _find_files(file_pattern):
@@ -84,6 +82,7 @@ def _find_files(file_pattern):
     files_found = glob.glob(os.path.join(root_dir, '**', file_pattern), recursive=True)
 
     for file in files_found:
+        print(f"found path {file}")
         yield os.path.abspath(file)
 
 
@@ -94,7 +93,7 @@ def _get_credentials():
         raise KeyError("Environment variable 'CHASSY_TOKEN' not found.")
     
     logger.debug("making request to refresh token")
-
+    print("requesting refresh token")
     refresh_token_url = f"{api_base_url}/token/user"
     token_request_body = {
         "token": chassy_refresh_token_b64
@@ -113,7 +112,7 @@ def _get_credentials():
         logger.critical(f"HTTP error occurred: {http_err}")  # HTTP error
     except Exception as err:
         logger.critical(f"An error occurred: {err}")  # Other errors
-
+    print("successfully got refresh token")
     return refresh_token_response.idToken
 
 
@@ -152,8 +151,10 @@ def _get_upload_url_image(credentials: str,
         response_data = response.json()        
         # logger.debug(f"Response JSON: {response_data}")        
         response.raise_for_status()  # Raises HTTPError for bad responses
+        print("sucessfully got url upload image")
         return response_data.get('uploadURI')  # Adjust based on actual response structure
     except requests.exceptions.RequestException as e:
+        print ("url request failed")
         logger.error(f"Request failed: {e}")
         logger.debug(f"Response Content: {response.text}")
         return None
@@ -196,9 +197,11 @@ def _get_upload_url_package(credentials: str,
         response_data = response.json()        
         # logger.debug(f"Response JSON: {response_data}")        
         response.raise_for_status()  # Raises HTTPError for bad responses
+        print("sucessfully got url upload image")
         return response_data.get('uploadURI')  # Adjust based on actual response structure
     except requests.exceptions.RequestException as e:
         logger.error(f"Request failed: {e}")
+        print("url request failed")
         logger.debug(f"Response Content: {response.text}")
         return None
 
@@ -218,8 +221,10 @@ def _put_a_file(upload_url, file_path):
 
     # Check the response status
     if response.ok:
+        print("file uploaded successfully")
         logger.debug('File uploaded successfully.')
     else:
+        print("file upload failed successfully)")
         logger.debug(f'Failed to upload file. Status code: {response.status_code}')
         logger.debug('Response:', response.text)
         # raise an http error since things aren't okay
