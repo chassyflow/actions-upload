@@ -88,9 +88,9 @@ def _find_files(file_pattern):
 
 def _get_credentials():
     # @ghoshsomik test code
-    chassy_refresh_token_b64 = os.getenv('CHASSY_TOKEN')
+    chassy_refresh_token_b64 = os.getenv('CHASSY_ACCESS_TOKEN')
     if chassy_refresh_token_b64 in (None, ''):
-        raise KeyError("Environment variable 'CHASSY_TOKEN' not found.")
+        raise KeyError("Environment variable 'CHASSY_ACCESS_TOKEN' not found.")
     
     logger.debug("making request to refresh token")
     print("requesting refresh token")
@@ -283,7 +283,7 @@ def _handler(args) -> int:
     else:
         logger.setLevel(logging.INFO)
 
-    _check_preconditions(["CHASSY_TOKEN", "CHASSY_ENDPOINT", "GITHUB_OUTPUT"])
+    _check_preconditions(["CHASSY_ACCESS_TOKEN", "CHASSY_ENDPOINT", "GITHUB_OUTPUT"])
 
     if args.upload_type == 'IMAGE':
         status = _image_uploads(args)
