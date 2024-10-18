@@ -7,6 +7,7 @@ import sys
 import glob
 import logging
 import requests
+import base64
 
 root_dir = "/github/workspace"
 api_base_url = "https://api.test.chassy.dev/v1"
@@ -26,6 +27,15 @@ class Args:
         self.dryrun = False
 
 
+def isBase64(s):
+    """
+    Check if input string is base64
+    """
+    try:
+        return base64.b64encode(base64.b64decode(s)) == s
+    except Exception:
+        return False
+
 # Function to easily write to github output.
 def _write_to_github_output(key, value):
     """
@@ -35,18 +45,16 @@ def _write_to_github_output(key, value):
         key (str): The key of the output. This must match the string in output section of actions.yml
         value (str): The value to assign to the string
     """    
-    logger.info(f"Successfully wrote {key}={value} to $GITHUB_OUTPUT")
-    return
-    # # Get the path of the $GITHUB_OUTPUT environment variable
-    # github_output = os.getenv('GITHUB_OUTPUT')
+    # Get the path of the $GITHUB_OUTPUT environment variable
+    github_output = os.getenv('GITHUB_OUTPUT')
     
-    # if github_output:
-    #     # Open the file in append mode and write the key=value pair
-    #     with open(github_output, 'a') as output_file:
-    #         output_file.write(f"{key}={value}\n")
-    #     logger.debug(f"Successfully wrote {key}={value} to $GITHUB_OUTPUT")
-    # else:
-    #     logger.debug("Error: $GITHUB_OUTPUT is not set in the environment")
+    if github_output:
+        # Open the file in append mode and write the key=value pair
+        with open(github_output, 'a') as output_file:
+            output_file.write(f"{key}={value}\n")
+        logger.debug(f"Successfully wrote {key}={value} to $GITHUB_OUTPUT")
+    else:
+        logger.debug("Error: $GITHUB_OUTPUT is not set in the environment")
 
 
 def _check_preconditions(required_vars=None):
@@ -58,11 +66,10 @@ def _check_preconditions(required_vars=None):
     if required_vars is None:
         required_vars = []
     for value in required_vars:
-        logger.error(f"env var {value} has value of {os.getenv(value)}")
+        logger.debug(f"env var {value} has value of {os.getenv(value)}")
         if os.getenv(value) is None:
-            logger.error(f"critical variable {value} is missing.")
+            logger.fatal(f"critical variable {value} is missing.")
             raise Exception(f"could not find required value {value}.")
-    print("check preconditions passed\n")
 
 
 def _find_files(file_pattern):
@@ -82,7 +89,6 @@ def _find_files(file_pattern):
     files_found = glob.glob(os.path.join(root_dir, '**', file_pattern), recursive=True)
 
     for file in files_found:
-        print(f"found path {file}")
         yield os.path.abspath(file)
 
 
@@ -92,9 +98,14 @@ def _get_credentials():
     if chassy_refresh_token_b64 in (None, ''):
         raise KeyError("Environment variable 'CHASSY_TOKEN' not found.")
     
+    if not isBase64(chassy_refresh_token_b64):
+        logger.fatal("Chassy Refresh toekn is not base 64")
+        return
+
     logger.debug("making request to refresh token")
-    print("requesting refresh token")
+    # get api base url from envar and not hardcode
     refresh_token_url = f"{api_base_url}/token/user"
+    # add function to check if string is b64 or not
     token_request_body = {
         "token": chassy_refresh_token_b64
     }
@@ -109,10 +120,10 @@ def _get_credentials():
         response.raise_for_status()
         refresh_token_response = response.json()
     except requests.exceptions.HTTPError as http_err:
-        logger.critical(f"HTTP error occurred: {http_err}")  # HTTP error
+        logger.fatal(f"HTTP error occurred: {http_err}")  # HTTP error
     except Exception as err:
-        logger.critical(f"An error occurred: {err}")  # Other errors
-    print("successfully got refresh token")
+        logger.fatal(f"An error occurred: {err}")  # Other errors
+    logger.debug("successfully got refresh token")
     return refresh_token_response.idToken
 
 
@@ -137,11 +148,6 @@ def _get_upload_url_image(credentials: str,
         'provenanceURI': os.getenv('GITHUB_REF', 'N/A'),
     }
 
-    # Log payload for debugging
-    # logger.debug("JSON Payload:")
-    # for key, value in json_payload.items():
-    #     logger.debug(f"  {key}: {value} (type: {type(value)})")
-
     try:
         response = requests.post(url,
                                  json=json_payload,
@@ -149,13 +155,10 @@ def _get_upload_url_image(credentials: str,
                                      'Authorization': credentials
                                  })
         response_data = response.json()        
-        # logger.debug(f"Response JSON: {response_data}")        
         response.raise_for_status()  # Raises HTTPError for bad responses
-        print("sucessfully got url upload image")
         return response_data.get('uploadURI')  # Adjust based on actual response structure
     except requests.exceptions.RequestException as e:
-        print ("url request failed")
-        logger.error(f"Request failed: {e}")
+        logger.fatal(f"Request failed: {e}")
         logger.debug(f"Response Content: {response.text}")
         return None
 
@@ -183,11 +186,6 @@ def _get_upload_url_package(credentials: str,
         'packageClass' : package_class
     }
 
-    # Log payload for debugging
-    # logger.debug("JSON Payload:")
-    # for key, value in json_payload.items():
-    #     logger.debug(f"  {key}: {value} (type: {type(value)})")
-
     try:
         response = requests.post(url,
                                  json=json_payload,
@@ -195,13 +193,10 @@ def _get_upload_url_package(credentials: str,
                                      'Authorization': credentials
                                  })
         response_data = response.json()        
-        # logger.debug(f"Response JSON: {response_data}")        
         response.raise_for_status()  # Raises HTTPError for bad responses
-        print("sucessfully got url upload image")
         return response_data.get('uploadURI')  # Adjust based on actual response structure
     except requests.exceptions.RequestException as e:
         logger.error(f"Request failed: {e}")
-        print("url request failed")
         logger.debug(f"Response Content: {response.text}")
         return None
 
@@ -221,10 +216,8 @@ def _put_a_file(upload_url, file_path):
 
     # Check the response status
     if response.ok:
-        print("file uploaded successfully")
         logger.debug('File uploaded successfully.')
     else:
-        print("file upload failed successfully)")
         logger.debug(f'Failed to upload file. Status code: {response.status_code}')
         logger.debug('Response:', response.text)
         # raise an http error since things aren't okay
@@ -300,7 +293,7 @@ def main() -> int:
     initiates execution of this application, chiefly responsible for parsing parameters.
     :return:
     """
-    print("\n\nCommand-line arguments:", sys.argv)  # Print the raw arguments
+    logger.debug("\n\nCommand-line arguments:", sys.argv)  # Print the raw arguments
 
     args = Args()
     return _handler(args)
