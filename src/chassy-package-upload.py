@@ -103,9 +103,8 @@ def _get_credentials():
         return
 
     logger.debug("making request to refresh token")
-    # get api base url from envar and not hardcode
-    refresh_token_url = f"{api_base_url}/token/user"
-    # add function to check if string is b64 or not
+    base_url = os.getenv('CHASSY_ENDPOINT')
+    refresh_token_url = f"{base_url}/token/user"
     token_request_body = {
         "token": chassy_refresh_token_b64
     }
