@@ -65,12 +65,12 @@ For example, see the following:
         id: test-action
         uses: chassyflow/actions-package-upload
         with:
-          architecture: "--architecture ARM64"
-          os: "--os ubuntu"
-          version: "--version 22.04"
-          type: "--type IMAGE"
-          path: "--path **/release.img"
-          classification: "--classification RFSIMAGE"
-          mode: "--mode INFO"
-          dryrun: "--dryrun false"
+          architecture: "ARM64"
+          os: "ubuntu"
+          version: "22.04"
+          type: "IMAGE"
+          path: "**/release.img"
+          classification: "RFSIMAGE"
+          mode: "INFO"
+          dryrun: "false"
 ```
