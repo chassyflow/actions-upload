@@ -34,17 +34,16 @@ action.
 | `dryrun`          | determine if we should run in dryrun mode or note (optional)          | `string`  |
 
 ### Default Values
-
-| Configuration | Default Value |
-| ----------------- | --------- |
-| `path`            | **NONE**  |
-| `architecture`    | **NONE**  |
-| `os`              | **NONE**  |
-| `version`         | **NONE**  |
-| `type`            | **NONE**  |
-| `classification`  | **NONE**  |
-| `mode`            | `false`   |
-| `dryrun`          | `false`   |
+| Configuration | Default Value | Valid Arguments                                           | 
+| ----------------- | --------- | --------------------------------------------------------- |
+| `path`            | **NONE**  | Any string                                                |
+| `architecture`    | **NONE**  | "AMD64", "ARM64", "ARMv6", "ARMv7", "RISCV", "UNKNOWN"    |
+| `os`              | **NONE**  | Any String                                                |
+| `version`         | **NONE**  | Any String                                                |
+| `type`            | **NONE**  | "FILE", "ARCHIVE", "IMAGE", "FIRMWARE"                    |
+| `classification`  | **NONE**  | "RFSIMAGE", "YOCTO"                                       |
+| `mode`            | `false`   | "DEBUG", "INFO"                                           |
+| `dryrun`          | `false`   | "TRUE", "FALSE"                                           |
 
 ## Development
 Add the package upload action to your workflow by checking it out and then having the correct input args.
