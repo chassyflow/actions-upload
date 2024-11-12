@@ -34,7 +34,8 @@ action.
 | `dryrun`          | determine if we should run in dryrun mode or note (optional)          | `string`  |
 
 ### Default Values
-| Configuration | Default Value | Valid Arguments                                           | 
+
+| Configuration | Default Value | Valid Arguments                                           |
 | ----------------- | --------- | --------------------------------------------------------- |
 | `path`            | **NONE**  | Any string                                                |
 | `architecture`    | **NONE**  | "AMD64", "ARM64", "ARMv6", "ARMv7", "RISCV", "UNKNOWN"    |
@@ -42,13 +43,15 @@ action.
 | `version`         | **NONE**  | Any String                                                |
 | `type`            | **NONE**  | "FILE", "ARCHIVE", "IMAGE", "FIRMWARE"                    |
 | `classification`  | **NONE**  | "RFSIMAGE", "YOCTO"                                       |
-| `mode`            | `false`   | "DEBUG", "INFO"                                           |
+| `mode`            | `"INFO"`  | "DEBUG", "INFO"                                           |
 | `dryrun`          | `false`   | "TRUE", "FALSE"                                           |
 
 ## Development
+
 Add the package upload action to your workflow by checking it out and then having the correct input args.
 
 For example, see the following:
+
 ```yml
   example-pkg-upload:
     name: Example Package Upload
