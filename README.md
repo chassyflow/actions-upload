@@ -31,10 +31,10 @@ action.
 | `type`            | what is the artifact type                                             | `string`  |
 | `classification`  | for file and archives, what is the class of artifact (optional)       | `string`  |
 | `mode`            | determine if we should run in debug or standard info mode (optional)  | `string`  |
-| `dryrun`          | determine if we should run in dryrun mode or note (optional)          | `string`  |
 
 ### Default Values
-| Configuration | Default Value | Valid Arguments                                           | 
+
+| Configuration | Default Value | Valid Arguments                                           |
 | ----------------- | --------- | --------------------------------------------------------- |
 | `path`            | **NONE**  | Any string                                                |
 | `architecture`    | **NONE**  | "AMD64", "ARM64", "ARMv6", "ARMv7", "RISCV", "UNKNOWN"    |
@@ -42,13 +42,14 @@ action.
 | `version`         | **NONE**  | Any String                                                |
 | `type`            | **NONE**  | "FILE", "ARCHIVE", "IMAGE", "FIRMWARE"                    |
 | `classification`  | **NONE**  | "RFSIMAGE", "YOCTO"                                       |
-| `mode`            | `false`   | "DEBUG", "INFO"                                           |
-| `dryrun`          | `false`   | "TRUE", "FALSE"                                           |
+| `mode`            | `"INFO"`  | "DEBUG", "INFO"                                           |
 
 ## Development
+
 Add the package upload action to your workflow by checking it out and then having the correct input args.
 
 For example, see the following:
+
 ```yml
   example-pkg-upload:
     name: Example Package Upload
@@ -71,5 +72,4 @@ For example, see the following:
           path: "**/release.img"
           classification: "RFSIMAGE"
           mode: "INFO"
-          dryrun: "false"
 ```
