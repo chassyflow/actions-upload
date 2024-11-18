@@ -1,6 +1,11 @@
 import * as v from 'valibot'
 import * as core from '@actions/core'
 
+v.setGlobalMessage(
+  e =>
+    `Validation Error: {type: ${e.type}, kind: ${e.kind}, received: ${e.received}, expected: ${e.expected}, message: ${e.message}}`
+)
+
 const architectureSchema = v.union(
   [
     v.literal('AMD64'),

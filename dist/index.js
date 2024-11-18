@@ -26349,6 +26349,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.getConfig = exports.configSchema = exports.baseSchema = void 0;
 const v = __importStar(__nccwpck_require__(8275));
 const core = __importStar(__nccwpck_require__(7484));
+v.setGlobalMessage(e => `Validation Error: {type: ${e.type}, kind: ${e.kind}, received: ${e.received}, expected: ${e.expected}, message: ${e.message}}`);
 const architectureSchema = v.union([
     v.literal('AMD64'),
     v.literal('ARM64'),
@@ -26459,7 +26460,7 @@ const createRunContext = async () => {
     const config = (0, config_1.getConfig)();
     const env = (0, env_1.getEnv)();
     // get auth session using refresh token
-    const refreshTokenURL = `${(0, env_1.getBackendUrl)(env)}/token/user`;
+    const refreshTokenURL = `${(0, env_1.getBackendUrl)(env).apiBaseUrl}/token/user`;
     const tokenRequestBody = {
         token: env.CHASSY_TOKEN
     };
@@ -26678,7 +26679,7 @@ const imageUpload = async (ctx) => {
     if (images.length === 0)
         throw new Error(`No files found in provided path: ${ctx.config.path}`);
     // create image in Chassy Index
-    const createUrl = `${(0, env_1.getBackendUrl)(ctx.env)}/image`;
+    const createUrl = `${(0, env_1.getBackendUrl)(ctx.env).apiBaseUrl}/image`;
     let image;
     try {
         const res = await fetch(createUrl, {
@@ -26730,7 +26731,7 @@ const packageUpload = async (ctx) => {
     if (paths.length === 0)
         throw new Error(`No files found in provided path: ${ctx.config.path}`);
     // create image in Chassy Index
-    const createUrl = `${(0, env_1.getBackendUrl)(ctx.env)}/package`;
+    const createUrl = `${(0, env_1.getBackendUrl)(ctx.env).apiBaseUrl}/package`;
     let pkg;
     try {
         const res = await fetch(createUrl, {

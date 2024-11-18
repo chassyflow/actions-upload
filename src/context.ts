@@ -10,7 +10,7 @@ export const createRunContext = async () => {
   const env = getEnv()
 
   // get auth session using refresh token
-  const refreshTokenURL = `${getBackendUrl(env)}/token/user`
+  const refreshTokenURL = `${getBackendUrl(env).apiBaseUrl}/token/user`
   const tokenRequestBody = {
     token: env.CHASSY_TOKEN
   }

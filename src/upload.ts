@@ -31,7 +31,7 @@ export const imageUpload = async (ctx: RunContext) => {
     throw new Error(`No files found in provided path: ${ctx.config.path}`)
 
   // create image in Chassy Index
-  const createUrl = `${getBackendUrl(ctx.env)}/image`
+  const createUrl = `${getBackendUrl(ctx.env).apiBaseUrl}/image`
 
   let image: CreateImage
   try {
@@ -86,7 +86,7 @@ export const packageUpload = async (ctx: RunContext) => {
     throw new Error(`No files found in provided path: ${ctx.config.path}`)
 
   // create image in Chassy Index
-  const createUrl = `${getBackendUrl(ctx.env)}/package`
+  const createUrl = `${getBackendUrl(ctx.env).apiBaseUrl}/package`
 
   let pkg: CreatePackage
   try {
