@@ -27,14 +27,14 @@ export const configSchema = v.object({
     v.literal("DEBUG"),
     v.literal("INFO"),
   ]), "INFO"),
-})
+});
 
-export type Config = v.InferInput<typeof configSchema>;
+export type Config = v.InferOutput<typeof configSchema>;
 
 /**
  * Get configuration options for environment
  */
-export const getConfig = () => {
+export const getConfig = () =>
   v.parse(configSchema, {
     path: core.getInput("path"),
     architecture: core.getInput("architecture"),
@@ -43,5 +43,5 @@ export const getConfig = () => {
     type: core.getInput("type"),
     classification: core.getInput("classification"),
     mode: core.getInput("mode")
-  })
-}
+  });
+
