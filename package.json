@@ -67,7 +67,8 @@
     ]
   },
   "dependencies": {
-    "@actions/core": "^1.11.1"
+    "@actions/core": "^1.11.1",
+    "valibot": "^1.0.0-beta.7"
   },
   "devDependencies": {
     "@github/local-action": "^2.2.0",

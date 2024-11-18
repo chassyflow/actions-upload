@@ -12,10 +12,13 @@ inputs:
   os:
     description: 'operating system name for compatibility tracking'
     required: true    
+  version:
+    description: 'operating system version for compatibility tracking'
+    required: true
   type:
     description: 'what is the artifact type'
     required: true
-  class:
+  classification:
     description: 'for file and archives, what is the class of artifact'
     required: false
   mode:
@@ -28,15 +31,5 @@ outputs:
   status:
     description: 'A log/status message denoting the success of the upload'
 runs:
-  using: 'docker'
-  image: 'Dockerfile'
-  args:
-    - ${{ inputs.path }}
-    - ${{ inputs.architecture }}
-    - ${{ inputs.os }}
-    - ${{ inputs.version }}
-    - ${{ inputs.type }}
-    - ${{ inputs.class }}
-    - ${{ inputs.mode }}
-    - ${{ inputs.dryrun }}
-
+  using: node20
+  main: dist/index.js
