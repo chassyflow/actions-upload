@@ -26349,7 +26349,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.getConfig = exports.configSchema = exports.baseSchema = void 0;
 const v = __importStar(__nccwpck_require__(8275));
 const core = __importStar(__nccwpck_require__(7484));
-v.setGlobalMessage(e => `Validation Error: {type: ${e.type}, kind: ${e.kind}, received: ${e.received}, expected: ${e.expected}, message: ${e.message}}`);
+const errMsg = (property) => (e) => `${e.kind} error: ${property} expected (${e.expected}) and received (${e.received}), raw: ${e.input}`;
 const architectureSchema = v.union([
     v.literal('AMD64'),
     v.literal('ARM64'),
@@ -26357,31 +26357,27 @@ const architectureSchema = v.union([
     v.literal('ARMv7'),
     v.literal('RISCV'),
     v.literal('UNKNOWN')
-], e => `architecture error: ${e.message}`);
+]);
 const imageSchema = v.object({
     type: v.literal('IMAGE'),
-    classification: v.union([v.literal('RFSIMAGE'), v.literal('YOCTO')])
+    classification: v.union([v.literal('RFSIMAGE'), v.literal('YOCTO')], errMsg('classification'))
 });
 const packageSchema = v.object({
-    type: v.union([
-        v.literal('FILE'),
-        v.literal('ARCHIVE'),
-        v.literal('FIRMWARE')
-    ]),
+    type: v.union([v.literal('FILE'), v.literal('ARCHIVE'), v.literal('FIRMWARE')], errMsg('type')),
     classification: v.union([
         v.literal('EXECUTABLE'),
         v.literal('CONFIG'),
         v.literal('DATA'),
         v.literal('BUNDLE')
-    ])
+    ], errMsg('classification'))
 });
 exports.baseSchema = v.object({
-    name: v.pipe(v.string(), v.minLength(1)),
-    path: v.pipe(v.string(), v.minLength(1)),
+    name: v.pipe(v.string(errMsg('name')), v.minLength(1, errMsg('name'))),
+    path: v.pipe(v.string(errMsg('name')), v.minLength(1, errMsg('name'))),
     architecture: architectureSchema,
-    os: v.string(),
-    version: v.string(),
-    mode: v.optional(v.union([v.literal('DEBUG'), v.literal('INFO')]), 'INFO')
+    os: v.string(errMsg('os')),
+    version: v.string(errMsg('version')),
+    mode: v.optional(v.union([v.literal('DEBUG'), v.literal('INFO')], errMsg('mode')), 'INFO')
 });
 exports.configSchema = v.intersect([
     exports.baseSchema,
