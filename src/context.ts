@@ -1,8 +1,8 @@
 import { backOff } from "exponential-backoff";
 import { TokenData } from "./api";
 import * as core from "@actions/core";
-import { configSchema, getConfig, type Config } from "./config";
-import { Env, getBackendUrl, getEnv } from "./env";
+import { getConfig } from "./config";
+import { getBackendUrl, getEnv } from "./env";
 import { BACKOFF_CONFIG } from "./constants";
 
 export const createRunContext = async () => {

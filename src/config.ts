@@ -2,6 +2,7 @@ import * as v from "valibot";
 import * as core from "@actions/core"
 
 export const configSchema = v.object({
+  name: v.pipe(v.string(), v.minLength(1)),
   path: v.string(),
   architecture: v.union([
     v.literal("AMD64"),
@@ -36,6 +37,7 @@ export type Config = v.InferOutput<typeof configSchema>;
  */
 export const getConfig = () =>
   v.parse(configSchema, {
+    name: core.getInput("name"),
     path: core.getInput("path"),
     architecture: core.getInput("architecture"),
     os: core.getInput("os"),
