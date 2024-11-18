@@ -1,15 +1,14 @@
-import * as v from "valibot";
+import * as v from 'valibot'
 
 export const envSchema = v.object({
   CHASSY_TOKEN: v.string(),
-  BACKEND_ENVIRONMENT: v.optional(v.union([
-    v.literal("PROD"),
-    v.literal("STAGE"),
-    v.literal("DEV")
-  ]), "PROD"),
+  BACKEND_ENVIRONMENT: v.optional(
+    v.union([v.literal('PROD'), v.literal('STAGE'), v.literal('DEV')]),
+    'PROD'
+  )
 })
 
-export type Env = v.InferOutput<typeof envSchema>;
+export type Env = v.InferOutput<typeof envSchema>
 
 export const getEnv = () => v.parse(envSchema, process.env)
 

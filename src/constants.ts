@@ -1,4 +1,4 @@
-import { BackoffOptions } from "exponential-backoff";
+import { BackoffOptions } from 'exponential-backoff'
 
 export const BACKOFF_CONFIG: BackoffOptions = {
   numOfAttempts: 6,

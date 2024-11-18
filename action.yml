@@ -3,15 +3,19 @@ description: 'Uploads a package to Chassy Index'
 author: 'Chassy'
 
 inputs:
+  name:
+    description: 'name of package or image'
+    required: true
   path:
-    description: "fully qualified path to image file or a glob search path for image"
+    description:
+      'fully qualified path to image file or a glob search path for image'
     required: true
   architecture:
     description: 'architecture of image to be uploaded'
     required: true
   os:
     description: 'operating system name for compatibility tracking'
-    required: true    
+    required: true
   version:
     description: 'operating system version for compatibility tracking'
     required: true

@@ -1,14 +1,13 @@
-import { backOff } from "exponential-backoff";
-import { TokenData } from "./api";
-import * as core from "@actions/core";
-import { getConfig } from "./config";
-import { getBackendUrl, getEnv } from "./env";
-import { BACKOFF_CONFIG } from "./constants";
+import { backOff } from 'exponential-backoff'
+import { TokenData } from './api'
+import * as core from '@actions/core'
+import { getConfig } from './config'
+import { getBackendUrl, getEnv } from './env'
+import { BACKOFF_CONFIG } from './constants'
 
 export const createRunContext = async () => {
-
-  const config = getConfig();
-  const env = getEnv();
+  const config = getConfig()
+  const env = getEnv()
 
   // get auth session using refresh token
   const refreshTokenURL = `${getBackendUrl(env)}/token/user`
@@ -26,22 +25,19 @@ export const createRunContext = async () => {
         body: JSON.stringify(tokenRequestBody)
       })
       if (!rawResponse.ok) {
-        throw new Error(
-          `Network response was not ok ${rawResponse.statusText}`
-        )
+        throw new Error(`Network response was not ok ${rawResponse.statusText}`)
       }
       return rawResponse.json()
     }, BACKOFF_CONFIG)
   } catch (e) {
     core.error('Failed to get refresh token')
     if (e instanceof Error) throw new Error(e.message)
-    else throw e;
+    else throw e
   }
 
   const authToken = refreshTokenResponse.idToken
 
-  return { config, env, authToken };
-};
+  return { config, env, authToken }
+}
 
-export type RunContext = Awaited<ReturnType<typeof createRunContext>>;
-
+export type RunContext = Awaited<ReturnType<typeof createRunContext>>

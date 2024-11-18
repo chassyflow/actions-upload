@@ -5,27 +5,27 @@ on:
     branches:
       - master
       - somik/merge-branch-test
-  workflow_dispatch:  # Allows manual trigger from the Actions tab
+  workflow_dispatch: # Allows manual trigger from the Actions tab
   pull_request:
     branches:
-      - "*"
+      - '*'
 jobs:
   test:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
-      
+
       - name: Run your custom action
         uses: ./
         with:
-          name: "test action"
-          architecture: "ARM64"
-          os: "ubuntu"
-          version: "20.04"
-          type: "FILE"
-          path: "**/README.md"
-          class: "DATA"
-          mode: "INFO"
-          dryrun: "false"
+          name: 'test action'
+          architecture: 'ARM64'
+          os: 'ubuntu'
+          version: '20.04'
+          type: 'FILE'
+          path: '**/README.md'
+          class: 'DATA'
+          mode: 'INFO'
+          dryrun: 'false'

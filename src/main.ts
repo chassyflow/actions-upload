@@ -1,7 +1,7 @@
 import * as core from '@actions/core'
 import { wait } from './wait'
 import { createRunContext } from './context'
-import { imageUpload, packageUpload } from './upload';
+import { imageUpload, packageUpload } from './upload'
 
 /**
  * The main function for the action.
@@ -23,16 +23,16 @@ export async function run(): Promise<void> {
     //core.setOutput('time', new Date().toTimeString())
 
     // get context
-    const ctx = await createRunContext();
+    const ctx = await createRunContext()
 
     switch (ctx.config.type) {
-      case "IMAGE": {
-        await imageUpload(ctx);
+      case 'IMAGE': {
+        await imageUpload(ctx)
 
-        break;
+        break
       }
       default: {
-        await packageUpload(ctx);
+        await packageUpload(ctx)
       }
     }
   } catch (error) {
