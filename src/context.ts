@@ -17,6 +17,7 @@ export const createRunContext = async () => {
   let refreshTokenResponse: TokenData
   try {
     refreshTokenResponse = await backOff(async () => {
+      console.debug(tokenRequestBody)
       const rawResponse = await fetch(refreshTokenURL, {
         method: 'POST',
         headers: {
