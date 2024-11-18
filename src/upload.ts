@@ -22,12 +22,14 @@ const uploadFile = (url: string) => async (path: Path) => {
  * Upload image to Chassy Index
  */
 export const imageUpload = async (ctx: RunContext) => {
+  // it must be image
+  if (ctx.config.type !== 'IMAGE')
+    throw new Error('Attempted to upload generic package as image')
   // validate that files exist
   const images = await glob(ctx.config.path, { withFileTypes: true })
   if (images.length === 0)
     throw new Error(`No files found in provided path: ${ctx.config.path}`)
 
-  // create image in Chassy Index
   // create image in Chassy Index
   const createUrl = `${getBackendUrl(ctx.env)}/image`
 
@@ -75,6 +77,9 @@ export const imageUpload = async (ctx: RunContext) => {
  * Upload package to Chassy Index
  */
 export const packageUpload = async (ctx: RunContext) => {
+  // it must not be image
+  if (ctx.config.type === 'IMAGE')
+    throw new Error('Attempted to upload image as generic package')
   // validate that files exist
   const paths = await glob(ctx.config.path, { withFileTypes: true })
   if (paths.length === 0)
@@ -98,13 +103,14 @@ export const packageUpload = async (ctx: RunContext) => {
           os_version: ctx.config.version,
           os_name: ctx.config.os,
           architecture: ctx.config.architecture
-        }
+        },
+        packageClass: ctx.config.classification
       })
     })
     pkg = await res.json()
   } catch (e: unknown) {
     if (e instanceof Error) {
-      core.error(`Failed to create new image: ${e.message}`)
+      core.error(`Failed to create new package: ${e.message}`)
       throw e
     } else throw e
   }

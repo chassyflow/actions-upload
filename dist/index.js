@@ -26346,31 +26346,46 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.getConfig = exports.configSchema = void 0;
+exports.getConfig = exports.configSchema = exports.baseSchema = void 0;
 const v = __importStar(__nccwpck_require__(8275));
 const core = __importStar(__nccwpck_require__(7484));
-exports.configSchema = v.object({
-    name: v.pipe(v.string(), v.minLength(1)),
-    path: v.string(),
-    architecture: v.union([
-        v.literal('AMD64'),
-        v.literal('ARM64'),
-        v.literal('ARMv6'),
-        v.literal('ARMv7'),
-        v.literal('RISCV'),
-        v.literal('UNKNOWN')
-    ]),
-    os: v.string(),
-    version: v.string(),
+const architectureSchema = v.union([
+    v.literal('AMD64'),
+    v.literal('ARM64'),
+    v.literal('ARMv6'),
+    v.literal('ARMv7'),
+    v.literal('RISCV'),
+    v.literal('UNKNOWN')
+], e => `architecture error: ${e.message}`);
+const imageSchema = v.object({
+    type: v.literal('IMAGE'),
+    classification: v.union([v.literal('RFSIMAGE'), v.literal('YOCTO')])
+});
+const packageSchema = v.object({
     type: v.union([
         v.literal('FILE'),
         v.literal('ARCHIVE'),
-        v.literal('IMAGE'),
         v.literal('FIRMWARE')
     ]),
-    classification: v.nullish(v.union([v.literal('RFSIMAGE'), v.literal('YOCTO')])),
+    classification: v.union([
+        v.literal('EXECUTABLE'),
+        v.literal('CONFIG'),
+        v.literal('DATA'),
+        v.literal('BUNDLE')
+    ])
+});
+exports.baseSchema = v.object({
+    name: v.pipe(v.string(), v.minLength(1)),
+    path: v.pipe(v.string(), v.minLength(1)),
+    architecture: architectureSchema,
+    os: v.string(),
+    version: v.string(),
     mode: v.optional(v.union([v.literal('DEBUG'), v.literal('INFO')]), 'INFO')
 });
+exports.configSchema = v.intersect([
+    exports.baseSchema,
+    v.union([imageSchema, packageSchema])
+]);
 /**
  * Get configuration options for environment
  */
@@ -26569,6 +26584,7 @@ exports.run = run;
 const core = __importStar(__nccwpck_require__(7484));
 const context_1 = __nccwpck_require__(788);
 const upload_1 = __nccwpck_require__(1550);
+const valibot_1 = __nccwpck_require__(8275);
 /**
  * The main function for the action.
  * @returns {Promise<void>} Resolves when the action is complete.
@@ -26586,17 +26602,16 @@ async function run() {
         //core.setOutput('time', new Date().toTimeString())
         // get context
         const ctx = await (0, context_1.createRunContext)();
-        switch (ctx.config.type) {
-            case 'IMAGE': {
-                await (0, upload_1.imageUpload)(ctx);
-                break;
-            }
-            default: {
-                await (0, upload_1.packageUpload)(ctx);
-            }
+        if (ctx.config.type === 'IMAGE') {
+            await (0, upload_1.imageUpload)(ctx);
+        }
+        else {
+            await (0, upload_1.packageUpload)(ctx);
         }
     }
     catch (error) {
+        if (error instanceof valibot_1.ValiError)
+            core.setFailed(error);
         // Fail the workflow run if an error occurs
         if (error instanceof Error)
             core.setFailed(error.message);
@@ -26655,11 +26670,13 @@ const uploadFile = (url) => async (path) => {
  * Upload image to Chassy Index
  */
 const imageUpload = async (ctx) => {
+    // it must be image
+    if (ctx.config.type !== 'IMAGE')
+        throw new Error('Attempted to upload generic package as image');
     // validate that files exist
     const images = await (0, glob_1.glob)(ctx.config.path, { withFileTypes: true });
     if (images.length === 0)
         throw new Error(`No files found in provided path: ${ctx.config.path}`);
-    // create image in Chassy Index
     // create image in Chassy Index
     const createUrl = `${(0, env_1.getBackendUrl)(ctx.env)}/image`;
     let image;
@@ -26705,6 +26722,9 @@ exports.imageUpload = imageUpload;
  * Upload package to Chassy Index
  */
 const packageUpload = async (ctx) => {
+    // it must not be image
+    if (ctx.config.type === 'IMAGE')
+        throw new Error('Attempted to upload image as generic package');
     // validate that files exist
     const paths = await (0, glob_1.glob)(ctx.config.path, { withFileTypes: true });
     if (paths.length === 0)
@@ -26726,14 +26746,15 @@ const packageUpload = async (ctx) => {
                     os_version: ctx.config.version,
                     os_name: ctx.config.os,
                     architecture: ctx.config.architecture
-                }
+                },
+                packageClass: ctx.config.classification
             })
         });
         pkg = await res.json();
     }
     catch (e) {
         if (e instanceof Error) {
-            core.error(`Failed to create new image: ${e.message}`);
+            core.error(`Failed to create new package: ${e.message}`);
             throw e;
         }
         else
