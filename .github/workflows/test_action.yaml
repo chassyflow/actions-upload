@@ -8,7 +8,7 @@ on:
   workflow_dispatch:  # Allows manual trigger from the Actions tab
   pull_request:
     branches:
-      - somik/merge-branch-test   
+      - "*"
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -20,11 +20,12 @@ jobs:
       - name: Run your custom action
         uses: ./
         with:
-          architecture: "-aARM64"
-          os: "--os ubuntu"
-          version: "--version 20.04"
-          type: "--type FILE"
-          path: "--path **/README.md"
-          class: "--class DATA"
-          mode: "--mode INFO"
-          dryrun: "--dryrun false"
+          name: "test action"
+          architecture: "ARM64"
+          os: "ubuntu"
+          version: "20.04"
+          type: "FILE"
+          path: "**/README.md"
+          class: "DATA"
+          mode: "INFO"
+          dryrun: "false"
