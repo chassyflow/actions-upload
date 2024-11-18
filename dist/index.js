@@ -26464,7 +26464,6 @@ const createRunContext = async () => {
     let refreshTokenResponse;
     try {
         refreshTokenResponse = await (0, exponential_backoff_1.backOff)(async () => {
-            console.debug(tokenRequestBody);
             const rawResponse = await fetch(refreshTokenURL, {
                 method: 'POST',
                 headers: {
@@ -26473,6 +26472,7 @@ const createRunContext = async () => {
                 body: JSON.stringify(tokenRequestBody)
             });
             if (!rawResponse.ok) {
+                console.debug(await rawResponse.text());
                 throw new Error(`Network response was not ok ${rawResponse.statusText}`);
             }
             return rawResponse.json();

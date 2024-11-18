@@ -18,7 +18,6 @@ export const createRunContext = async () => {
   let refreshTokenResponse: TokenData
   try {
     refreshTokenResponse = await backOff(async () => {
-      console.debug(tokenRequestBody)
       const rawResponse = await fetch(refreshTokenURL, {
         method: 'POST',
         headers: {
@@ -27,6 +26,7 @@ export const createRunContext = async () => {
         body: JSON.stringify(tokenRequestBody)
       })
       if (!rawResponse.ok) {
+        console.debug(await rawResponse.text())
         throw new Error(`Network response was not ok ${rawResponse.statusText}`)
       }
       return rawResponse.json()
