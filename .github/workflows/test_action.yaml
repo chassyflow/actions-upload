@@ -26,6 +26,6 @@ jobs:
           version: '20.04'
           type: 'FILE'
           path: '**/README.md'
-          classification: 'DATA'
+          classification: 'RFSIMAGE'
           mode: 'INFO'
           dryrun: 'false'
