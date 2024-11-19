@@ -51,8 +51,8 @@ export const imageUpload = async (ctx: RunContext) => {
           name: ctx.config.name,
           type: ctx.config.type,
           compatibility: {
-            os_version: ctx.config.version,
-            os_name: ctx.config.os,
+            versionID: ctx.config.version,
+            odID: ctx.config.os,
             architecture: ctx.config.architecture
           }
         })
@@ -113,8 +113,8 @@ export const packageUpload = async (ctx: RunContext) => {
           name: ctx.config.name,
           type: ctx.config.type,
           compatibility: {
-            os_version: ctx.config.version,
-            os_name: ctx.config.os,
+            versionID: ctx.config.version,
+            osID: ctx.config.os,
             architecture: ctx.config.architecture
           },
           packageClass: ctx.config.classification
