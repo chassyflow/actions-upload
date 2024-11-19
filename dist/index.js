@@ -26705,6 +26705,7 @@ const imageUpload = async (ctx) => {
         else
             throw e;
     }
+    console.log(image);
     // upload image using returned URL
     const upload = uploadFile(image.uploadURI);
     const files = await Promise.all(images.map(upload));
@@ -26758,6 +26759,7 @@ const packageUpload = async (ctx) => {
         else
             throw e;
     }
+    console.log(pkg);
     // upload image using returned URL
     const upload = uploadFile(pkg.uploadURI);
     const files = await Promise.all(paths.map(upload));

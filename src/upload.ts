@@ -58,6 +58,7 @@ export const imageUpload = async (ctx: RunContext) => {
       throw e
     } else throw e
   }
+  console.log(image)
 
   // upload image using returned URL
   const upload = uploadFile(image.uploadURI)
@@ -114,6 +115,7 @@ export const packageUpload = async (ctx: RunContext) => {
       throw e
     } else throw e
   }
+  console.log(pkg)
 
   // upload image using returned URL
   const upload = uploadFile(pkg.uploadURI)
