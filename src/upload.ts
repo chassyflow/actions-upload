@@ -142,7 +142,9 @@ export const packageUpload = async (ctx: RunContext) => {
 
   if (failures.length > 0) {
     core.error('Failed to upload one or more files')
-    throw new Error(`Failed to upload files: (${failures.join(',')})`)
+    throw new Error(
+      `Failed to upload files: (${failures.map(async f => `[${f.statusText}, ${await f.text()}]`).join(',')})`
+    )
   }
 
   return pkg.package
