@@ -26462,6 +26462,7 @@ const createRunContext = async () => {
         token: env.CHASSY_TOKEN
     };
     let refreshTokenResponse;
+    console.debug(refreshTokenURL);
     try {
         refreshTokenResponse = await (0, exponential_backoff_1.backOff)(async () => {
             console.debug(JSON.stringify(tokenRequestBody));

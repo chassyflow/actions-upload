@@ -18,6 +18,7 @@ export const createRunContext = async () => {
     token: env.CHASSY_TOKEN
   }
   let refreshTokenResponse: TokenData
+  console.debug(refreshTokenURL)
   try {
     refreshTokenResponse = await backOff(async () => {
       console.debug(JSON.stringify(tokenRequestBody))
