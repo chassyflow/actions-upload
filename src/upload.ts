@@ -71,6 +71,9 @@ export const imageUpload = async (ctx: RunContext) => {
   }
   console.log(image)
 
+  if (ctx.config.mode === 'DEBUG')
+    console.debug(`Uploading files: ${images.map(f => f.fullpath()).join(',')}`)
+
   // upload image using returned URL
   const upload = uploadFile(image.uploadURI)
 
@@ -136,6 +139,9 @@ export const packageUpload = async (ctx: RunContext) => {
 
   // upload image using returned URL
   const upload = uploadFile(pkg.uploadURI)
+
+  if (ctx.config.mode === 'DEBUG')
+    console.debug(`Uploading files: ${paths.map(f => f.fullpath()).join(',')}`)
 
   const files = await Promise.all(paths.map(upload))
   const failures = files.filter(f => !f.ok)
