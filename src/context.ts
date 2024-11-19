@@ -7,10 +7,8 @@ import { BACKOFF_CONFIG } from './constants'
 
 export const createRunContext = async () => {
   const config = getConfig()
+  console.debug(config)
   const env = getEnv()
-  console.debug(
-    `tok len: ${env.CHASSY_TOKEN.length}, ${env.CHASSY_TOKEN.slice(0, 4)}, ${env.CHASSY_TOKEN.slice(env.CHASSY_TOKEN.length - 4, env.CHASSY_TOKEN.length)}`
-  )
 
   // get auth session using refresh token
   const refreshTokenURL = `${getBackendUrl(env).apiBaseUrl}/token/user`

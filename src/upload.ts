@@ -5,6 +5,11 @@ import { CreateImage, CreatePackage } from './api'
 import { glob, Path } from 'glob'
 import { readFileSync, statSync } from 'fs'
 
+const dbg = <T>(x: T) => {
+  console.debug(x)
+  return x
+}
+
 const uploadFile = (url: string) => async (path: Path) => {
   const readStream = readFileSync(path.fullpath())
 
@@ -41,16 +46,22 @@ export const imageUpload = async (ctx: RunContext) => {
         'Content-Type': 'application/json',
         Authorization: ctx.authToken
       },
-      body: JSON.stringify({
-        name: ctx.config.name,
-        type: ctx.config.type,
-        compatibility: {
-          os_version: ctx.config.version,
-          os_name: ctx.config.os,
-          architecture: ctx.config.architecture
-        }
-      })
+      body: JSON.stringify(
+        dbg({
+          name: ctx.config.name,
+          type: ctx.config.type,
+          compatibility: {
+            os_version: ctx.config.version,
+            os_name: ctx.config.os,
+            architecture: ctx.config.architecture
+          }
+        })
+      )
     })
+    if (!res.ok)
+      throw new Error(
+        `Failed to create package: status: ${res.statusText}, message: ${await res.text()}`
+      )
     image = await res.json()
   } catch (e: unknown) {
     if (e instanceof Error) {
@@ -97,17 +108,23 @@ export const packageUpload = async (ctx: RunContext) => {
         'Content-Type': 'application/json',
         Authorization: ctx.authToken
       },
-      body: JSON.stringify({
-        name: ctx.config.name,
-        type: ctx.config.type,
-        compatibility: {
-          os_version: ctx.config.version,
-          os_name: ctx.config.os,
-          architecture: ctx.config.architecture
-        },
-        packageClass: ctx.config.classification
-      })
+      body: JSON.stringify(
+        dbg({
+          name: ctx.config.name,
+          type: ctx.config.type,
+          compatibility: {
+            os_version: ctx.config.version,
+            os_name: ctx.config.os,
+            architecture: ctx.config.architecture
+          },
+          packageClass: ctx.config.classification
+        })
+      )
     })
+    if (!res.ok)
+      throw new Error(
+        `Failed to create package: status: ${res.statusText}, message: ${await res.text()}`
+      )
     pkg = await res.json()
   } catch (e: unknown) {
     if (e instanceof Error) {

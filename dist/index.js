@@ -26454,8 +26454,8 @@ const env_1 = __nccwpck_require__(8204);
 const constants_1 = __nccwpck_require__(7242);
 const createRunContext = async () => {
     const config = (0, config_1.getConfig)();
+    console.debug(config);
     const env = (0, env_1.getEnv)();
-    console.debug(`tok len: ${env.CHASSY_TOKEN.length}, ${env.CHASSY_TOKEN.slice(0, 4)}, ${env.CHASSY_TOKEN.slice(env.CHASSY_TOKEN.length - 4, env.CHASSY_TOKEN.length)}`);
     // get auth session using refresh token
     const refreshTokenURL = `${(0, env_1.getBackendUrl)(env).apiBaseUrl}/token/user`;
     const tokenRequestBody = {
@@ -26653,6 +26653,10 @@ const core = __importStar(__nccwpck_require__(7484));
 const env_1 = __nccwpck_require__(8204);
 const glob_1 = __nccwpck_require__(1363);
 const fs_1 = __nccwpck_require__(9896);
+const dbg = (x) => {
+    console.debug(x);
+    return x;
+};
 const uploadFile = (url) => async (path) => {
     const readStream = (0, fs_1.readFileSync)(path.fullpath());
     return fetch(url, {
@@ -26685,7 +26689,7 @@ const imageUpload = async (ctx) => {
                 'Content-Type': 'application/json',
                 Authorization: ctx.authToken
             },
-            body: JSON.stringify({
+            body: JSON.stringify(dbg({
                 name: ctx.config.name,
                 type: ctx.config.type,
                 compatibility: {
@@ -26693,8 +26697,10 @@ const imageUpload = async (ctx) => {
                     os_name: ctx.config.os,
                     architecture: ctx.config.architecture
                 }
-            })
+            }))
         });
+        if (!res.ok)
+            throw new Error(`Failed to create package: status: ${res.statusText}, message: ${await res.text()}`);
         image = await res.json();
     }
     catch (e) {
@@ -26738,7 +26744,7 @@ const packageUpload = async (ctx) => {
                 'Content-Type': 'application/json',
                 Authorization: ctx.authToken
             },
-            body: JSON.stringify({
+            body: JSON.stringify(dbg({
                 name: ctx.config.name,
                 type: ctx.config.type,
                 compatibility: {
@@ -26747,8 +26753,10 @@ const packageUpload = async (ctx) => {
                     architecture: ctx.config.architecture
                 },
                 packageClass: ctx.config.classification
-            })
+            }))
         });
+        if (!res.ok)
+            throw new Error(`Failed to create package: status: ${res.statusText}, message: ${await res.text()}`);
         pkg = await res.json();
     }
     catch (e) {
