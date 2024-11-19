@@ -26455,7 +26455,7 @@ const constants_1 = __nccwpck_require__(7242);
 const createRunContext = async () => {
     const config = (0, config_1.getConfig)();
     const env = (0, env_1.getEnv)();
-    console.debug(`tok len: ${env.CHASSY_TOKEN.length}`);
+    console.debug(`tok len: ${env.CHASSY_TOKEN.length}, ${env.CHASSY_TOKEN.slice(0, 4)}, ${env.CHASSY_TOKEN.slice(env.CHASSY_TOKEN.length - 4, env.CHASSY_TOKEN.length)}`);
     // get auth session using refresh token
     const refreshTokenURL = `${(0, env_1.getBackendUrl)(env).apiBaseUrl}/token/user`;
     const tokenRequestBody = {
@@ -26464,6 +26464,7 @@ const createRunContext = async () => {
     let refreshTokenResponse;
     try {
         refreshTokenResponse = await (0, exponential_backoff_1.backOff)(async () => {
+            console.debug(JSON.stringify(tokenRequestBody));
             const rawResponse = await fetch(refreshTokenURL, {
                 method: 'POST',
                 headers: {
