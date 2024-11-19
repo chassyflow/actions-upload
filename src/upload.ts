@@ -3,7 +3,7 @@ import * as core from '@actions/core'
 import { getBackendUrl } from './env'
 import { CreateImage, CreatePackage } from './api'
 import { glob, Path } from 'glob'
-import { readFileSync } from 'fs'
+import { readFileSync, statSync } from 'fs'
 
 const uploadFile = (url: string) => async (path: Path) => {
   const readStream = readFileSync(path.fullpath())
@@ -12,7 +12,7 @@ const uploadFile = (url: string) => async (path: Path) => {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/octet-stream',
-      'Content-Length': path.size!.toString()
+      'Content-Length': statSync(path.fullpath()).size.toString()
     },
     body: readStream
   })

@@ -18,10 +18,8 @@ export const createRunContext = async () => {
     token: env.CHASSY_TOKEN
   }
   let refreshTokenResponse: TokenData
-  console.debug(refreshTokenURL)
   try {
     refreshTokenResponse = await backOff(async () => {
-      console.debug(JSON.stringify(tokenRequestBody))
       const rawResponse = await fetch(refreshTokenURL, {
         method: 'POST',
         headers: {
@@ -30,7 +28,6 @@ export const createRunContext = async () => {
         body: JSON.stringify(tokenRequestBody)
       })
       if (!rawResponse.ok) {
-        console.debug(await rawResponse.text())
         throw new Error(`Network response was not ok ${rawResponse.statusText}`)
       }
       return rawResponse.json()

@@ -26462,10 +26462,8 @@ const createRunContext = async () => {
         token: env.CHASSY_TOKEN
     };
     let refreshTokenResponse;
-    console.debug(refreshTokenURL);
     try {
         refreshTokenResponse = await (0, exponential_backoff_1.backOff)(async () => {
-            console.debug(JSON.stringify(tokenRequestBody));
             const rawResponse = await fetch(refreshTokenURL, {
                 method: 'POST',
                 headers: {
@@ -26474,7 +26472,6 @@ const createRunContext = async () => {
                 body: JSON.stringify(tokenRequestBody)
             });
             if (!rawResponse.ok) {
-                console.debug(await rawResponse.text());
                 throw new Error(`Network response was not ok ${rawResponse.statusText}`);
             }
             return rawResponse.json();
@@ -26662,7 +26659,7 @@ const uploadFile = (url) => async (path) => {
         method: 'PUT',
         headers: {
             'Content-Type': 'application/octet-stream',
-            'Content-Length': path.size.toString()
+            'Content-Length': (0, fs_1.statSync)(path.fullpath()).size.toString()
         },
         body: readStream
     });
