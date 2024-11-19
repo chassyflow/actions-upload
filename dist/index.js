@@ -26528,7 +26528,7 @@ exports.getBackendUrl = exports.BASE_URLS_BY_ENV = exports.getEnv = exports.envS
 const v = __importStar(__nccwpck_require__(8275));
 exports.envSchema = v.object({
     CHASSY_TOKEN: v.string('CHASSY_TOKEN must be present in environment'),
-    BACKEND_ENVIRONMENT: v.optional(v.union([v.literal('PROD'), v.literal('STAGE'), v.literal('DEV')]), 'PROD')
+    BACKEND_ENV: v.optional(v.union([v.literal('PROD'), v.literal('STAGE'), v.literal('DEV')]), 'PROD')
 });
 const getEnv = () => v.parse(exports.envSchema, process.env);
 exports.getEnv = getEnv;
@@ -26546,7 +26546,7 @@ exports.BASE_URLS_BY_ENV = {
         frontendBaseUrl: 'https://console.test.chassy.dev'
     }
 };
-const getBackendUrl = (e) => exports.BASE_URLS_BY_ENV[e.BACKEND_ENVIRONMENT];
+const getBackendUrl = (e) => exports.BASE_URLS_BY_ENV[e.BACKEND_ENV];
 exports.getBackendUrl = getBackendUrl;
 
 
