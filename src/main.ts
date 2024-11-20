@@ -13,13 +13,15 @@ export async function run(): Promise<void> {
     // get context
     const ctx = await createRunContext()
 
+    let output: any
     if (ctx.config.type === 'IMAGE') {
-      await imageUpload(ctx)
+      output = await imageUpload(ctx)
     } else if (ctx.config.type === 'ARCHIVE') {
-      await archiveUpload(ctx)
+      output = await archiveUpload(ctx)
     } else {
-      await packageUpload(ctx)
+      output = await packageUpload(ctx)
     }
+    core.setOutput('packageId', output.id)
   } catch (error) {
     if (error instanceof ValiError) core.setFailed(error)
     // Fail the workflow run if an error occurs

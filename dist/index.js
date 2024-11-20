@@ -27417,15 +27417,17 @@ async function run() {
     try {
         // get context
         const ctx = await (0, context_1.createRunContext)();
+        let output;
         if (ctx.config.type === 'IMAGE') {
-            await (0, upload_1.imageUpload)(ctx);
+            output = await (0, upload_1.imageUpload)(ctx);
         }
         else if (ctx.config.type === 'ARCHIVE') {
-            await (0, upload_1.archiveUpload)(ctx);
+            output = await (0, upload_1.archiveUpload)(ctx);
         }
         else {
-            await (0, upload_1.packageUpload)(ctx);
+            output = await (0, upload_1.packageUpload)(ctx);
         }
+        core.setOutput('packageId', output.id);
     }
     catch (error) {
         if (error instanceof valibot_1.ValiError)
@@ -27536,6 +27538,7 @@ const imageUpload = async (ctx) => {
     }
     core.endGroup();
     core.debug(`Created image: ${JSON.stringify(image)}`);
+    core.info(`Image Id: ${image.image.id}`);
     // upload image using returned URL
     const upload = uploadFile(image.uploadURI);
     core.startGroup('Uploading files');
@@ -27552,7 +27555,7 @@ exports.imageUpload = imageUpload;
  * Upload archive package to Chassy Index
  */
 const archiveUpload = async (ctx) => {
-    // it must be image
+    // it must be archive
     if (ctx.config.type !== 'ARCHIVE')
         throw new Error('Attempted to upload non-archive as archive');
     if (ctx.config.classification !== 'BUNDLE')
@@ -27569,7 +27572,7 @@ const archiveUpload = async (ctx) => {
     // create image in Chassy Index
     const createUrl = `${(0, env_1.getBackendUrl)(ctx.env).apiBaseUrl}/package`;
     core.startGroup('Create Archive in Chassy Index');
-    let image;
+    let pkg;
     try {
         const res = await fetch(createUrl, {
             method: 'POST',
@@ -27590,7 +27593,7 @@ const archiveUpload = async (ctx) => {
         });
         if (!res.ok)
             throw new Error(`Failed to create archive: status: ${res.statusText}, message: ${await res.text()}`);
-        image = await res.json();
+        pkg = await res.json();
     }
     catch (e) {
         if (e instanceof Error) {
@@ -27601,9 +27604,10 @@ const archiveUpload = async (ctx) => {
             throw e;
     }
     core.endGroup();
-    core.debug(`Created archive: ${JSON.stringify(image)}`);
+    core.debug(`Created archive: ${JSON.stringify(pkg)}`);
+    core.info(`Package Id: ${pkg.package.id}`);
     // upload image using returned URL
-    const upload = uploadFile(image.uploadURI);
+    const upload = uploadFile(pkg.uploadURI);
     core.startGroup('Uploading files');
     path = !bundled ? await (0, archives_1.zipBundle)(ctx, paths) : path;
     const res = await upload(path);
@@ -27612,7 +27616,7 @@ const archiveUpload = async (ctx) => {
         throw new Error(`Failed to upload file "${path}"`);
     }
     core.endGroup();
-    return image.image;
+    return pkg.package;
 };
 exports.archiveUpload = archiveUpload;
 /**
@@ -27663,6 +27667,7 @@ const packageUpload = async (ctx) => {
             throw e;
     }
     core.debug(`Created package: ${JSON.stringify(pkg)}`);
+    core.info(`Package Id: ${pkg.package.id}`);
     // upload image using returned URL
     const upload = uploadFile(pkg.uploadURI);
     const files = await Promise.all(paths.map(upload));

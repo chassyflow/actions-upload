@@ -75,6 +75,7 @@ export const imageUpload = async (ctx: RunContext) => {
   core.endGroup()
 
   core.debug(`Created image: ${JSON.stringify(image)}`)
+  core.info(`Image Id: ${image.image.id}`)
 
   // upload image using returned URL
   const upload = uploadFile(image.uploadURI)
@@ -95,7 +96,7 @@ export const imageUpload = async (ctx: RunContext) => {
  * Upload archive package to Chassy Index
  */
 export const archiveUpload = async (ctx: RunContext) => {
-  // it must be image
+  // it must be archive
   if (ctx.config.type !== 'ARCHIVE')
     throw new Error('Attempted to upload non-archive as archive')
   if (ctx.config.classification !== 'BUNDLE')
@@ -117,7 +118,7 @@ export const archiveUpload = async (ctx: RunContext) => {
   const createUrl = `${getBackendUrl(ctx.env).apiBaseUrl}/package`
 
   core.startGroup('Create Archive in Chassy Index')
-  let image: CreateImage
+  let pkg: CreatePackage
   try {
     const res = await fetch(createUrl, {
       method: 'POST',
@@ -140,7 +141,7 @@ export const archiveUpload = async (ctx: RunContext) => {
       throw new Error(
         `Failed to create archive: status: ${res.statusText}, message: ${await res.text()}`
       )
-    image = await res.json()
+    pkg = await res.json()
   } catch (e: unknown) {
     if (e instanceof Error) {
       core.error(`Failed to create new archive: ${e.message}`)
@@ -149,10 +150,11 @@ export const archiveUpload = async (ctx: RunContext) => {
   }
   core.endGroup()
 
-  core.debug(`Created archive: ${JSON.stringify(image)}`)
+  core.debug(`Created archive: ${JSON.stringify(pkg)}`)
+  core.info(`Package Id: ${pkg.package.id}`)
 
   // upload image using returned URL
-  const upload = uploadFile(image.uploadURI)
+  const upload = uploadFile(pkg.uploadURI)
 
   core.startGroup('Uploading files')
 
@@ -166,7 +168,7 @@ export const archiveUpload = async (ctx: RunContext) => {
   }
   core.endGroup()
 
-  return image.image
+  return pkg.package
 }
 
 /**
@@ -220,6 +222,7 @@ export const packageUpload = async (ctx: RunContext) => {
     } else throw e
   }
   core.debug(`Created package: ${JSON.stringify(pkg)}`)
+  core.info(`Package Id: ${pkg.package.id}`)
 
   // upload image using returned URL
   const upload = uploadFile(pkg.uploadURI)
