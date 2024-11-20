@@ -27130,7 +27130,7 @@ const zipBundle = async (ctx, paths) => {
         archive.set(p.fullpath().split(process.cwd())[1].slice(1), readStream);
     });
     (0, fs_1.writeFileSync)(`/tmp/${ctx.config.name}.zip`, await archive.to_blob().text());
-    const archives = await (0, glob_1.glob)('/tmp/${ctx.config.name}.zip', {
+    const archives = await (0, glob_1.glob)(`/tmp/${ctx.config.name}.zip`, {
         withFileTypes: true
     });
     return archives[0];

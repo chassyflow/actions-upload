@@ -16,7 +16,7 @@ export const zipBundle = async (ctx: RunContext, paths: Path[]) => {
 
   writeFileSync(`/tmp/${ctx.config.name}.zip`, await archive.to_blob().text())
 
-  const archives = await glob('/tmp/${ctx.config.name}.zip', {
+  const archives = await glob(`/tmp/${ctx.config.name}.zip`, {
     withFileTypes: true
   })
   return archives[0]
