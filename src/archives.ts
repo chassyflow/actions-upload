@@ -4,6 +4,7 @@ import { readFileSync, writeFileSync } from 'fs'
 import { RunContext } from './context'
 
 export const zipBundle = async (ctx: RunContext, paths: Path[]) => {
+  console.debug('bundling zip')
   const archive = new ZipArchive()
   paths.forEach(p => {
     // read file content

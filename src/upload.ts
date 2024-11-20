@@ -114,9 +114,9 @@ export const archiveUpload = async (ctx: RunContext) => {
     extra.length === 0
 
   // create image in Chassy Index
-  const createUrl = `${getBackendUrl(ctx.env).apiBaseUrl}/image`
+  const createUrl = `${getBackendUrl(ctx.env).apiBaseUrl}/package`
 
-  core.startGroup('Create Image in Chassy Index')
+  core.startGroup('Create Archive in Chassy Index')
   let image: CreateImage
   try {
     const res = await fetch(createUrl, {
@@ -130,32 +130,33 @@ export const archiveUpload = async (ctx: RunContext) => {
         type: ctx.config.type,
         compatibility: {
           versionID: ctx.config.version,
-          odID: ctx.config.os,
+          osID: ctx.config.os,
           architecture: ctx.config.architecture
-        }
+        },
+        packageClass: ctx.config.classification
       })
     })
     if (!res.ok)
       throw new Error(
-        `Failed to create image: status: ${res.statusText}, message: ${await res.text()}`
+        `Failed to create archive: status: ${res.statusText}, message: ${await res.text()}`
       )
     image = await res.json()
   } catch (e: unknown) {
     if (e instanceof Error) {
-      core.error(`Failed to create new image: ${e.message}`)
+      core.error(`Failed to create new archive: ${e.message}`)
       throw e
     } else throw e
   }
   core.endGroup()
 
-  core.debug(`Created image: ${JSON.stringify(image)}`)
+  core.debug(`Created archive: ${JSON.stringify(image)}`)
 
   // upload image using returned URL
   const upload = uploadFile(image.uploadURI)
 
   core.startGroup('Uploading files')
 
-  path = bundled ? await zipBundle(ctx, paths) : path
+  path = !bundled ? await zipBundle(ctx, paths) : path
 
   const res = await upload(path)
 

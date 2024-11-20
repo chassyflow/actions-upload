@@ -27121,6 +27121,7 @@ const webzip_1 = __nccwpck_require__(1216);
 const glob_1 = __nccwpck_require__(1363);
 const fs_1 = __nccwpck_require__(9896);
 const zipBundle = async (ctx, paths) => {
+    console.debug('bundling zip');
     const archive = new webzip_1.ZipArchive();
     paths.forEach(p => {
         // read file content
@@ -27566,8 +27567,8 @@ const archiveUpload = async (ctx) => {
         ['.zip', '.tar', '.tar.gz', '.7z'].filter(ext => path.fullpath().endsWith(ext)).length > 0 &&
         extra.length === 0;
     // create image in Chassy Index
-    const createUrl = `${(0, env_1.getBackendUrl)(ctx.env).apiBaseUrl}/image`;
-    core.startGroup('Create Image in Chassy Index');
+    const createUrl = `${(0, env_1.getBackendUrl)(ctx.env).apiBaseUrl}/package`;
+    core.startGroup('Create Archive in Chassy Index');
     let image;
     try {
         const res = await fetch(createUrl, {
@@ -27581,29 +27582,30 @@ const archiveUpload = async (ctx) => {
                 type: ctx.config.type,
                 compatibility: {
                     versionID: ctx.config.version,
-                    odID: ctx.config.os,
+                    osID: ctx.config.os,
                     architecture: ctx.config.architecture
-                }
+                },
+                packageClass: ctx.config.classification
             })
         });
         if (!res.ok)
-            throw new Error(`Failed to create image: status: ${res.statusText}, message: ${await res.text()}`);
+            throw new Error(`Failed to create archive: status: ${res.statusText}, message: ${await res.text()}`);
         image = await res.json();
     }
     catch (e) {
         if (e instanceof Error) {
-            core.error(`Failed to create new image: ${e.message}`);
+            core.error(`Failed to create new archive: ${e.message}`);
             throw e;
         }
         else
             throw e;
     }
     core.endGroup();
-    core.debug(`Created image: ${JSON.stringify(image)}`);
+    core.debug(`Created archive: ${JSON.stringify(image)}`);
     // upload image using returned URL
     const upload = uploadFile(image.uploadURI);
     core.startGroup('Uploading files');
-    path = bundled ? await (0, archives_1.zipBundle)(ctx, paths) : path;
+    path = !bundled ? await (0, archives_1.zipBundle)(ctx, paths) : path;
     const res = await upload(path);
     if (!res.ok) {
         core.error(`Failed to upload file "${path}"`);
