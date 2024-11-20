@@ -26667,15 +26667,15 @@ const imageUpload = async (ctx) => {
     if (ctx.config.type !== 'IMAGE')
         throw new Error('Attempted to upload generic package as image');
     // validate that files exist
-    const images = await (0, glob_1.glob)(ctx.config.path, { withFileTypes: true });
-    core.debug(`Found files: ${images.map(f => f.fullpath()).join(',')}`);
-    if (images.length === 0)
+    const paths = await (0, glob_1.glob)(ctx.config.path, { withFileTypes: true });
+    core.notice(`Found files: ${paths.map(f => f.fullpath()).join(',')}`);
+    const [path, ...extra] = paths;
+    if (extra.length > 0)
+        throw new Error(`Too many files found: ${paths.map(i => `"${i.fullpath()}"`).join(',')}`);
+    else if (!path)
         throw new Error(`No files found in provided path: ${ctx.config.path}`);
-    else if (images.length > 0)
-        throw new Error(`Too many files found: ${images.map(i => `"${i.fullpath()}"`).join(',')}`);
     // create image in Chassy Index
     const createUrl = `${(0, env_1.getBackendUrl)(ctx.env).apiBaseUrl}/image`;
-    core.debug(`Create image URL: ${createUrl}`);
     core.startGroup('Create Image in Chassy Index');
     let image;
     try {
@@ -26696,7 +26696,7 @@ const imageUpload = async (ctx) => {
             })
         });
         if (!res.ok)
-            throw new Error(`Failed to create package: status: ${res.statusText}, message: ${await res.text()}`);
+            throw new Error(`Failed to create image: status: ${res.statusText}, message: ${await res.text()}`);
         image = await res.json();
     }
     catch (e) {
@@ -26712,11 +26712,10 @@ const imageUpload = async (ctx) => {
     // upload image using returned URL
     const upload = uploadFile(image.uploadURI);
     core.startGroup('Uploading files');
-    const files = await Promise.all(images.map(upload));
-    const failures = files.filter(f => !f.ok);
-    if (failures.length > 0) {
-        core.error('Failed to upload one or more files');
-        throw new Error(`Failed to upload files: (${failures.length})/${files.length}`);
+    const res = await upload(path);
+    if (!res.ok) {
+        core.error(`Failed to upload file "${path}"`);
+        throw new Error(`Failed to upload file "${path}"`);
     }
     core.endGroup();
     return image.image;
@@ -26731,9 +26730,11 @@ const packageUpload = async (ctx) => {
         throw new Error('Attempted to upload image as generic package');
     // validate that files exist
     const paths = await (0, glob_1.glob)(ctx.config.path, { withFileTypes: true });
-    core.debug(`Found files: ${paths.map(f => f.fullpath()).join(',')}`);
+    core.notice(`Found files: ${paths.map(f => f.fullpath()).join(',')}`);
     if (paths.length === 0)
         throw new Error(`No files found in provided path: ${ctx.config.path}`);
+    if (paths.length > 1 && ctx.config.type !== 'ARCHIVE')
+        throw new Error(`Too many files found: ${paths.map(i => `"${i.fullpath()}"`).join(',')}`);
     // create image in Chassy Index
     const createUrl = `${(0, env_1.getBackendUrl)(ctx.env).apiBaseUrl}/package`;
     let pkg;
