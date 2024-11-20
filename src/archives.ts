@@ -17,6 +17,9 @@ export const zipBundle = async (ctx: RunContext, paths: Path[]) => {
   for (const file in archive.files()) files.push(archive.get(file))
   console.debug(`files in archive: ${files.join(',')}`)
 
+  const blob = archive.to_blob()
+  console.debug('blob size', blob.size)
+  console.debug('blob text', await blob.text())
   writeFileSync(`/tmp/${ctx.config.name}.zip`, await archive.to_blob().text())
 
   const archives = await glob(`/tmp/${ctx.config.name}.zip`, {

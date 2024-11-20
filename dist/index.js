@@ -27133,6 +27133,9 @@ const zipBundle = async (ctx, paths) => {
     for (const file in archive.files())
         files.push(archive.get(file));
     console.debug(`files in archive: ${files.join(',')}`);
+    const blob = archive.to_blob();
+    console.debug('blob size', blob.size);
+    console.debug('blob text', await blob.text());
     (0, fs_1.writeFileSync)(`/tmp/${ctx.config.name}.zip`, await archive.to_blob().text());
     const archives = await (0, glob_1.glob)(`/tmp/${ctx.config.name}.zip`, {
         withFileTypes: true
