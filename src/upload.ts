@@ -1,9 +1,10 @@
 import { RunContext } from './context'
 import * as core from '@actions/core'
 import { getBackendUrl } from './env'
-import { CreateImage, CreatePackage } from './api'
+import { CreateImage, CreatePackage, Upload } from './api'
 import { glob, Path } from 'glob'
 import { readFileSync, statSync } from 'fs'
+import { zipBundle } from './archives'
 
 const uploadFile = (url: string) => async (path: Path) => {
   const readStream = readFileSync(path.fullpath())
@@ -79,6 +80,83 @@ export const imageUpload = async (ctx: RunContext) => {
   const upload = uploadFile(image.uploadURI)
 
   core.startGroup('Uploading files')
+  const res = await upload(path)
+
+  if (!res.ok) {
+    core.error(`Failed to upload file "${path}"`)
+    throw new Error(`Failed to upload file "${path}"`)
+  }
+  core.endGroup()
+
+  return image.image
+}
+
+/**
+ * Upload archive package to Chassy Index
+ */
+export const archiveUpload = async (ctx: RunContext) => {
+  // it must be image
+  if (ctx.config.type !== 'ARCHIVE')
+    throw new Error('Attempted to upload non-archive as archive')
+  if (ctx.config.classification !== 'BUNDLE')
+    throw new Error('Archive must have classification `BUNDLE`')
+  // validate that files exist
+  const paths = await glob(ctx.config.path, { withFileTypes: true })
+  core.notice(`Found files: ${paths.map(f => f.fullpath()).join(',')}`)
+  let [path, ...extra] = paths
+  if (!path)
+    throw new Error(`No files found in provided path: ${ctx.config.path}`)
+  const bundled =
+    path &&
+    ['.zip', '.tar', '.tar.gz', '.7z'].filter(ext =>
+      path.fullpath().endsWith(ext)
+    ).length > 0 &&
+    extra.length === 0
+
+  // create image in Chassy Index
+  const createUrl = `${getBackendUrl(ctx.env).apiBaseUrl}/image`
+
+  core.startGroup('Create Image in Chassy Index')
+  let image: CreateImage
+  try {
+    const res = await fetch(createUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: ctx.authToken
+      },
+      body: JSON.stringify({
+        name: ctx.config.name,
+        type: ctx.config.type,
+        compatibility: {
+          versionID: ctx.config.version,
+          odID: ctx.config.os,
+          architecture: ctx.config.architecture
+        }
+      })
+    })
+    if (!res.ok)
+      throw new Error(
+        `Failed to create image: status: ${res.statusText}, message: ${await res.text()}`
+      )
+    image = await res.json()
+  } catch (e: unknown) {
+    if (e instanceof Error) {
+      core.error(`Failed to create new image: ${e.message}`)
+      throw e
+    } else throw e
+  }
+  core.endGroup()
+
+  core.debug(`Created image: ${JSON.stringify(image)}`)
+
+  // upload image using returned URL
+  const upload = uploadFile(image.uploadURI)
+
+  core.startGroup('Uploading files')
+
+  path = bundled ? await zipBundle(ctx, paths) : path
+
   const res = await upload(path)
 
   if (!res.ok) {

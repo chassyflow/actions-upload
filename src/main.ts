@@ -1,7 +1,7 @@
 import * as core from '@actions/core'
 import { wait } from './wait'
 import { createRunContext } from './context'
-import { imageUpload, packageUpload } from './upload'
+import { archiveUpload, imageUpload, packageUpload } from './upload'
 import { ValiError } from 'valibot'
 
 /**
@@ -15,6 +15,8 @@ export async function run(): Promise<void> {
 
     if (ctx.config.type === 'IMAGE') {
       await imageUpload(ctx)
+    } else if (ctx.config.type === 'ARCHIVE') {
+      await archiveUpload(ctx)
     } else {
       await packageUpload(ctx)
     }
