@@ -11,7 +11,7 @@ export const zipBundle = async (ctx: RunContext, paths: Path[]) => {
     const readStream = readFileSync(p.fullpath())
 
     process.cwd()
-    archive.set('.' + p.fullpath().split(process.cwd())[1], readStream)
+    archive.set(p.fullpath().split(process.cwd())[1].slice(1), readStream)
   })
 
   writeFileSync(`/tmp/${ctx.config.name}.zip`, await archive.to_blob().text())
