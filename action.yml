@@ -25,12 +25,6 @@ inputs:
   classification:
     description: 'for file and archives, what is the class of artifact'
     required: false
-  mode:
-    description: 'determine if we should run in debug or standard info mode'
-    required: false
-  dryrun:
-    description: 'determine if we should run in dryrun mode or not'
-    required: false
 outputs:
   status:
     description: 'A log/status message denoting the success of the upload'

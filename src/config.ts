@@ -43,11 +43,7 @@ export const baseSchema = v.object({
   path: v.pipe(v.string(errMsg('name')), v.minLength(1, errMsg('name'))),
   architecture: architectureSchema,
   os: v.string(errMsg('os')),
-  version: v.string(errMsg('version')),
-  mode: v.optional(
-    v.union([v.literal('DEBUG'), v.literal('INFO')], errMsg('mode')),
-    'INFO'
-  )
+  version: v.string(errMsg('version'))
 })
 
 export const configSchema = v.intersect([
@@ -67,6 +63,5 @@ export const getConfig = () =>
     os: core.getInput('os'),
     version: core.getInput('version'),
     type: core.getInput('type'),
-    classification: core.getInput('classification'),
-    mode: core.getInput('mode')
+    classification: core.getInput('classification')
   })

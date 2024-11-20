@@ -5,13 +5,10 @@ import { CreateImage, CreatePackage } from './api'
 import { glob, Path } from 'glob'
 import { readFileSync, statSync } from 'fs'
 
-const dbg = <T>(x: T) => {
-  console.debug(x)
-  return x
-}
-
 const uploadFile = (url: string) => async (path: Path) => {
   const readStream = readFileSync(path.fullpath())
+
+  core.debug(`Uploading file: ${path.fullpath()}`)
 
   return fetch(url, {
     method: 'PUT',
@@ -32,12 +29,19 @@ export const imageUpload = async (ctx: RunContext) => {
     throw new Error('Attempted to upload generic package as image')
   // validate that files exist
   const images = await glob(ctx.config.path, { withFileTypes: true })
+  core.debug(`Found files: ${images.map(f => f.fullpath()).join(',')}`)
   if (images.length === 0)
     throw new Error(`No files found in provided path: ${ctx.config.path}`)
+  else if (images.length > 0)
+    throw new Error(
+      `Too many files found: ${images.map(i => `"${i.fullpath()}"`).join(',')}`
+    )
 
   // create image in Chassy Index
   const createUrl = `${getBackendUrl(ctx.env).apiBaseUrl}/image`
+  core.debug(`Create image URL: ${createUrl}`)
 
+  core.startGroup('Create Image in Chassy Index')
   let image: CreateImage
   try {
     const res = await fetch(createUrl, {
@@ -46,17 +50,15 @@ export const imageUpload = async (ctx: RunContext) => {
         'Content-Type': 'application/json',
         Authorization: ctx.authToken
       },
-      body: JSON.stringify(
-        dbg({
-          name: ctx.config.name,
-          type: ctx.config.type,
-          compatibility: {
-            versionID: ctx.config.version,
-            odID: ctx.config.os,
-            architecture: ctx.config.architecture
-          }
-        })
-      )
+      body: JSON.stringify({
+        name: ctx.config.name,
+        type: ctx.config.type,
+        compatibility: {
+          versionID: ctx.config.version,
+          odID: ctx.config.os,
+          architecture: ctx.config.architecture
+        }
+      })
     })
     if (!res.ok)
       throw new Error(
@@ -69,21 +71,24 @@ export const imageUpload = async (ctx: RunContext) => {
       throw e
     } else throw e
   }
-  console.log(image)
+  core.endGroup()
 
-  if (ctx.config.mode === 'DEBUG')
-    console.debug(`Uploading files: ${images.map(f => f.fullpath()).join(',')}`)
+  core.debug(`Created image: ${JSON.stringify(image)}`)
 
   // upload image using returned URL
   const upload = uploadFile(image.uploadURI)
 
+  core.startGroup('Uploading files')
   const files = await Promise.all(images.map(upload))
   const failures = files.filter(f => !f.ok)
 
   if (failures.length > 0) {
     core.error('Failed to upload one or more files')
-    throw new Error(`Failed to upload files: (${failures.join(',')})`)
+    throw new Error(
+      `Failed to upload files: (${failures.length})/${files.length}`
+    )
   }
+  core.endGroup()
 
   return image.image
 }
@@ -97,6 +102,7 @@ export const packageUpload = async (ctx: RunContext) => {
     throw new Error('Attempted to upload image as generic package')
   // validate that files exist
   const paths = await glob(ctx.config.path, { withFileTypes: true })
+  core.debug(`Found files: ${paths.map(f => f.fullpath()).join(',')}`)
   if (paths.length === 0)
     throw new Error(`No files found in provided path: ${ctx.config.path}`)
 
@@ -111,18 +117,16 @@ export const packageUpload = async (ctx: RunContext) => {
         'Content-Type': 'application/json',
         Authorization: ctx.authToken
       },
-      body: JSON.stringify(
-        dbg({
-          name: ctx.config.name,
-          type: ctx.config.type,
-          compatibility: {
-            versionID: ctx.config.version,
-            osID: ctx.config.os,
-            architecture: ctx.config.architecture
-          },
-          packageClass: ctx.config.classification
-        })
-      )
+      body: JSON.stringify({
+        name: ctx.config.name,
+        type: ctx.config.type,
+        compatibility: {
+          versionID: ctx.config.version,
+          osID: ctx.config.os,
+          architecture: ctx.config.architecture
+        },
+        packageClass: ctx.config.classification
+      })
     })
     if (!res.ok)
       throw new Error(
@@ -135,13 +139,10 @@ export const packageUpload = async (ctx: RunContext) => {
       throw e
     } else throw e
   }
-  console.log(pkg)
+  core.debug(`Created package: ${JSON.stringify(pkg)}`)
 
   // upload image using returned URL
   const upload = uploadFile(pkg.uploadURI)
-
-  if (ctx.config.mode === 'DEBUG')
-    console.debug(`Uploading files: ${paths.map(f => f.fullpath()).join(',')}`)
 
   const files = await Promise.all(paths.map(upload))
   const failures = files.filter(f => !f.ok)

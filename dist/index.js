@@ -26376,8 +26376,7 @@ exports.baseSchema = v.object({
     path: v.pipe(v.string(errMsg('name')), v.minLength(1, errMsg('name'))),
     architecture: architectureSchema,
     os: v.string(errMsg('os')),
-    version: v.string(errMsg('version')),
-    mode: v.optional(v.union([v.literal('DEBUG'), v.literal('INFO')], errMsg('mode')), 'INFO')
+    version: v.string(errMsg('version'))
 });
 exports.configSchema = v.intersect([
     exports.baseSchema,
@@ -26393,8 +26392,7 @@ const getConfig = () => v.parse(exports.configSchema, {
     os: core.getInput('os'),
     version: core.getInput('version'),
     type: core.getInput('type'),
-    classification: core.getInput('classification'),
-    mode: core.getInput('mode')
+    classification: core.getInput('classification')
 });
 exports.getConfig = getConfig;
 
@@ -26453,10 +26451,14 @@ const config_1 = __nccwpck_require__(2973);
 const env_1 = __nccwpck_require__(8204);
 const constants_1 = __nccwpck_require__(7242);
 const createRunContext = async () => {
+    core.startGroup('Validating configuration');
     const config = (0, config_1.getConfig)();
-    console.debug(config);
+    core.endGroup();
+    core.startGroup('Validating environment');
     const env = (0, env_1.getEnv)();
+    core.endGroup();
     // get auth session using refresh token
+    core.startGroup('Authenticating with Chassy API');
     const refreshTokenURL = `${(0, env_1.getBackendUrl)(env).apiBaseUrl}/token/user`;
     const tokenRequestBody = {
         token: env.CHASSY_TOKEN
@@ -26484,6 +26486,7 @@ const createRunContext = async () => {
         else
             throw e;
     }
+    core.endGroup();
     const authToken = refreshTokenResponse.idToken;
     return { config, env, authToken };
 };
@@ -26589,15 +26592,6 @@ const valibot_1 = __nccwpck_require__(8275);
  */
 async function run() {
     try {
-        //const ms: string = core.getInput('milliseconds')
-        //// Debug logs are only output if the `ACTIONS_STEP_DEBUG` secret is true
-        //core.debug(`Waiting ${ms} milliseconds ...`)
-        //// Log the current timestamp, wait, then log the new timestamp
-        //core.debug(new Date().toTimeString())
-        //await wait(parseInt(ms, 10))
-        //core.debug(new Date().toTimeString())
-        //// Set outputs for other workflow steps to use
-        //core.setOutput('time', new Date().toTimeString())
         // get context
         const ctx = await (0, context_1.createRunContext)();
         if (ctx.config.type === 'IMAGE') {
@@ -26653,12 +26647,9 @@ const core = __importStar(__nccwpck_require__(7484));
 const env_1 = __nccwpck_require__(8204);
 const glob_1 = __nccwpck_require__(1363);
 const fs_1 = __nccwpck_require__(9896);
-const dbg = (x) => {
-    console.debug(x);
-    return x;
-};
 const uploadFile = (url) => async (path) => {
     const readStream = (0, fs_1.readFileSync)(path.fullpath());
+    core.debug(`Uploading file: ${path.fullpath()}`);
     return fetch(url, {
         method: 'PUT',
         headers: {
@@ -26677,10 +26668,15 @@ const imageUpload = async (ctx) => {
         throw new Error('Attempted to upload generic package as image');
     // validate that files exist
     const images = await (0, glob_1.glob)(ctx.config.path, { withFileTypes: true });
+    core.debug(`Found files: ${images.map(f => f.fullpath()).join(',')}`);
     if (images.length === 0)
         throw new Error(`No files found in provided path: ${ctx.config.path}`);
+    else if (images.length > 0)
+        throw new Error(`Too many files found: ${images.map(i => `"${i.fullpath()}"`).join(',')}`);
     // create image in Chassy Index
     const createUrl = `${(0, env_1.getBackendUrl)(ctx.env).apiBaseUrl}/image`;
+    core.debug(`Create image URL: ${createUrl}`);
+    core.startGroup('Create Image in Chassy Index');
     let image;
     try {
         const res = await fetch(createUrl, {
@@ -26689,7 +26685,7 @@ const imageUpload = async (ctx) => {
                 'Content-Type': 'application/json',
                 Authorization: ctx.authToken
             },
-            body: JSON.stringify(dbg({
+            body: JSON.stringify({
                 name: ctx.config.name,
                 type: ctx.config.type,
                 compatibility: {
@@ -26697,7 +26693,7 @@ const imageUpload = async (ctx) => {
                     odID: ctx.config.os,
                     architecture: ctx.config.architecture
                 }
-            }))
+            })
         });
         if (!res.ok)
             throw new Error(`Failed to create package: status: ${res.statusText}, message: ${await res.text()}`);
@@ -26711,17 +26707,18 @@ const imageUpload = async (ctx) => {
         else
             throw e;
     }
-    console.log(image);
-    if (ctx.config.mode === 'DEBUG')
-        console.debug(`Uploading files: ${images.map(f => f.fullpath()).join(',')}`);
+    core.endGroup();
+    core.debug(`Created image: ${JSON.stringify(image)}`);
     // upload image using returned URL
     const upload = uploadFile(image.uploadURI);
+    core.startGroup('Uploading files');
     const files = await Promise.all(images.map(upload));
     const failures = files.filter(f => !f.ok);
     if (failures.length > 0) {
         core.error('Failed to upload one or more files');
-        throw new Error(`Failed to upload files: (${failures.join(',')})`);
+        throw new Error(`Failed to upload files: (${failures.length})/${files.length}`);
     }
+    core.endGroup();
     return image.image;
 };
 exports.imageUpload = imageUpload;
@@ -26734,6 +26731,7 @@ const packageUpload = async (ctx) => {
         throw new Error('Attempted to upload image as generic package');
     // validate that files exist
     const paths = await (0, glob_1.glob)(ctx.config.path, { withFileTypes: true });
+    core.debug(`Found files: ${paths.map(f => f.fullpath()).join(',')}`);
     if (paths.length === 0)
         throw new Error(`No files found in provided path: ${ctx.config.path}`);
     // create image in Chassy Index
@@ -26746,7 +26744,7 @@ const packageUpload = async (ctx) => {
                 'Content-Type': 'application/json',
                 Authorization: ctx.authToken
             },
-            body: JSON.stringify(dbg({
+            body: JSON.stringify({
                 name: ctx.config.name,
                 type: ctx.config.type,
                 compatibility: {
@@ -26755,7 +26753,7 @@ const packageUpload = async (ctx) => {
                     architecture: ctx.config.architecture
                 },
                 packageClass: ctx.config.classification
-            }))
+            })
         });
         if (!res.ok)
             throw new Error(`Failed to create package: status: ${res.statusText}, message: ${await res.text()}`);
@@ -26769,11 +26767,9 @@ const packageUpload = async (ctx) => {
         else
             throw e;
     }
-    console.log(pkg);
+    core.debug(`Created package: ${JSON.stringify(pkg)}`);
     // upload image using returned URL
     const upload = uploadFile(pkg.uploadURI);
-    if (ctx.config.mode === 'DEBUG')
-        console.debug(`Uploading files: ${paths.map(f => f.fullpath()).join(',')}`);
     const files = await Promise.all(paths.map(upload));
     const failures = files.filter(f => !f.ok);
     if (failures.length > 0) {

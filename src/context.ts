@@ -6,11 +6,15 @@ import { getBackendUrl, getEnv } from './env'
 import { BACKOFF_CONFIG } from './constants'
 
 export const createRunContext = async () => {
+  core.startGroup('Validating configuration')
   const config = getConfig()
-  console.debug(config)
+  core.endGroup()
+  core.startGroup('Validating environment')
   const env = getEnv()
+  core.endGroup()
 
   // get auth session using refresh token
+  core.startGroup('Authenticating with Chassy API')
   const refreshTokenURL = `${getBackendUrl(env).apiBaseUrl}/token/user`
   const tokenRequestBody = {
     token: env.CHASSY_TOKEN
@@ -35,6 +39,7 @@ export const createRunContext = async () => {
     if (e instanceof Error) throw new Error(e.message)
     else throw e
   }
+  core.endGroup()
 
   const authToken = refreshTokenResponse.idToken
 
