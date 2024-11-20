@@ -27118,7 +27118,6 @@ module.exports = {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.zipBundle = void 0;
 const webzip_1 = __nccwpck_require__(1216);
-const glob_1 = __nccwpck_require__(1363);
 const fs_1 = __nccwpck_require__(9896);
 const zipBundle = async (ctx, paths) => {
     console.debug('bundling zip');
@@ -27136,12 +27135,7 @@ const zipBundle = async (ctx, paths) => {
     const blob = archive.to_blob();
     console.debug('blob size', blob.size);
     console.debug('blob text', await blob.text());
-    (0, fs_1.writeFileSync)(`/tmp/${ctx.config.name}.zip`, await archive.to_blob().text());
-    const archives = await (0, glob_1.glob)(`/tmp/${ctx.config.name}.zip`, {
-        withFileTypes: true
-    });
-    console.log('archive len: ', archives.length);
-    return archives[0];
+    return archive.to_blob();
 };
 exports.zipBundle = zipBundle;
 
@@ -27617,8 +27611,20 @@ const archiveUpload = async (ctx) => {
     // upload image using returned URL
     const upload = uploadFile(pkg.uploadURI);
     core.startGroup('Uploading files');
-    path = !bundled ? await (0, archives_1.zipBundle)(ctx, paths) : path;
-    const res = await upload(path);
+    let res;
+    if (!bundled) {
+        const blob = await (0, archives_1.zipBundle)(ctx, paths);
+        res = await fetch(pkg.uploadURI, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/octet-stream',
+                'Content-Length': blob.size.toString()
+            },
+            body: blob
+        });
+    }
+    else
+        res = await upload(path);
     if (!res.ok) {
         core.error(`Failed to upload file "${path}"`);
         throw new Error(`Failed to upload file "${path}"`);

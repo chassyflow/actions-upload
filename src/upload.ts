@@ -158,9 +158,19 @@ export const archiveUpload = async (ctx: RunContext) => {
 
   core.startGroup('Uploading files')
 
-  path = !bundled ? await zipBundle(ctx, paths) : path
+  let res
+  if (!bundled) {
+    const blob = await zipBundle(ctx, paths)
 
-  const res = await upload(path)
+    res = await fetch(pkg.uploadURI, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/octet-stream',
+        'Content-Length': blob.size.toString()
+      },
+      body: blob
+    })
+  } else res = await upload(path)
 
   if (!res.ok) {
     core.error(`Failed to upload file "${path}"`)
