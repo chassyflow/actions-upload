@@ -30,7 +30,7 @@ export const imageUpload = async (ctx: RunContext) => {
     throw new Error('Attempted to upload generic package as image')
   // validate that files exist
   const paths = await glob(ctx.config.path, { withFileTypes: true })
-  core.notice(`Found files: ${paths.map(f => f.fullpath()).join(',')}`)
+  core.info(`Found files: ${paths.map(f => f.fullpath()).join(',')}`)
   const [path, ...extra] = paths
   if (extra.length > 0)
     throw new Error(
@@ -103,7 +103,7 @@ export const archiveUpload = async (ctx: RunContext) => {
     throw new Error('Archive must have classification `BUNDLE`')
   // validate that files exist
   const paths = await glob(ctx.config.path, { withFileTypes: true })
-  core.notice(`Found files: ${paths.map(f => f.fullpath()).join(',')}`)
+  core.info(`Found files: ${paths.map(f => f.fullpath()).join(',')}`)
   let [path, ...extra] = paths
   if (!path)
     throw new Error(`No files found in provided path: ${ctx.config.path}`)
@@ -190,7 +190,7 @@ export const packageUpload = async (ctx: RunContext) => {
     throw new Error('Attempted to upload image as generic package')
   // validate that files exist
   const paths = await glob(ctx.config.path, { withFileTypes: true })
-  core.notice(`Found files: ${paths.map(f => f.fullpath()).join(',')}`)
+  core.info(`Found files: ${paths.map(f => f.fullpath()).join(',')}`)
   if (paths.length === 0)
     throw new Error(`No files found in provided path: ${ctx.config.path}`)
   if (paths.length > 1 && ctx.config.type !== 'ARCHIVE')
