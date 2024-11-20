@@ -27123,15 +27123,15 @@ const fs_1 = __nccwpck_require__(9896);
 const zipBundle = async (ctx, paths) => {
     console.debug('bundling zip');
     const archive = new webzip_1.ZipArchive();
-    paths.forEach(p => {
+    for (const p of paths) {
         // read file content
         const readStream = (0, fs_1.readFileSync)(p.fullpath());
         process.cwd();
-        archive.set(p.fullpath().split(process.cwd())[1].slice(1), readStream);
-    });
+        await archive.set(p.fullpath().split(process.cwd())[1].slice(1), readStream);
+    }
     let files = [];
     for (const file in archive.files())
-        files.push(file);
+        files.push(archive.get(file));
     console.debug(`files in archive: ${files.join(',')}`);
     (0, fs_1.writeFileSync)(`/tmp/${ctx.config.name}.zip`, await archive.to_blob().text());
     const archives = await (0, glob_1.glob)(`/tmp/${ctx.config.name}.zip`, {
