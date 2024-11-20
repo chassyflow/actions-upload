@@ -25,5 +25,6 @@ export const zipBundle = async (ctx: RunContext, paths: Path[]) => {
   const archives = await glob(`/tmp/${ctx.config.name}.zip`, {
     withFileTypes: true
   })
+  console.log('archive len: ', archives.length)
   return archives[0]
 }

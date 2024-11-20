@@ -27140,6 +27140,7 @@ const zipBundle = async (ctx, paths) => {
     const archives = await (0, glob_1.glob)(`/tmp/${ctx.config.name}.zip`, {
         withFileTypes: true
     });
+    console.log('archive len: ', archives.length);
     return archives[0];
 };
 exports.zipBundle = zipBundle;
