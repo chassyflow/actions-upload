@@ -27139,7 +27139,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.zipBundle = void 0;
+exports.isArchive = exports.zipBundle = void 0;
 const webzip_1 = __nccwpck_require__(1216);
 const fs_1 = __nccwpck_require__(9896);
 const core = __importStar(__nccwpck_require__(7484));
@@ -27155,6 +27155,23 @@ const zipBundle = async (ctx, paths) => {
     return archive.to_blob();
 };
 exports.zipBundle = zipBundle;
+const ARCHIVE_EXTENSIONS = [
+    '.zip',
+    '.zipx',
+    '.tar',
+    '.gz',
+    '.7z',
+    '.rar',
+    '.jar',
+    '.deb',
+    '.rpm'
+];
+/**
+ * Determines whether the extension of the file matches that of a
+ * valid archive.
+ */
+const isArchive = (filepath) => ARCHIVE_EXTENSIONS.reduce((acc, ext) => acc || filepath.fullpath().endsWith(ext), false);
+exports.isArchive = isArchive;
 
 
 /***/ }),
@@ -27587,10 +27604,7 @@ const archiveUpload = async (ctx) => {
     const [path, ...extra] = paths;
     if (!path)
         throw new Error(`No files found in provided path: ${ctx.config.path}`);
-    const bundled = path &&
-        ['.zip', '.tar', '.gz', '.7z'].filter(ext => path.fullpath().endsWith(ext))
-            .length > 0 &&
-        extra.length === 0;
+    const bundled = path && (0, archives_1.isArchive)(path) && extra.length === 0;
     // create image in Chassy Index
     const createUrl = `${(0, env_1.getBackendUrl)(ctx.env).apiBaseUrl}/package`;
     core.startGroup('Create Archive in Chassy Index');
