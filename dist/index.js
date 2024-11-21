@@ -27540,15 +27540,15 @@ const imageUpload = async (ctx) => {
                 'Content-Type': 'application/json',
                 Authorization: ctx.authToken
             },
-            body: JSON.stringify(dbg({
+            body: JSON.stringify({
                 name: ctx.config.name,
                 type: ctx.config.classification,
                 compatibility: {
                     versionID: ctx.config.version,
-                    odID: ctx.config.os,
+                    osID: ctx.config.os,
                     architecture: ctx.config.architecture
                 }
-            }))
+            })
         });
         if (!res.ok)
             throw new Error(`Failed to create image: status: ${res.statusText}, message: ${await res.text()}`);

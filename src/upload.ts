@@ -56,17 +56,15 @@ export const imageUpload = async (ctx: RunContext) => {
         'Content-Type': 'application/json',
         Authorization: ctx.authToken
       },
-      body: JSON.stringify(
-        dbg({
-          name: ctx.config.name,
-          type: ctx.config.classification,
-          compatibility: {
-            versionID: ctx.config.version,
-            odID: ctx.config.os,
-            architecture: ctx.config.architecture
-          }
-        })
-      )
+      body: JSON.stringify({
+        name: ctx.config.name,
+        type: ctx.config.classification,
+        compatibility: {
+          versionID: ctx.config.version,
+          osID: ctx.config.os,
+          architecture: ctx.config.architecture
+        }
+      })
     })
     if (!res.ok)
       throw new Error(
