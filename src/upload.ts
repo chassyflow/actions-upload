@@ -59,7 +59,7 @@ export const imageUpload = async (ctx: RunContext) => {
       body: JSON.stringify(
         dbg({
           name: ctx.config.name,
-          type: ctx.config.type,
+          type: ctx.config.classification,
           compatibility: {
             versionID: ctx.config.version,
             odID: ctx.config.os,
