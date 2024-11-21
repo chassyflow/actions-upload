@@ -68,7 +68,7 @@ These are examples of valid path values:
 
 - `**/release/web`
 - `**/*.zip`
-- `./src/target/release/web`
+- `./target/release/web`
 
 ### Architecture
 
