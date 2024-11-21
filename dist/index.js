@@ -27237,10 +27237,7 @@ exports.baseSchema = v.object({
     os: v.string(errMsg('os')),
     version: v.string(errMsg('version'))
 });
-exports.configSchema = v.intersect([
-    exports.baseSchema,
-    v.union([imageSchema, packageSchema])
-]);
+exports.configSchema = v.intersect([exports.baseSchema, v.union([imageSchema, packageSchema], errMsg('imageOrPackage'))], errMsg('config'));
 /**
  * Get configuration options for environment
  */

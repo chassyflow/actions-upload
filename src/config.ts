@@ -46,10 +46,10 @@ export const baseSchema = v.object({
   version: v.string(errMsg('version'))
 })
 
-export const configSchema = v.intersect([
-  baseSchema,
-  v.union([imageSchema, packageSchema])
-])
+export const configSchema = v.intersect(
+  [baseSchema, v.union([imageSchema, packageSchema], errMsg('imageOrPackage'))],
+  errMsg('config')
+)
 export type Config = v.InferOutput<typeof configSchema>
 
 /**
