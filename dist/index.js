@@ -27449,7 +27449,7 @@ async function run() {
         else {
             output = await (0, upload_1.packageUpload)(ctx);
         }
-        core.setOutput('packageId', output.id);
+        core.setOutput('id', output.id);
     }
     catch (error) {
         if (error instanceof valibot_1.ValiError)

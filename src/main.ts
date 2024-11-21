@@ -21,7 +21,7 @@ export async function run(): Promise<void> {
     } else {
       output = await packageUpload(ctx)
     }
-    core.setOutput('packageId', output.id)
+    core.setOutput('id', output.id)
   } catch (error) {
     if (error instanceof ValiError) core.setFailed(error)
     // Fail the workflow run if an error occurs
