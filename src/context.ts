@@ -11,6 +11,10 @@ export const createRunContext = async () => {
   core.endGroup()
   core.startGroup('Validating environment')
   const env = getEnv()
+  if (env.BACKEND_ENV !== 'PROD')
+    core.warning(
+      `Using ${env.BACKEND_ENV} backend environment. Beware of unexpected or undocumented behavior`
+    )
   core.endGroup()
 
   // get auth session using refresh token

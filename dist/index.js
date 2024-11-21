@@ -27301,6 +27301,8 @@ const createRunContext = async () => {
     core.endGroup();
     core.startGroup('Validating environment');
     const env = (0, env_1.getEnv)();
+    if (env.BACKEND_ENV !== 'PROD')
+        core.warning(`Using ${env.BACKEND_ENV} backend environment. Beware of unexpected or undocumented behavior`);
     core.endGroup();
     // get auth session using refresh token
     core.startGroup('Authenticating with Chassy API');
@@ -27589,7 +27591,8 @@ const archiveUpload = async (ctx) => {
     if (!path)
         throw new Error(`No files found in provided path: ${ctx.config.path}`);
     const bundled = path &&
-        ['.zip', '.tar', '.tar.gz', '.7z'].filter(ext => path.fullpath().endsWith(ext)).length > 0 &&
+        ['.zip', '.tar', '.gz', '.7z'].filter(ext => path.fullpath().endsWith(ext))
+            .length > 0 &&
         extra.length === 0;
     // create image in Chassy Index
     const createUrl = `${(0, env_1.getBackendUrl)(ctx.env).apiBaseUrl}/package`;

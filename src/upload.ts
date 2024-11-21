@@ -109,9 +109,8 @@ export const archiveUpload = async (ctx: RunContext) => {
     throw new Error(`No files found in provided path: ${ctx.config.path}`)
   const bundled =
     path &&
-    ['.zip', '.tar', '.tar.gz', '.7z'].filter(ext =>
-      path.fullpath().endsWith(ext)
-    ).length > 0 &&
+    ['.zip', '.tar', '.gz', '.7z'].filter(ext => path.fullpath().endsWith(ext))
+      .length > 0 &&
     extra.length === 0
 
   // create image in Chassy Index
