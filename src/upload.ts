@@ -6,11 +6,6 @@ import { glob, Path } from 'glob'
 import { readFileSync, statSync } from 'fs'
 import { zipBundle } from './archives'
 
-const dbg = <T>(x: T) => {
-  console.debug(x)
-  return x
-}
-
 const uploadFile = (url: string) => async (path: Path) => {
   const readStream = readFileSync(path.fullpath())
 

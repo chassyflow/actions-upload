@@ -27498,10 +27498,6 @@ const env_1 = __nccwpck_require__(8204);
 const glob_1 = __nccwpck_require__(1363);
 const fs_1 = __nccwpck_require__(9896);
 const archives_1 = __nccwpck_require__(6792);
-const dbg = (x) => {
-    console.debug(x);
-    return x;
-};
 const uploadFile = (url) => async (path) => {
     const readStream = (0, fs_1.readFileSync)(path.fullpath());
     core.debug(`Uploading file: ${path.fullpath()}`);
