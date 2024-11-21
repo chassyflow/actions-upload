@@ -3,7 +3,7 @@ import type { BaseIssue } from 'valibot'
 import * as core from '@actions/core'
 
 const errMsg = (property: string) => (e: BaseIssue<unknown>) =>
-  `${e.kind} error: ${property} expected (${e.expected}) and received (${e.received}), raw: ${e.input}`
+  `${e.kind} error: ${property} expected (${e.expected}) and received (${e.received}), raw: ${e.input}, ${e.message}`
 
 const architectureSchema = v.union([
   v.literal('AMD64'),

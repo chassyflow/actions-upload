@@ -27208,7 +27208,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.getConfig = exports.configSchema = exports.baseSchema = void 0;
 const v = __importStar(__nccwpck_require__(8275));
 const core = __importStar(__nccwpck_require__(7484));
-const errMsg = (property) => (e) => `${e.kind} error: ${property} expected (${e.expected}) and received (${e.received}), raw: ${e.input}`;
+const errMsg = (property) => (e) => `${e.kind} error: ${property} expected (${e.expected}) and received (${e.received}), raw: ${e.input}, ${e.message}`;
 const architectureSchema = v.union([
     v.literal('AMD64'),
     v.literal('ARM64'),
