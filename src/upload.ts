@@ -6,6 +6,11 @@ import { glob, Path } from 'glob'
 import { readFileSync, statSync } from 'fs'
 import { zipBundle } from './archives'
 
+const dbg = <T>(x: T) => {
+  console.debug(x)
+  return x
+}
+
 const uploadFile = (url: string) => async (path: Path) => {
   const readStream = readFileSync(path.fullpath())
 
@@ -51,15 +56,17 @@ export const imageUpload = async (ctx: RunContext) => {
         'Content-Type': 'application/json',
         Authorization: ctx.authToken
       },
-      body: JSON.stringify({
-        name: ctx.config.name,
-        type: ctx.config.type,
-        compatibility: {
-          versionID: ctx.config.version,
-          odID: ctx.config.os,
-          architecture: ctx.config.architecture
-        }
-      })
+      body: JSON.stringify(
+        dbg({
+          name: ctx.config.name,
+          type: ctx.config.type,
+          compatibility: {
+            versionID: ctx.config.version,
+            odID: ctx.config.os,
+            architecture: ctx.config.architecture
+          }
+        })
+      )
     })
     if (!res.ok)
       throw new Error(

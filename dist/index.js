@@ -27111,16 +27111,40 @@ module.exports = {
 /***/ }),
 
 /***/ 6792:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
 
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.zipBundle = void 0;
 const webzip_1 = __nccwpck_require__(1216);
 const fs_1 = __nccwpck_require__(9896);
+const core = __importStar(__nccwpck_require__(7484));
 const zipBundle = async (ctx, paths) => {
-    console.debug('bundling zip');
+    core.debug('bundling zip');
     const archive = new webzip_1.ZipArchive();
     for (const p of paths) {
         // read file content
@@ -27131,10 +27155,6 @@ const zipBundle = async (ctx, paths) => {
     let files = [];
     for (const file in archive.files())
         files.push(archive.get(file));
-    console.debug(`files in archive: ${files.join(',')}`);
-    const blob = archive.to_blob();
-    console.debug('blob size', blob.size);
-    console.debug('blob text', await blob.text());
     return archive.to_blob();
 };
 exports.zipBundle = zipBundle;
@@ -27478,6 +27498,10 @@ const env_1 = __nccwpck_require__(8204);
 const glob_1 = __nccwpck_require__(1363);
 const fs_1 = __nccwpck_require__(9896);
 const archives_1 = __nccwpck_require__(6792);
+const dbg = (x) => {
+    console.debug(x);
+    return x;
+};
 const uploadFile = (url) => async (path) => {
     const readStream = (0, fs_1.readFileSync)(path.fullpath());
     core.debug(`Uploading file: ${path.fullpath()}`);
@@ -27499,7 +27523,7 @@ const imageUpload = async (ctx) => {
         throw new Error('Attempted to upload generic package as image');
     // validate that files exist
     const paths = await (0, glob_1.glob)(ctx.config.path, { withFileTypes: true });
-    core.notice(`Found files: ${paths.map(f => f.fullpath()).join(',')}`);
+    core.info(`Found files: ${paths.map(f => f.fullpath()).join(',')}`);
     const [path, ...extra] = paths;
     if (extra.length > 0)
         throw new Error(`Too many files found: ${paths.map(i => `"${i.fullpath()}"`).join(',')}`);
@@ -27516,7 +27540,7 @@ const imageUpload = async (ctx) => {
                 'Content-Type': 'application/json',
                 Authorization: ctx.authToken
             },
-            body: JSON.stringify({
+            body: JSON.stringify(dbg({
                 name: ctx.config.name,
                 type: ctx.config.type,
                 compatibility: {
@@ -27524,7 +27548,7 @@ const imageUpload = async (ctx) => {
                     odID: ctx.config.os,
                     architecture: ctx.config.architecture
                 }
-            })
+            }))
         });
         if (!res.ok)
             throw new Error(`Failed to create image: status: ${res.statusText}, message: ${await res.text()}`);
@@ -27564,7 +27588,7 @@ const archiveUpload = async (ctx) => {
         throw new Error('Archive must have classification `BUNDLE`');
     // validate that files exist
     const paths = await (0, glob_1.glob)(ctx.config.path, { withFileTypes: true });
-    core.notice(`Found files: ${paths.map(f => f.fullpath()).join(',')}`);
+    core.info(`Found files: ${paths.map(f => f.fullpath()).join(',')}`);
     let [path, ...extra] = paths;
     if (!path)
         throw new Error(`No files found in provided path: ${ctx.config.path}`);
@@ -27642,7 +27666,7 @@ const packageUpload = async (ctx) => {
         throw new Error('Attempted to upload image as generic package');
     // validate that files exist
     const paths = await (0, glob_1.glob)(ctx.config.path, { withFileTypes: true });
-    core.notice(`Found files: ${paths.map(f => f.fullpath()).join(',')}`);
+    core.info(`Found files: ${paths.map(f => f.fullpath()).join(',')}`);
     if (paths.length === 0)
         throw new Error(`No files found in provided path: ${ctx.config.path}`);
     if (paths.length > 1 && ctx.config.type !== 'ARCHIVE')
