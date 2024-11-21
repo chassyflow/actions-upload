@@ -36,7 +36,7 @@ export const createRunContext = async () => {
       if (!rawResponse.ok) {
         throw new Error(`Network response was not ok ${rawResponse.statusText}`)
       }
-      return rawResponse.json()
+      return (await rawResponse.json()) as TokenData
     }, BACKOFF_CONFIG)
   } catch (e) {
     core.error('Failed to refresh token')

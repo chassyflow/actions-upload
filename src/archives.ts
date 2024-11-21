@@ -14,8 +14,6 @@ export const zipBundle = async (ctx: RunContext, paths: Path[]) => {
     process.cwd()
     await archive.set(p.fullpath().split(process.cwd())[1].slice(1), readStream)
   }
-  let files = []
-  for (const file in archive.files()) files.push(archive.get(file))
 
   return archive.to_blob()
 }

@@ -27152,9 +27152,6 @@ const zipBundle = async (ctx, paths) => {
         process.cwd();
         await archive.set(p.fullpath().split(process.cwd())[1].slice(1), readStream);
     }
-    let files = [];
-    for (const file in archive.files())
-        files.push(archive.get(file));
     return archive.to_blob();
 };
 exports.zipBundle = zipBundle;
@@ -27323,7 +27320,7 @@ const createRunContext = async () => {
             if (!rawResponse.ok) {
                 throw new Error(`Network response was not ok ${rawResponse.statusText}`);
             }
-            return rawResponse.json();
+            return (await rawResponse.json());
         }, constants_1.BACKOFF_CONFIG);
     }
     catch (e) {
@@ -27550,7 +27547,7 @@ const imageUpload = async (ctx) => {
         });
         if (!res.ok)
             throw new Error(`Failed to create image: status: ${res.statusText}, message: ${await res.text()}`);
-        image = await res.json();
+        image = (await res.json());
     }
     catch (e) {
         if (e instanceof Error) {
@@ -27568,8 +27565,8 @@ const imageUpload = async (ctx) => {
     core.startGroup('Uploading files');
     const res = await upload(path);
     if (!res.ok) {
-        core.error(`Failed to upload file "${path}"`);
-        throw new Error(`Failed to upload file "${path}"`);
+        core.error(`Failed to upload file "${path.fullpath()}"`);
+        throw new Error(`Failed to upload file "${path.fullpath()}"`);
     }
     core.endGroup();
     return image.image;
@@ -27587,7 +27584,7 @@ const archiveUpload = async (ctx) => {
     // validate that files exist
     const paths = await (0, glob_1.glob)(ctx.config.path, { withFileTypes: true });
     core.info(`Found files: ${paths.map(f => f.fullpath()).join(',')}`);
-    let [path, ...extra] = paths;
+    const [path, ...extra] = paths;
     if (!path)
         throw new Error(`No files found in provided path: ${ctx.config.path}`);
     const bundled = path &&
@@ -27618,7 +27615,7 @@ const archiveUpload = async (ctx) => {
         });
         if (!res.ok)
             throw new Error(`Failed to create archive: status: ${res.statusText}, message: ${await res.text()}`);
-        pkg = await res.json();
+        pkg = (await res.json());
     }
     catch (e) {
         if (e instanceof Error) {
@@ -27649,8 +27646,8 @@ const archiveUpload = async (ctx) => {
     else
         res = await upload(path);
     if (!res.ok) {
-        core.error(`Failed to upload file "${path}"`);
-        throw new Error(`Failed to upload file "${path}"`);
+        core.error(`Failed to upload file "${path.fullpath()}"`);
+        throw new Error(`Failed to upload file "${path.fullpath()}"`);
     }
     core.endGroup();
     return pkg.package;
@@ -27693,7 +27690,7 @@ const packageUpload = async (ctx) => {
         });
         if (!res.ok)
             throw new Error(`Failed to create package: status: ${res.statusText}, message: ${await res.text()}`);
-        pkg = await res.json();
+        pkg = (await res.json());
     }
     catch (e) {
         if (e instanceof Error) {

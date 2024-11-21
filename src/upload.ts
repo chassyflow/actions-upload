@@ -1,7 +1,7 @@
 import { RunContext } from './context'
 import * as core from '@actions/core'
 import { getBackendUrl } from './env'
-import { CreateImage, CreatePackage, Upload } from './api'
+import { CreateImage, CreatePackage } from './api'
 import { glob, Path } from 'glob'
 import { readFileSync, statSync } from 'fs'
 import { zipBundle } from './archives'
@@ -65,7 +65,7 @@ export const imageUpload = async (ctx: RunContext) => {
       throw new Error(
         `Failed to create image: status: ${res.statusText}, message: ${await res.text()}`
       )
-    image = await res.json()
+    image = (await res.json()) as CreateImage
   } catch (e: unknown) {
     if (e instanceof Error) {
       core.error(`Failed to create new image: ${e.message}`)
@@ -84,8 +84,8 @@ export const imageUpload = async (ctx: RunContext) => {
   const res = await upload(path)
 
   if (!res.ok) {
-    core.error(`Failed to upload file "${path}"`)
-    throw new Error(`Failed to upload file "${path}"`)
+    core.error(`Failed to upload file "${path.fullpath()}"`)
+    throw new Error(`Failed to upload file "${path.fullpath()}"`)
   }
   core.endGroup()
 
@@ -104,7 +104,7 @@ export const archiveUpload = async (ctx: RunContext) => {
   // validate that files exist
   const paths = await glob(ctx.config.path, { withFileTypes: true })
   core.info(`Found files: ${paths.map(f => f.fullpath()).join(',')}`)
-  let [path, ...extra] = paths
+  const [path, ...extra] = paths
   if (!path)
     throw new Error(`No files found in provided path: ${ctx.config.path}`)
   const bundled =
@@ -140,7 +140,7 @@ export const archiveUpload = async (ctx: RunContext) => {
       throw new Error(
         `Failed to create archive: status: ${res.statusText}, message: ${await res.text()}`
       )
-    pkg = await res.json()
+    pkg = (await res.json()) as CreatePackage
   } catch (e: unknown) {
     if (e instanceof Error) {
       core.error(`Failed to create new archive: ${e.message}`)
@@ -172,8 +172,8 @@ export const archiveUpload = async (ctx: RunContext) => {
   } else res = await upload(path)
 
   if (!res.ok) {
-    core.error(`Failed to upload file "${path}"`)
-    throw new Error(`Failed to upload file "${path}"`)
+    core.error(`Failed to upload file "${path.fullpath()}"`)
+    throw new Error(`Failed to upload file "${path.fullpath()}"`)
   }
   core.endGroup()
 
@@ -223,7 +223,7 @@ export const packageUpload = async (ctx: RunContext) => {
       throw new Error(
         `Failed to create package: status: ${res.statusText}, message: ${await res.text()}`
       )
-    pkg = await res.json()
+    pkg = (await res.json()) as CreatePackage
   } catch (e: unknown) {
     if (e instanceof Error) {
       core.error(`Failed to create new package: ${e.message}`)
