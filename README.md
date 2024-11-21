@@ -2,6 +2,31 @@
 
 This GitHub Action will allow you to upload a package or image to Chassy Index.
 
+## Examples
+
+```yml
+example-pkg-upload:
+  name: Example Package Upload
+  runs-on: ubuntu-latest
+  env:
+    CHASSY_TOKEN: <base64 encoded token>
+  steps:
+    - name: Checkout
+      id: checkout
+      uses: actions/checkout@v4
+    - name: Chassy package upload
+      id: test-action
+      uses: chassyflow/actions-package-upload
+      with:
+        architecture: 'ARM64'
+        os: 'ubuntu'
+        version: '22.04'
+        type: 'IMAGE'
+        path: '**/release.img'
+        classification: 'RFSIMAGE'
+        mode: 'INFO'
+```
+
 ## Authentication with Chassy
 
 In addition to any configuration options, you also must have `CHASSY_TOKEN`
@@ -17,59 +42,150 @@ in base64.
 
 If `CHASSY_TOKEN` isn't defined, the action will fail to execute the workflow.
 
-## Usage in Development
+## Usage
 
 Each of these options can be used in the `with` section when you call this
 action.
 
-| Configuration     | Description                                                           | Type      |
-| ----------------- | --------------------------------------------------------------------- | --------- |
-| `path`            | Fully qualified path to image file or a glob search path for image    | `string`  |
-| `architecture`    | Architecture of image to be uploaded                                  | `string`  |
-| `os`              | operating system name for compatibility tracking                      | `string`  |
-| `version`         | operating system version for compatibility tracking                   | `string`  |
-| `type`            | what is the artifact type                                             | `string`  |
-| `classification`  | for file and archives, what is the class of artifact (optional)       | `string`  |
-| `mode`            | determine if we should run in debug or standard info mode (optional)  | `string`  |
+| Configuration    | Description                                          | Type     |
+| ---------------- | ---------------------------------------------------- | -------- |
+| `path`           | Fully qualified or glob path to file(s) for artifact | `string` |
+| `architecture`   | Architecture of image to be uploaded                 | `string` |
+| `os`             | operating system name for compatibility tracking     | `string` |
+| `version`        | operating system version for compatibility tracking  | `string` |
+| `type`           | what is the artifact type                            | `string` |
+| `classification` | for file and archives, what is the class of artifact | `string` |
 
-### Default Values
+As of now, all of the configurations are required.
 
-| Configuration | Default Value | Valid Arguments                                           |
-| ----------------- | --------- | --------------------------------------------------------- |
-| `path`            | **NONE**  | Any string                                                |
-| `architecture`    | **NONE**  | "AMD64", "ARM64", "ARMv6", "ARMv7", "RISCV", "UNKNOWN"    |
-| `os`              | **NONE**  | Any String                                                |
-| `version`         | **NONE**  | Any String                                                |
-| `type`            | **NONE**  | "FILE", "ARCHIVE", "IMAGE", "FIRMWARE"                    |
-| `classification`  | **NONE**  | "RFSIMAGE", "YOCTO"                                       |
-| `mode`            | `"INFO"`  | "DEBUG", "INFO"                                           |
+### Path
+
+Path is a string pointing to one or more files. Note: It is only acceptable to
+match multiple files if you are using `ARCHIVE` type and `BUNDLE`
+classification.
+
+These are examples of valid path values:
+
+- `**/release/web`
+- `**/*.zip`
+- `./target/release/web`
+
+### Architecture
+
+Architecture indicates the architecture of the deployment target. The following
+list contains the accepted values for `architecture`:
+
+- `AMD64`
+- `ARM64`
+- `ARMv6`
+- `ARMv7`
+- `RISCV`
+- `UNKNOWN`
+
+### OS
+
+OS specifies the name of the operating system of the intended deployment target.
+Any string is acceptable for `os`. Here are examples:
+
+- `ubuntu`
+- `debian`
+- `archlinux`
+
+Specifying operating system allows Chassy to determine compatibility with your
+machines.
+
+### Version
+
+Version specifies the version of the operating system. It accepts any string,
+but here are some examples:
+
+- `22.04`
+- `12.0`
+- `2024.11.01`
+
+### Type
+
+Type specifies what type of artifact you are attempting to upload. Each type
+deserves its own explanation. The accepted values are:
+
+- `IMAGE`
+- `FILE`
+- `ARCHIVE`
+- `FIRMWARE`
+
+#### Image
+
+Image is used when uploading an image for a container.
+
+#### File
+
+File is used to upload a single file.
+
+#### Archive
+
+Archive is used to upload an archive. If multiple files are found when searching
+with your provided `path` value, then these values will be zipped together as a
+single file.
+
+If your path leads to a single file that happens to be a valid zip file (.zip,
+.7z, .tar, .gz), then this file will simply be uploaded.
+
+#### Firmware
+
+Firmware represents device firmware. It is expected you only provide a single
+value.
+
+### Classification
+
+Depending on the `type` of your artifact, the available values for
+`classification` will change.
+
+#### Image
+
+The valid values for image are:
+
+- `RFSIMAGE`
+- `YOCTO`
+
+#### Archive
+
+The only valid value for archive is `BUNDLE`.
+
+#### File and Firmware
+
+File and firmware artifacts support the following classifications:
+
+- `EXECUTABLE`
+- `CONFIG`
+- `DATA`
 
 ## Development
 
-Add the package upload action to your workflow by checking it out and then having the correct input args.
+Add the package upload action to your workflow by checking it out and then
+having the correct input arguments.
 
 For example, see the following:
 
 ```yml
-  example-pkg-upload:
-    name: Example Package Upload
-    runs-on: ubuntu-latest
-    env:
-      CHASSY_TOKEN: <base64 encoded token>
-      CHASSY_ENDPOINT: https://api.test.chassy.dev
-    steps:
-      - name: Checkout
-        id: checkout
-        uses: actions/checkout@v4
-      - name: Chassy package upload
-        id: test-action
-        uses: chassyflow/actions-package-upload
-        with:
-          architecture: "ARM64"
-          os: "ubuntu"
-          version: "22.04"
-          type: "IMAGE"
-          path: "**/release.img"
-          classification: "RFSIMAGE"
-          mode: "INFO"
+example-pkg-upload:
+  name: Example Package Upload
+  runs-on: ubuntu-latest
+  env:
+    CHASSY_TOKEN: <base64 encoded token>
+    BACKEND_ENV: DEV
+  steps:
+    - name: Checkout
+      id: checkout
+      uses: actions/checkout@v4
+    - name: Chassy package upload
+      id: test-action
+      uses: chassyflow/actions-package-upload
+      with:
+        architecture: 'ARM64'
+        os: 'ubuntu'
+        version: '22.04'
+        type: 'IMAGE'
+        path: '**/release.img'
+        classification: 'RFSIMAGE'
+        mode: 'INFO'
 ```
