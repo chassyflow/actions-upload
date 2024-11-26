@@ -72,7 +72,7 @@ These are examples of valid path values:
 
 ### Architecture
 
-Architecture indicates the architecture of the deployment target. The following
+Architecture indicates the cpu architecture of the uploaded artifact is compatible with. The following
 list contains the accepted values for `architecture`:
 
 - `AMD64`
@@ -84,7 +84,7 @@ list contains the accepted values for `architecture`:
 
 ### OS
 
-OS specifies the name of the operating system of the intended deployment target.
+OS specifies the name of the operating system name your artifact is compatible with.
 Any string is acceptable for `os`. Here are examples:
 
 - `ubuntu`
