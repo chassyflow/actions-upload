@@ -1,7 +1,10 @@
 import * as v from 'valibot'
 
 export const envSchema = v.object({
-  CHASSY_TOKEN: v.string('CHASSY_TOKEN must be present in environment'),
+  CHASSY_TOKEN: v.pipe(
+    v.string('CHASSY_TOKEN must be present in environment'),
+    v.minLength(1, 'CHASSY_TOKEN cannot be empty')
+  ),
   BACKEND_ENV: v.optional(
     v.union([v.literal('PROD'), v.literal('STAGE'), v.literal('DEV')]),
     'PROD'

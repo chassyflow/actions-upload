@@ -27371,7 +27371,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.getBackendUrl = exports.BASE_URLS_BY_ENV = exports.getEnv = exports.envSchema = void 0;
 const v = __importStar(__nccwpck_require__(8275));
 exports.envSchema = v.object({
-    CHASSY_TOKEN: v.string('CHASSY_TOKEN must be present in environment'),
+    CHASSY_TOKEN: v.pipe(v.string('CHASSY_TOKEN must be present in environment'), v.minLength(1, 'CHASSY_TOKEN cannot be empty')),
     BACKEND_ENV: v.optional(v.union([v.literal('PROD'), v.literal('STAGE'), v.literal('DEV')]), 'PROD')
 });
 const getEnv = () => v.parse(exports.envSchema, process.env);
