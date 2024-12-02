@@ -71,7 +71,7 @@
     "@shortercode/webzip": "1.1.1-0",
     "exponential-backoff": "3.1.1",
     "glob": "^11.0.0",
-    "valibot": "^1.0.0-beta.7"
+    "valibot": "^1.0.0-beta.9"
   },
   "devDependencies": {
     "@github/local-action": "^2.2.0",
