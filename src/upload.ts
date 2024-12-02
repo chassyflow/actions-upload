@@ -4,7 +4,7 @@ import { getBackendUrl } from './env'
 import { CreateImage, CreatePackage } from './api'
 import { glob, Path } from 'glob'
 import { readFileSync, statSync } from 'fs'
-import { zipBundle } from './archives'
+import { isArchive, zipBundle } from './archives'
 
 const uploadFile = (url: string) => async (path: Path) => {
   const readStream = readFileSync(path.fullpath())
@@ -107,11 +107,7 @@ export const archiveUpload = async (ctx: RunContext) => {
   const [path, ...extra] = paths
   if (!path)
     throw new Error(`No files found in provided path: ${ctx.config.path}`)
-  const bundled =
-    path &&
-    ['.zip', '.tar', '.gz', '.7z'].filter(ext => path.fullpath().endsWith(ext))
-      .length > 0 &&
-    extra.length === 0
+  const bundled = path && isArchive(path) && extra.length === 0
 
   // create image in Chassy Index
   const createUrl = `${getBackendUrl(ctx.env).apiBaseUrl}/package`

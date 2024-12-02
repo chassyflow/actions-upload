@@ -17,3 +17,25 @@ export const zipBundle = async (ctx: RunContext, paths: Path[]) => {
 
   return archive.to_blob()
 }
+
+const ARCHIVE_EXTENSIONS = [
+  '.zip',
+  '.zipx',
+  '.tar',
+  '.gz',
+  '.7z',
+  '.rar',
+  '.jar',
+  '.deb',
+  '.rpm'
+]
+
+/**
+ * Determines whether the extension of the file matches that of a
+ * valid archive.
+ */
+export const isArchive = (filepath: Path) =>
+  ARCHIVE_EXTENSIONS.reduce(
+    (acc, ext) => acc || filepath.fullpath().endsWith(ext),
+    false
+  )

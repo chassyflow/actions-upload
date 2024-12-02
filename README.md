@@ -72,8 +72,9 @@ These are examples of valid path values:
 
 ### Architecture
 
-Architecture indicates the architecture of the deployment target. The following
-list contains the accepted values for `architecture`:
+Architecture indicates the cpu architecture of the uploaded artifact is
+compatible with. The following list contains the accepted values for
+`architecture`:
 
 - `AMD64`
 - `ARM64`
@@ -84,8 +85,8 @@ list contains the accepted values for `architecture`:
 
 ### OS
 
-OS specifies the name of the operating system of the intended deployment target.
-Any string is acceptable for `os`. Here are examples:
+OS specifies the name of the operating system name your artifact is compatible
+with. Any string is acceptable for `os`. Here are examples:
 
 - `ubuntu`
 - `debian`
@@ -158,34 +159,3 @@ File and firmware artifacts support the following classifications:
 - `EXECUTABLE`
 - `CONFIG`
 - `DATA`
-
-## Development
-
-Add the package upload action to your workflow by checking it out and then
-having the correct input arguments.
-
-For example, see the following:
-
-```yml
-example-pkg-upload:
-  name: Example Package Upload
-  runs-on: ubuntu-latest
-  env:
-    CHASSY_TOKEN: <base64 encoded token>
-    BACKEND_ENV: DEV
-  steps:
-    - name: Checkout
-      id: checkout
-      uses: actions/checkout@v4
-    - name: Chassy package upload
-      id: test-action
-      uses: chassyflow/actions-package-upload
-      with:
-        architecture: 'ARM64'
-        os: 'ubuntu'
-        version: '22.04'
-        type: 'IMAGE'
-        path: '**/release.img'
-        classification: 'RFSIMAGE'
-        mode: 'INFO'
-```

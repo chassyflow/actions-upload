@@ -3,7 +3,7 @@ import type { BaseIssue } from 'valibot'
 import * as core from '@actions/core'
 
 const errMsg = (property: string) => (e: BaseIssue<unknown>) =>
-  `${e.kind} error: ${property} expected (${e.expected}) and received (${e.received}), raw: ${e.input}`
+  `${e.kind} error: ${property} expected (${e.expected}) and received (${e.received}), raw: ${JSON.stringify(e.input)}, ${e.message}`
 
 const architectureSchema = v.union([
   v.literal('AMD64'),
@@ -46,10 +46,10 @@ export const baseSchema = v.object({
   version: v.string(errMsg('version'))
 })
 
-export const configSchema = v.intersect([
-  baseSchema,
-  v.union([imageSchema, packageSchema])
-])
+export const configSchema = v.intersect(
+  [baseSchema, v.union([imageSchema, packageSchema], errMsg('imageOrPackage'))],
+  errMsg('config')
+)
 export type Config = v.InferOutput<typeof configSchema>
 
 /**
