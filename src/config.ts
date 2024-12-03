@@ -67,8 +67,11 @@ export const getConfig = () =>
   v.parse(configSchema, {
     name: core.getInput('name'),
     path: core.getInput('path'),
-    architecture: core.getInput('architecture'),
-    os: core.getInput('os'),
+    compatibility: {
+      architecture: core.getInput('architecture'),
+      os: core.getInput('os'),
+      version: core.getInput('os_version')
+    },
     version: core.getInput('version'),
     type: core.getInput('type'),
     classification: core.getInput('classification')

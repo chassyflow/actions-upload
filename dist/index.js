@@ -27248,8 +27248,11 @@ exports.configSchema = v.intersect([exports.baseSchema, v.union([imageSchema, pa
 const getConfig = () => v.parse(exports.configSchema, {
     name: core.getInput('name'),
     path: core.getInput('path'),
-    architecture: core.getInput('architecture'),
-    os: core.getInput('os'),
+    compatibility: {
+        architecture: core.getInput('architecture'),
+        os: core.getInput('os'),
+        version: core.getInput('os_version')
+    },
     version: core.getInput('version'),
     type: core.getInput('type'),
     classification: core.getInput('classification')
