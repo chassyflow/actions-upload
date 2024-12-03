@@ -10,8 +10,6 @@ import { Image, Package } from './api'
  */
 export async function run(): Promise<void> {
   try {
-    const x = `https://github.com/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`
-    console.log(x)
     // get context
     const ctx = await createRunContext()
 
