@@ -20,7 +20,7 @@ example-pkg-upload:
       with:
         architecture: 'ARM64'
         os: 'ubuntu'
-        version: '22.04'
+        os_version: '22.04'
         type: 'IMAGE'
         path: '**/release.img'
         classification: 'RFSIMAGE'
@@ -108,7 +108,8 @@ but here are some examples:
 ### Version
 
 Version specifies the version of the package itself. It accepts any string, but
-is generally expected to be [semantic versioning](https://semver.org/).
+is generally expected to be [semantic versioning](https://semver.org/). This
+parameter shouldn't be used when uploading an `IMAGE`.
 
 ### Type
 
