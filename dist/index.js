@@ -27228,7 +27228,8 @@ const packageSchema = v.object({
         v.literal('CONFIG'),
         v.literal('DATA'),
         v.literal('BUNDLE')
-    ], errMsg('classification'))
+    ], errMsg('classification')),
+    version: v.string(errMsg('version'))
 });
 const compatibilitySchema = v.object({
     architecture: architectureSchema,
@@ -27238,8 +27239,7 @@ const compatibilitySchema = v.object({
 exports.baseSchema = v.object({
     name: v.pipe(v.string(errMsg('name')), v.minLength(1, errMsg('name'))),
     path: v.pipe(v.string(errMsg('name')), v.minLength(1, errMsg('name'))),
-    compatibility: compatibilitySchema,
-    version: v.string(errMsg('version'))
+    compatibility: compatibilitySchema
 });
 exports.configSchema = v.intersect([exports.baseSchema, v.union([imageSchema, packageSchema], errMsg('imageOrPackage'))], errMsg('config'));
 /**
@@ -27636,6 +27636,7 @@ const archiveUpload = async (ctx) => {
                     osID: ctx.config.compatibility.os,
                     architecture: ctx.config.compatibility.architecture
                 },
+                version: ctx.config.version,
                 provenanceURI: (0, env_1.getActionRunURL)(),
                 packageClass: ctx.config.classification
             })
@@ -27712,6 +27713,7 @@ const packageUpload = async (ctx) => {
                     osID: ctx.config.compatibility.os,
                     architecture: ctx.config.compatibility.architecture
                 },
+                version: ctx.config.version,
                 provenanceURI: (0, env_1.getActionRunURL)(),
                 packageClass: ctx.config.classification
             })

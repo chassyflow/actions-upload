@@ -130,6 +130,7 @@ export const archiveUpload = async (ctx: RunContext) => {
           osID: ctx.config.compatibility.os,
           architecture: ctx.config.compatibility.architecture
         },
+        version: ctx.config.version,
         provenanceURI: getActionRunURL(),
         packageClass: ctx.config.classification
       })
@@ -214,6 +215,7 @@ export const packageUpload = async (ctx: RunContext) => {
           osID: ctx.config.compatibility.os,
           architecture: ctx.config.compatibility.architecture
         },
+        version: ctx.config.version,
         provenanceURI: getActionRunURL(),
         packageClass: ctx.config.classification
       })
