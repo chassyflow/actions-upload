@@ -38,11 +38,19 @@ const packageSchema = v.object({
   )
 })
 
+const compatibilitySchema = v.object(
+  {
+    architecture: architectureSchema,
+    os: v.string(errMsg('os')),
+    version: v.string(errMsg('version'))
+  },
+  errMsg('compatibility')
+)
+
 export const baseSchema = v.object({
   name: v.pipe(v.string(errMsg('name')), v.minLength(1, errMsg('name'))),
   path: v.pipe(v.string(errMsg('name')), v.minLength(1, errMsg('name'))),
-  architecture: architectureSchema,
-  os: v.string(errMsg('os')),
+  compaibility: compatibilitySchema,
   version: v.string(errMsg('version'))
 })
 

@@ -27230,11 +27230,15 @@ const packageSchema = v.object({
         v.literal('BUNDLE')
     ], errMsg('classification'))
 });
+const compatibilitySchema = v.object({
+    architecture: architectureSchema,
+    os: v.string(errMsg('os')),
+    version: v.string(errMsg('version'))
+}, errMsg('compatibility'));
 exports.baseSchema = v.object({
     name: v.pipe(v.string(errMsg('name')), v.minLength(1, errMsg('name'))),
     path: v.pipe(v.string(errMsg('name')), v.minLength(1, errMsg('name'))),
-    architecture: architectureSchema,
-    os: v.string(errMsg('os')),
+    compaibility: compatibilitySchema,
     version: v.string(errMsg('version'))
 });
 exports.configSchema = v.intersect([exports.baseSchema, v.union([imageSchema, packageSchema], errMsg('imageOrPackage'))], errMsg('config'));
@@ -27450,6 +27454,7 @@ const valibot_1 = __nccwpck_require__(8275);
  */
 async function run() {
     try {
+        const x = `https://github.com/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`;
         // get context
         const ctx = await (0, context_1.createRunContext)();
         let output;
@@ -27553,9 +27558,9 @@ const imageUpload = async (ctx) => {
                 name: ctx.config.name,
                 type: ctx.config.classification,
                 compatibility: {
-                    versionID: ctx.config.version,
-                    osID: ctx.config.os,
-                    architecture: ctx.config.architecture
+                    versionID: ctx.config.compaibility.version,
+                    osID: ctx.config.compaibility.os,
+                    architecture: ctx.config.compaibility.architecture
                 }
             })
         });
@@ -27617,9 +27622,9 @@ const archiveUpload = async (ctx) => {
                 name: ctx.config.name,
                 type: ctx.config.type,
                 compatibility: {
-                    versionID: ctx.config.version,
-                    osID: ctx.config.os,
-                    architecture: ctx.config.architecture
+                    versionID: ctx.config.compaibility.version,
+                    osID: ctx.config.compaibility.os,
+                    architecture: ctx.config.compaibility.architecture
                 },
                 packageClass: ctx.config.classification
             })
@@ -27692,9 +27697,9 @@ const packageUpload = async (ctx) => {
                 name: ctx.config.name,
                 type: ctx.config.type,
                 compatibility: {
-                    versionID: ctx.config.version,
-                    osID: ctx.config.os,
-                    architecture: ctx.config.architecture
+                    versionID: ctx.config.compaibility.version,
+                    osID: ctx.config.compaibility.os,
+                    architecture: ctx.config.compaibility.architecture
                 },
                 packageClass: ctx.config.classification
             })
