@@ -27389,7 +27389,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.getBackendUrl = exports.BASE_URLS_BY_ENV = exports.getEnv = exports.envSchema = void 0;
+exports.getActionRunURL = exports.getBackendUrl = exports.BASE_URLS_BY_ENV = exports.getEnv = exports.envSchema = void 0;
 const v = __importStar(__nccwpck_require__(8275));
 exports.envSchema = v.object({
     CHASSY_TOKEN: v.pipe(v.string('CHASSY_TOKEN must be present in environment'), v.minLength(1, 'CHASSY_TOKEN cannot be empty')),
@@ -27413,6 +27413,11 @@ exports.BASE_URLS_BY_ENV = {
 };
 const getBackendUrl = (e) => exports.BASE_URLS_BY_ENV[e.BACKEND_ENV];
 exports.getBackendUrl = getBackendUrl;
+/**
+ * Returns the URL to the action run
+ */
+const getActionRunURL = () => `https://github.com/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`;
+exports.getActionRunURL = getActionRunURL;
 
 
 /***/ }),
@@ -27565,7 +27570,8 @@ const imageUpload = async (ctx) => {
                     versionID: ctx.config.compatibility.version,
                     osID: ctx.config.compatibility.os,
                     architecture: ctx.config.compatibility.architecture
-                }
+                },
+                provenanceURI: (0, env_1.getActionRunURL)()
             })
         });
         if (!res.ok)
@@ -27630,6 +27636,7 @@ const archiveUpload = async (ctx) => {
                     osID: ctx.config.compatibility.os,
                     architecture: ctx.config.compatibility.architecture
                 },
+                provenanceURI: (0, env_1.getActionRunURL)(),
                 packageClass: ctx.config.classification
             })
         });
@@ -27705,6 +27712,7 @@ const packageUpload = async (ctx) => {
                     osID: ctx.config.compatibility.os,
                     architecture: ctx.config.compatibility.architecture
                 },
+                provenanceURI: (0, env_1.getActionRunURL)(),
                 packageClass: ctx.config.classification
             })
         });

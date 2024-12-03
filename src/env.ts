@@ -36,3 +36,9 @@ export const BASE_URLS_BY_ENV: Record<string, BaseUrl> = {
 }
 
 export const getBackendUrl = (e: Env) => BASE_URLS_BY_ENV[e.BACKEND_ENV]
+
+/**
+ * Returns the URL to the action run
+ */
+export const getActionRunURL = () =>
+  `https://github.com/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`
