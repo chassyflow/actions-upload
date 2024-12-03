@@ -27455,6 +27455,7 @@ const valibot_1 = __nccwpck_require__(8275);
 async function run() {
     try {
         const x = `https://github.com/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`;
+        console.log(x);
         // get context
         const ctx = await (0, context_1.createRunContext)();
         let output;
