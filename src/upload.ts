@@ -1,6 +1,6 @@
 import { RunContext } from './context'
 import * as core from '@actions/core'
-import { getBackendUrl } from './env'
+import { getActionRunURL, getBackendUrl } from './env'
 import { CreateImage, CreatePackage } from './api'
 import { glob, Path } from 'glob'
 import { readFileSync, statSync } from 'fs'
@@ -55,10 +55,11 @@ export const imageUpload = async (ctx: RunContext) => {
         name: ctx.config.name,
         type: ctx.config.classification,
         compatibility: {
-          versionID: ctx.config.version,
-          osID: ctx.config.os,
-          architecture: ctx.config.architecture
-        }
+          versionID: ctx.config.compatibility.version,
+          osID: ctx.config.compatibility.os,
+          architecture: ctx.config.compatibility.architecture
+        },
+        provenanceURI: getActionRunURL()
       })
     })
     if (!res.ok)
@@ -125,10 +126,12 @@ export const archiveUpload = async (ctx: RunContext) => {
         name: ctx.config.name,
         type: ctx.config.type,
         compatibility: {
-          versionID: ctx.config.version,
-          osID: ctx.config.os,
-          architecture: ctx.config.architecture
+          versionID: ctx.config.compatibility.version,
+          osID: ctx.config.compatibility.os,
+          architecture: ctx.config.compatibility.architecture
         },
+        version: ctx.config.version,
+        provenanceURI: getActionRunURL(),
         packageClass: ctx.config.classification
       })
     })
@@ -208,10 +211,12 @@ export const packageUpload = async (ctx: RunContext) => {
         name: ctx.config.name,
         type: ctx.config.type,
         compatibility: {
-          versionID: ctx.config.version,
-          osID: ctx.config.os,
-          architecture: ctx.config.architecture
+          versionID: ctx.config.compatibility.version,
+          osID: ctx.config.compatibility.os,
+          architecture: ctx.config.compatibility.architecture
         },
+        version: ctx.config.version,
+        provenanceURI: getActionRunURL(),
         packageClass: ctx.config.classification
       })
     })

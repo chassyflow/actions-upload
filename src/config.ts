@@ -35,15 +35,23 @@ const packageSchema = v.object({
       v.literal('BUNDLE')
     ],
     errMsg('classification')
-  )
+  ),
+  version: v.string(errMsg('version'))
 })
+
+const compatibilitySchema = v.object(
+  {
+    architecture: architectureSchema,
+    os: v.string(errMsg('os')),
+    version: v.string(errMsg('version'))
+  },
+  errMsg('compatibility')
+)
 
 export const baseSchema = v.object({
   name: v.pipe(v.string(errMsg('name')), v.minLength(1, errMsg('name'))),
   path: v.pipe(v.string(errMsg('name')), v.minLength(1, errMsg('name'))),
-  architecture: architectureSchema,
-  os: v.string(errMsg('os')),
-  version: v.string(errMsg('version'))
+  compatibility: compatibilitySchema
 })
 
 export const configSchema = v.intersect(
@@ -59,8 +67,11 @@ export const getConfig = () =>
   v.parse(configSchema, {
     name: core.getInput('name'),
     path: core.getInput('path'),
-    architecture: core.getInput('architecture'),
-    os: core.getInput('os'),
+    compatibility: {
+      architecture: core.getInput('architecture'),
+      os: core.getInput('os'),
+      version: core.getInput('os_version')
+    },
     version: core.getInput('version'),
     type: core.getInput('type'),
     classification: core.getInput('classification')

@@ -27228,14 +27228,18 @@ const packageSchema = v.object({
         v.literal('CONFIG'),
         v.literal('DATA'),
         v.literal('BUNDLE')
-    ], errMsg('classification'))
+    ], errMsg('classification')),
+    version: v.string(errMsg('version'))
 });
-exports.baseSchema = v.object({
-    name: v.pipe(v.string(errMsg('name')), v.minLength(1, errMsg('name'))),
-    path: v.pipe(v.string(errMsg('name')), v.minLength(1, errMsg('name'))),
+const compatibilitySchema = v.object({
     architecture: architectureSchema,
     os: v.string(errMsg('os')),
     version: v.string(errMsg('version'))
+}, errMsg('compatibility'));
+exports.baseSchema = v.object({
+    name: v.pipe(v.string(errMsg('name')), v.minLength(1, errMsg('name'))),
+    path: v.pipe(v.string(errMsg('name')), v.minLength(1, errMsg('name'))),
+    compatibility: compatibilitySchema
 });
 exports.configSchema = v.intersect([exports.baseSchema, v.union([imageSchema, packageSchema], errMsg('imageOrPackage'))], errMsg('config'));
 /**
@@ -27244,8 +27248,11 @@ exports.configSchema = v.intersect([exports.baseSchema, v.union([imageSchema, pa
 const getConfig = () => v.parse(exports.configSchema, {
     name: core.getInput('name'),
     path: core.getInput('path'),
-    architecture: core.getInput('architecture'),
-    os: core.getInput('os'),
+    compatibility: {
+        architecture: core.getInput('architecture'),
+        os: core.getInput('os'),
+        version: core.getInput('os_version')
+    },
     version: core.getInput('version'),
     type: core.getInput('type'),
     classification: core.getInput('classification')
@@ -27382,10 +27389,10 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.getBackendUrl = exports.BASE_URLS_BY_ENV = exports.getEnv = exports.envSchema = void 0;
+exports.getActionRunURL = exports.getBackendUrl = exports.BASE_URLS_BY_ENV = exports.getEnv = exports.envSchema = void 0;
 const v = __importStar(__nccwpck_require__(8275));
 exports.envSchema = v.object({
-    CHASSY_TOKEN: v.string('CHASSY_TOKEN must be present in environment'),
+    CHASSY_TOKEN: v.pipe(v.string('CHASSY_TOKEN must be present in environment'), v.minLength(1, 'CHASSY_TOKEN cannot be empty')),
     BACKEND_ENV: v.optional(v.union([v.literal('PROD'), v.literal('STAGE'), v.literal('DEV')]), 'PROD')
 });
 const getEnv = () => v.parse(exports.envSchema, process.env);
@@ -27406,6 +27413,11 @@ exports.BASE_URLS_BY_ENV = {
 };
 const getBackendUrl = (e) => exports.BASE_URLS_BY_ENV[e.BACKEND_ENV];
 exports.getBackendUrl = getBackendUrl;
+/**
+ * Returns the URL to the action run
+ */
+const getActionRunURL = () => `https://github.com/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`;
+exports.getActionRunURL = getActionRunURL;
 
 
 /***/ }),
@@ -27553,10 +27565,11 @@ const imageUpload = async (ctx) => {
                 name: ctx.config.name,
                 type: ctx.config.classification,
                 compatibility: {
-                    versionID: ctx.config.version,
-                    osID: ctx.config.os,
-                    architecture: ctx.config.architecture
-                }
+                    versionID: ctx.config.compatibility.version,
+                    osID: ctx.config.compatibility.os,
+                    architecture: ctx.config.compatibility.architecture
+                },
+                provenanceURI: (0, env_1.getActionRunURL)()
             })
         });
         if (!res.ok)
@@ -27617,10 +27630,12 @@ const archiveUpload = async (ctx) => {
                 name: ctx.config.name,
                 type: ctx.config.type,
                 compatibility: {
-                    versionID: ctx.config.version,
-                    osID: ctx.config.os,
-                    architecture: ctx.config.architecture
+                    versionID: ctx.config.compatibility.version,
+                    osID: ctx.config.compatibility.os,
+                    architecture: ctx.config.compatibility.architecture
                 },
+                version: ctx.config.version,
+                provenanceURI: (0, env_1.getActionRunURL)(),
                 packageClass: ctx.config.classification
             })
         });
@@ -27692,10 +27707,12 @@ const packageUpload = async (ctx) => {
                 name: ctx.config.name,
                 type: ctx.config.type,
                 compatibility: {
-                    versionID: ctx.config.version,
-                    osID: ctx.config.os,
-                    architecture: ctx.config.architecture
+                    versionID: ctx.config.compatibility.version,
+                    osID: ctx.config.compatibility.os,
+                    architecture: ctx.config.compatibility.architecture
                 },
+                version: ctx.config.version,
+                provenanceURI: (0, env_1.getActionRunURL)(),
                 packageClass: ctx.config.classification
             })
         });

@@ -20,7 +20,7 @@ example-pkg-upload:
       with:
         architecture: 'ARM64'
         os: 'ubuntu'
-        version: '22.04'
+        os_version: '22.04'
         type: 'IMAGE'
         path: '**/release.img'
         classification: 'RFSIMAGE'
@@ -52,9 +52,10 @@ action.
 | `path`           | Fully qualified or glob path to file(s) for artifact | `string` |
 | `architecture`   | Architecture of image to be uploaded                 | `string` |
 | `os`             | operating system name for compatibility tracking     | `string` |
-| `version`        | operating system version for compatibility tracking  | `string` |
+| `os_version`     | operating system version for compatibility tracking  | `string` |
 | `type`           | what is the artifact type                            | `string` |
 | `classification` | for file and archives, what is the class of artifact | `string` |
+| `version`        | package version                                      | `string` |
 
 As of now, all of the configurations are required.
 
@@ -72,8 +73,9 @@ These are examples of valid path values:
 
 ### Architecture
 
-Architecture indicates the cpu architecture of the uploaded artifact is compatible with. The following
-list contains the accepted values for `architecture`:
+Architecture indicates the cpu architecture of the uploaded artifact is
+compatible with. The following list contains the accepted values for
+`architecture`:
 
 - `AMD64`
 - `ARM64`
@@ -84,8 +86,8 @@ list contains the accepted values for `architecture`:
 
 ### OS
 
-OS specifies the name of the operating system name your artifact is compatible with.
-Any string is acceptable for `os`. Here are examples:
+OS specifies the name of the operating system name your artifact is compatible
+with. Any string is acceptable for `os`. Here are examples:
 
 - `ubuntu`
 - `debian`
@@ -94,14 +96,20 @@ Any string is acceptable for `os`. Here are examples:
 Specifying operating system allows Chassy to determine compatibility with your
 machines.
 
-### Version
+### OS Version
 
-Version specifies the version of the operating system. It accepts any string,
+OS version specifies the version of the operating system. It accepts any string,
 but here are some examples:
 
 - `22.04`
 - `12.0`
 - `2024.11.01`
+
+### Version
+
+Version specifies the version of the package itself. It accepts any string, but
+is generally expected to be [semantic versioning](https://semver.org/). This
+parameter shouldn't be used when uploading an `IMAGE`.
 
 ### Type
 

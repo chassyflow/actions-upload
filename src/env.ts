@@ -1,7 +1,10 @@
 import * as v from 'valibot'
 
 export const envSchema = v.object({
-  CHASSY_TOKEN: v.string('CHASSY_TOKEN must be present in environment'),
+  CHASSY_TOKEN: v.pipe(
+    v.string('CHASSY_TOKEN must be present in environment'),
+    v.minLength(1, 'CHASSY_TOKEN cannot be empty')
+  ),
   BACKEND_ENV: v.optional(
     v.union([v.literal('PROD'), v.literal('STAGE'), v.literal('DEV')]),
     'PROD'
@@ -33,3 +36,9 @@ export const BASE_URLS_BY_ENV: Record<string, BaseUrl> = {
 }
 
 export const getBackendUrl = (e: Env) => BASE_URLS_BY_ENV[e.BACKEND_ENV]
+
+/**
+ * Returns the URL to the action run
+ */
+export const getActionRunURL = () =>
+  `https://github.com/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`
