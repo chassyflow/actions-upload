@@ -55,9 +55,9 @@ export const imageUpload = async (ctx: RunContext) => {
         name: ctx.config.name,
         type: ctx.config.classification,
         compatibility: {
-          versionID: ctx.config.compaibility.version,
-          osID: ctx.config.compaibility.os,
-          architecture: ctx.config.compaibility.architecture
+          versionID: ctx.config.compatibility.version,
+          osID: ctx.config.compatibility.os,
+          architecture: ctx.config.compatibility.architecture
         }
       })
     })
@@ -125,9 +125,9 @@ export const archiveUpload = async (ctx: RunContext) => {
         name: ctx.config.name,
         type: ctx.config.type,
         compatibility: {
-          versionID: ctx.config.compaibility.version,
-          osID: ctx.config.compaibility.os,
-          architecture: ctx.config.compaibility.architecture
+          versionID: ctx.config.compatibility.version,
+          osID: ctx.config.compatibility.os,
+          architecture: ctx.config.compatibility.architecture
         },
         packageClass: ctx.config.classification
       })
@@ -208,9 +208,9 @@ export const packageUpload = async (ctx: RunContext) => {
         name: ctx.config.name,
         type: ctx.config.type,
         compatibility: {
-          versionID: ctx.config.compaibility.version,
-          osID: ctx.config.compaibility.os,
-          architecture: ctx.config.compaibility.architecture
+          versionID: ctx.config.compatibility.version,
+          osID: ctx.config.compatibility.os,
+          architecture: ctx.config.compatibility.architecture
         },
         packageClass: ctx.config.classification
       })

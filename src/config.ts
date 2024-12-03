@@ -50,7 +50,7 @@ const compatibilitySchema = v.object(
 export const baseSchema = v.object({
   name: v.pipe(v.string(errMsg('name')), v.minLength(1, errMsg('name'))),
   path: v.pipe(v.string(errMsg('name')), v.minLength(1, errMsg('name'))),
-  compaibility: compatibilitySchema,
+  compatibility: compatibilitySchema,
   version: v.string(errMsg('version'))
 })
 

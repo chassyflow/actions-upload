@@ -27238,7 +27238,7 @@ const compatibilitySchema = v.object({
 exports.baseSchema = v.object({
     name: v.pipe(v.string(errMsg('name')), v.minLength(1, errMsg('name'))),
     path: v.pipe(v.string(errMsg('name')), v.minLength(1, errMsg('name'))),
-    compaibility: compatibilitySchema,
+    compatibility: compatibilitySchema,
     version: v.string(errMsg('version'))
 });
 exports.configSchema = v.intersect([exports.baseSchema, v.union([imageSchema, packageSchema], errMsg('imageOrPackage'))], errMsg('config'));
@@ -27558,9 +27558,9 @@ const imageUpload = async (ctx) => {
                 name: ctx.config.name,
                 type: ctx.config.classification,
                 compatibility: {
-                    versionID: ctx.config.compaibility.version,
-                    osID: ctx.config.compaibility.os,
-                    architecture: ctx.config.compaibility.architecture
+                    versionID: ctx.config.compatibility.version,
+                    osID: ctx.config.compatibility.os,
+                    architecture: ctx.config.compatibility.architecture
                 }
             })
         });
@@ -27622,9 +27622,9 @@ const archiveUpload = async (ctx) => {
                 name: ctx.config.name,
                 type: ctx.config.type,
                 compatibility: {
-                    versionID: ctx.config.compaibility.version,
-                    osID: ctx.config.compaibility.os,
-                    architecture: ctx.config.compaibility.architecture
+                    versionID: ctx.config.compatibility.version,
+                    osID: ctx.config.compatibility.os,
+                    architecture: ctx.config.compatibility.architecture
                 },
                 packageClass: ctx.config.classification
             })
@@ -27697,9 +27697,9 @@ const packageUpload = async (ctx) => {
                 name: ctx.config.name,
                 type: ctx.config.type,
                 compatibility: {
-                    versionID: ctx.config.compaibility.version,
-                    osID: ctx.config.compaibility.os,
-                    architecture: ctx.config.compaibility.architecture
+                    versionID: ctx.config.compatibility.version,
+                    osID: ctx.config.compatibility.os,
+                    architecture: ctx.config.compatibility.architecture
                 },
                 packageClass: ctx.config.classification
             })
