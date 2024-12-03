@@ -52,9 +52,10 @@ action.
 | `path`           | Fully qualified or glob path to file(s) for artifact | `string` |
 | `architecture`   | Architecture of image to be uploaded                 | `string` |
 | `os`             | operating system name for compatibility tracking     | `string` |
-| `version`        | operating system version for compatibility tracking  | `string` |
+| `os_version`     | operating system version for compatibility tracking  | `string` |
 | `type`           | what is the artifact type                            | `string` |
 | `classification` | for file and archives, what is the class of artifact | `string` |
+| `version`        | package version                                      | `string` |
 
 As of now, all of the configurations are required.
 
@@ -95,14 +96,19 @@ with. Any string is acceptable for `os`. Here are examples:
 Specifying operating system allows Chassy to determine compatibility with your
 machines.
 
-### Version
+### OS Version
 
-Version specifies the version of the operating system. It accepts any string,
+OS version specifies the version of the operating system. It accepts any string,
 but here are some examples:
 
 - `22.04`
 - `12.0`
 - `2024.11.01`
+
+### Version
+
+Version specifies the version of the package itself. It accepts any string, but
+is generally expected to be [semantic versioning](https://semver.org/).
 
 ### Type
 
