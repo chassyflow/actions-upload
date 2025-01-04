@@ -98,6 +98,9 @@ export const getConfig = () =>
       os: core.getInput('os'),
       version: core.getInput('os_version')
     },
+    partitions: core.getInput('partitions'),
+    compressionScheme: core.getInput('compression_scheme'),
+    rawDiskScheme: core.getInput('raw_disk_scheme'),
     version: core.getInput('version'),
     type: core.getInput('type'),
     classification: core.getInput('classification')

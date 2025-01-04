@@ -28,8 +28,14 @@ inputs:
   classification:
     description: 'for file and archives, what is the class of artifact'
     required: false
-  partition:
+  partitions:
     description: 'for images, specify path to JSON file with partition info'
+    required: false
+  compression_scheme:
+    description: 'for images, specify compression scheme (NONE, ZIP, TGZ)'
+    required: false
+  raw_disk_scheme:
+    description: 'for images, specify raw disk scheme (ISO, IMG)'
     required: false
 outputs:
   id:
