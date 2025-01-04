@@ -1,6 +1,7 @@
 import * as v from 'valibot'
 import type { BaseIssue } from 'valibot'
 import * as core from '@actions/core'
+import { readFileSync } from 'fs'
 
 const errMsg = (property: string) => (e: BaseIssue<unknown>) =>
   `${e.kind} error: ${property} expected (${e.expected}) and received (${e.received}), raw: ${JSON.stringify(e.input)}, ${e.message}`
@@ -14,12 +15,37 @@ const architectureSchema = v.union([
   v.literal('UNKNOWN')
 ])
 
+const imagePartitionSchema = v.object({
+  filesystemType: v.string(),
+  mountPoint: v.string(),
+  name: v.string(),
+  size: v.pipe(
+    v.string(),
+    v.regex(/^\d+(\.\d+)?[mMgGbBkK]$/gm, 'Invalid size provided')
+  ),
+  startSector: v.pipe(v.number(), v.integer(), v.minValue(0)),
+  partitionType: v.string()
+})
+
 const imageSchema = v.object({
   type: v.literal('IMAGE'),
   classification: v.union(
     [v.literal('RFSIMAGE'), v.literal('YOCTO')],
     errMsg('classification')
-  )
+  ),
+  partitions: v.optional(
+    v.pipe(
+      v.string(errMsg('partitions')),
+      v.transform(partitions => readFileSync(partitions, 'utf-8')),
+      v.transform(JSON.parse),
+      v.array(imagePartitionSchema, errMsg('partitions'))
+    )
+  ),
+  compressionScheme: v.optional(
+    v.union([v.literal('NONE'), v.literal('ZIP'), v.literal('TGZ')]),
+    'NONE'
+  ),
+  rawDiskScheme: v.optional(v.union([v.literal('IMG'), v.literal('ISO')]))
 })
 
 const packageSchema = v.object({

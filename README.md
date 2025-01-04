@@ -1,4 +1,4 @@
-# Actions workflow run
+# Actions Upload
 
 This GitHub Action will allow you to upload a package or image to Chassy Index.
 
@@ -16,7 +16,7 @@ example-pkg-upload:
       uses: actions/checkout@v4
     - name: Chassy package upload
       id: test-action
-      uses: chassyflow/actions-package-upload
+      uses: chassyflow/actions-upload
       with:
         architecture: 'ARM64'
         os: 'ubuntu'

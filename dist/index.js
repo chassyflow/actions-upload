@@ -27176,6 +27176,29 @@ exports.isArchive = isArchive;
 
 /***/ }),
 
+/***/ 4596:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.computeChecksum = void 0;
+const crypto_1 = __nccwpck_require__(6982);
+const fs_1 = __nccwpck_require__(9896);
+const computeChecksum = (path, algorithm) => {
+    const file = (0, fs_1.readFileSync)(path);
+    switch (algorithm) {
+        case 'md5':
+            return (0, crypto_1.createHash)('md5').update(file).digest('hex');
+        case 'sha256':
+            return (0, crypto_1.createHash)('sha256').update(file).digest('hex');
+    }
+};
+exports.computeChecksum = computeChecksum;
+
+
+/***/ }),
+
 /***/ 2973:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
@@ -27208,6 +27231,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.getConfig = exports.configSchema = exports.baseSchema = void 0;
 const v = __importStar(__nccwpck_require__(8275));
 const core = __importStar(__nccwpck_require__(7484));
+const fs_1 = __nccwpck_require__(9896);
 const errMsg = (property) => (e) => `${e.kind} error: ${property} expected (${e.expected}) and received (${e.received}), raw: ${JSON.stringify(e.input)}, ${e.message}`;
 const architectureSchema = v.union([
     v.literal('AMD64'),
@@ -27217,9 +27241,20 @@ const architectureSchema = v.union([
     v.literal('RISCV'),
     v.literal('UNKNOWN')
 ]);
+const imagePartitionSchema = v.object({
+    filesystemType: v.string(),
+    mountPoint: v.string(),
+    name: v.string(),
+    size: v.pipe(v.string(), v.regex(/^\d+(\.\d+)?[mMgGbBkK]$/gm, 'Invalid size provided')),
+    startSector: v.pipe(v.number(), v.integer(), v.minValue(0)),
+    partitionType: v.string()
+});
 const imageSchema = v.object({
     type: v.literal('IMAGE'),
-    classification: v.union([v.literal('RFSIMAGE'), v.literal('YOCTO')], errMsg('classification'))
+    classification: v.union([v.literal('RFSIMAGE'), v.literal('YOCTO')], errMsg('classification')),
+    partitions: v.optional(v.pipe(v.string(errMsg('partitions')), v.transform(partitions => (0, fs_1.readFileSync)(partitions, 'utf-8')), v.transform(JSON.parse), v.array(imagePartitionSchema, errMsg('partitions')))),
+    compressionScheme: v.optional(v.union([v.literal('NONE'), v.literal('ZIP'), v.literal('TGZ')]), 'NONE'),
+    rawDiskScheme: v.optional(v.union([v.literal('IMG'), v.literal('ISO')]))
 });
 const packageSchema = v.object({
     type: v.union([v.literal('FILE'), v.literal('ARCHIVE'), v.literal('FIRMWARE')], errMsg('type')),
@@ -27523,6 +27558,7 @@ const env_1 = __nccwpck_require__(8204);
 const glob_1 = __nccwpck_require__(1363);
 const fs_1 = __nccwpck_require__(9896);
 const archives_1 = __nccwpck_require__(6792);
+const checksum_1 = __nccwpck_require__(4596);
 const uploadFile = (url) => async (path) => {
     const readStream = (0, fs_1.readFileSync)(path.fullpath());
     core.debug(`Uploading file: ${path.fullpath()}`);
@@ -27542,6 +27578,9 @@ const imageUpload = async (ctx) => {
     // it must be image
     if (ctx.config.type !== 'IMAGE')
         throw new Error('Attempted to upload generic package as image');
+    // if compressionScheme is provided, then rawDiskScheme must be provided
+    if (ctx.config.compressionScheme && !ctx.config.rawDiskScheme)
+        throw new Error('Compression scheme provided without raw disk scheme');
     // validate that files exist
     const paths = await (0, glob_1.glob)(ctx.config.path, { withFileTypes: true });
     core.info(`Found files: ${paths.map(f => f.fullpath()).join(',')}`);
@@ -27569,7 +27608,17 @@ const imageUpload = async (ctx) => {
                     osID: ctx.config.compatibility.os,
                     architecture: ctx.config.compatibility.architecture
                 },
-                provenanceURI: (0, env_1.getActionRunURL)()
+                provenanceURI: (0, env_1.getActionRunURL)(),
+                partitions: ctx.config.partitions ?? [],
+                ...(ctx.config.rawDiskScheme
+                    ? {
+                        storageFormat: {
+                            compressionScheme: ctx.config.compressionScheme,
+                            rawDiskScheme: ctx.config.rawDiskScheme
+                        }
+                    }
+                    : {}),
+                checksum: (0, checksum_1.computeChecksum)(path.fullpath(), 'md5')
             })
         });
         if (!res.ok)

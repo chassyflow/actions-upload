@@ -5,6 +5,7 @@ import { CreateImage, CreatePackage } from './api'
 import { glob, Path } from 'glob'
 import { readFileSync, statSync } from 'fs'
 import { isArchive, zipBundle } from './archives'
+import { computeChecksum } from './checksum'
 
 const uploadFile = (url: string) => async (path: Path) => {
   const readStream = readFileSync(path.fullpath())
@@ -28,6 +29,9 @@ export const imageUpload = async (ctx: RunContext) => {
   // it must be image
   if (ctx.config.type !== 'IMAGE')
     throw new Error('Attempted to upload generic package as image')
+  // if compressionScheme is provided, then rawDiskScheme must be provided
+  if (ctx.config.compressionScheme && !ctx.config.rawDiskScheme)
+    throw new Error('Compression scheme provided without raw disk scheme')
   // validate that files exist
   const paths = await glob(ctx.config.path, { withFileTypes: true })
   core.info(`Found files: ${paths.map(f => f.fullpath()).join(',')}`)
@@ -59,7 +63,17 @@ export const imageUpload = async (ctx: RunContext) => {
           osID: ctx.config.compatibility.os,
           architecture: ctx.config.compatibility.architecture
         },
-        provenanceURI: getActionRunURL()
+        provenanceURI: getActionRunURL(),
+        partitions: ctx.config.partitions ?? [],
+        ...(ctx.config.rawDiskScheme
+          ? {
+              storageFormat: {
+                compressionScheme: ctx.config.compressionScheme,
+                rawDiskScheme: ctx.config.rawDiskScheme
+              }
+            }
+          : {}),
+        checksum: computeChecksum(path.fullpath(), 'md5')
       })
     })
     if (!res.ok)

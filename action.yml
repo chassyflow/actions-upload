@@ -1,5 +1,5 @@
-name: 'Package Upload'
-description: 'Uploads a package to Chassy Index'
+name: 'Chassy Upload'
+description: 'Uploads an artifact to Chassy Index'
 author: 'Chassy'
 
 inputs:
@@ -27,6 +27,9 @@ inputs:
     required: true
   classification:
     description: 'for file and archives, what is the class of artifact'
+    required: false
+  partition:
+    description: 'for images, specify path to JSON file with partition info'
     required: false
 outputs:
   id:
