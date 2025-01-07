@@ -1,11 +1,14 @@
 import { RunContext } from './context'
 import * as core from '@actions/core'
+import { backOff } from 'exponential-backoff'
+import { parse } from 'valibot'
 import { getActionRunURL, getBackendUrl } from './env'
-import { CreateImage, CreatePackage } from './api'
+import { createImageSchema, CreatePackage, CreateImage } from './api'
 import { glob, Path } from 'glob'
 import { readFileSync, statSync } from 'fs'
 import { isArchive, zipBundle } from './archives'
 import { computeChecksum } from './checksum'
+import { BACKOFF_CONFIG, MULTI_PART_CHUNK_SIZE } from './constants'
 
 const uploadFile = (url: string) => async (path: Path) => {
   const readStream = readFileSync(path.fullpath())
@@ -73,14 +76,15 @@ export const imageUpload = async (ctx: RunContext) => {
               }
             }
           : {}),
-        checksum: computeChecksum(path.fullpath(), 'md5')
+        checksum: computeChecksum(path.fullpath(), 'md5'),
+        sizeInBytes: path.size
       })
     })
     if (!res.ok)
       throw new Error(
         `Failed to create image: status: ${res.statusText}, message: ${await res.text()}`
       )
-    image = (await res.json()) as CreateImage
+    image = parse(createImageSchema, await res.json())
   } catch (e: unknown) {
     if (e instanceof Error) {
       core.error(`Failed to create new image: ${e.message}`)
@@ -92,15 +96,84 @@ export const imageUpload = async (ctx: RunContext) => {
   core.debug(`Created image: ${JSON.stringify(image)}`)
   core.info(`Image Id: ${image.image.id}`)
 
-  // upload image using returned URL
-  const upload = uploadFile(image.uploadURI)
-
   core.startGroup('Uploading files')
-  const res = await upload(path)
 
-  if (!res.ok) {
-    core.error(`Failed to upload file "${path.fullpath()}"`)
-    throw new Error(`Failed to upload file "${path.fullpath()}"`)
+  // upload image using returned URL
+  if ('urls' in image) {
+    const readStream = readFileSync(path.fullpath())
+    let start = MULTI_PART_CHUNK_SIZE
+    const promises = image.urls.map(upload =>
+      (async () => {
+        // retry request while expiry time is not reached
+        const res = await backOff(
+          async () => {
+            const res = await fetch(upload.uploadURI, {
+              method: 'PUT',
+              body: readStream.slice(start, start + MULTI_PART_CHUNK_SIZE)
+            })
+            start += MULTI_PART_CHUNK_SIZE
+            if (!res.ok) {
+              throw new Error(`Failed to upload part "${upload.partNumber}"`)
+            }
+            return res
+          },
+          {
+            ...BACKOFF_CONFIG,
+            numOfAttempts: 999,
+            retry: () => Date.now() < upload.expiryTimestamp.getMilliseconds()
+          }
+        )
+        //res => res.ok,
+        //() => Date.now() < upload.expiryTimestamp.getMilliseconds()
+        if (!res.ok) {
+          core.error(`Failed to upload file "${path.fullpath()}"`)
+          return {
+            err: `Failed to upload file "${path.fullpath()}"`,
+            partNumber: upload.partNumber
+          }
+        }
+        // etag header
+        return { etag: res.headers.get('ETag'), partNumber: upload.partNumber }
+      })()
+    )
+    const responses = await Promise.all(promises)
+    const fails = responses.filter(r => r.err)
+    if (fails.length > 0) {
+      core.error('Failed to upload one or more files')
+      const errMsgs = fails.map(f => `[${f.err}]`)
+      throw new Error(`Failed to upload files: (${errMsgs.join(',')})`)
+    }
+    // send confirmations
+    backOff(async () => {
+      const res = await fetch(`${getBackendUrl(ctx.env).apiBaseUrl}/image`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: ctx.authToken
+        },
+        body: JSON.stringify({
+          id: image.image.id,
+          confirmation: {
+            uploadId: image.uploadId,
+            etags: responses.map(r => ({
+              partNumber: r.partNumber,
+              etag: r.etag
+            }))
+          }
+        })
+      })
+      if (!res.ok) throw new Error(`Failed to confirm upload`)
+      return res
+    }, BACKOFF_CONFIG)
+  } else {
+    const upload = uploadFile(image.uploadURI)
+
+    const res = await upload(path)
+
+    if (!res.ok) {
+      core.error(`Failed to upload file "${path.fullpath()}"`)
+      throw new Error(`Failed to upload file "${path.fullpath()}"`)
+    }
   }
   core.endGroup()
 

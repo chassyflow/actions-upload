@@ -27110,6 +27110,59 @@ module.exports = {
 
 /***/ }),
 
+/***/ 6879:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.createImageSchema = void 0;
+const v = __importStar(__nccwpck_require__(8275));
+const imageSchema = v.object({
+    id: v.string()
+});
+exports.createImageSchema = v.union([
+    v.object({
+        image: imageSchema,
+        uploadURI: v.string()
+    }),
+    v.object({
+        image: imageSchema,
+        uploadId: v.string(),
+        urls: v.array(v.object({
+            uploadURI: v.string(),
+            expiryTimestamp: v.date(),
+            partNumber: v.pipe(v.number(), v.integer())
+        }))
+    })
+]);
+
+
+/***/ }),
+
 /***/ 6792:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
@@ -27306,12 +27359,14 @@ exports.getConfig = getConfig;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.BACKOFF_CONFIG = void 0;
+exports.MULTI_PART_CHUNK_SIZE = exports.BACKOFF_CONFIG = void 0;
 exports.BACKOFF_CONFIG = {
     numOfAttempts: 6,
     timeMultiple: 2,
-    startingDelay: 2
+    startingDelay: 2,
+    maxDelay: 45
 };
+exports.MULTI_PART_CHUNK_SIZE = 4 * 1024 * 1024 * 1024;
 
 
 /***/ }),
@@ -27557,11 +27612,15 @@ var __importStar = (this && this.__importStar) || function (mod) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.packageUpload = exports.archiveUpload = exports.imageUpload = void 0;
 const core = __importStar(__nccwpck_require__(7484));
+const exponential_backoff_1 = __nccwpck_require__(1675);
+const valibot_1 = __nccwpck_require__(8275);
 const env_1 = __nccwpck_require__(8204);
+const api_1 = __nccwpck_require__(6879);
 const glob_1 = __nccwpck_require__(1363);
 const fs_1 = __nccwpck_require__(9896);
 const archives_1 = __nccwpck_require__(6792);
 const checksum_1 = __nccwpck_require__(4596);
+const constants_1 = __nccwpck_require__(7242);
 const uploadFile = (url) => async (path) => {
     const readStream = (0, fs_1.readFileSync)(path.fullpath());
     core.debug(`Uploading file: ${path.fullpath()}`);
@@ -27621,12 +27680,13 @@ const imageUpload = async (ctx) => {
                         }
                     }
                     : {}),
-                checksum: (0, checksum_1.computeChecksum)(path.fullpath(), 'md5')
+                checksum: (0, checksum_1.computeChecksum)(path.fullpath(), 'md5'),
+                sizeInBytes: path.size
             })
         });
         if (!res.ok)
             throw new Error(`Failed to create image: status: ${res.statusText}, message: ${await res.text()}`);
-        image = (await res.json());
+        image = (0, valibot_1.parse)(api_1.createImageSchema, await res.json());
     }
     catch (e) {
         if (e instanceof Error) {
@@ -27639,13 +27699,78 @@ const imageUpload = async (ctx) => {
     core.endGroup();
     core.debug(`Created image: ${JSON.stringify(image)}`);
     core.info(`Image Id: ${image.image.id}`);
-    // upload image using returned URL
-    const upload = uploadFile(image.uploadURI);
     core.startGroup('Uploading files');
-    const res = await upload(path);
-    if (!res.ok) {
-        core.error(`Failed to upload file "${path.fullpath()}"`);
-        throw new Error(`Failed to upload file "${path.fullpath()}"`);
+    // upload image using returned URL
+    if ('urls' in image) {
+        const readStream = (0, fs_1.readFileSync)(path.fullpath());
+        let start = constants_1.MULTI_PART_CHUNK_SIZE;
+        const promises = image.urls.map(upload => (async () => {
+            // retry request while expiry time is not reached
+            const res = await (0, exponential_backoff_1.backOff)(async () => {
+                const res = await fetch(upload.uploadURI, {
+                    method: 'PUT',
+                    body: readStream.slice(start, start + constants_1.MULTI_PART_CHUNK_SIZE)
+                });
+                start += constants_1.MULTI_PART_CHUNK_SIZE;
+                if (!res.ok) {
+                    throw new Error(`Failed to upload part "${upload.partNumber}"`);
+                }
+                return res;
+            }, {
+                ...constants_1.BACKOFF_CONFIG,
+                numOfAttempts: 999,
+                retry: () => Date.now() < upload.expiryTimestamp.getMilliseconds()
+            });
+            //res => res.ok,
+            //() => Date.now() < upload.expiryTimestamp.getMilliseconds()
+            if (!res.ok) {
+                core.error(`Failed to upload file "${path.fullpath()}"`);
+                return {
+                    err: `Failed to upload file "${path.fullpath()}"`,
+                    partNumber: upload.partNumber
+                };
+            }
+            // etag header
+            return { etag: res.headers.get('ETag'), partNumber: upload.partNumber };
+        })());
+        const responses = await Promise.all(promises);
+        const fails = responses.filter(r => r.err);
+        if (fails.length > 0) {
+            core.error('Failed to upload one or more files');
+            const errMsgs = fails.map(f => `[${f.err}]`);
+            throw new Error(`Failed to upload files: (${errMsgs.join(',')})`);
+        }
+        // send confirmations
+        (0, exponential_backoff_1.backOff)(async () => {
+            const res = await fetch(`${(0, env_1.getBackendUrl)(ctx.env).apiBaseUrl}/image`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: ctx.authToken
+                },
+                body: JSON.stringify({
+                    id: image.image.id,
+                    confirmation: {
+                        uploadId: image.uploadId,
+                        etags: responses.map(r => ({
+                            partNumber: r.partNumber,
+                            etag: r.etag
+                        }))
+                    }
+                })
+            });
+            if (!res.ok)
+                throw new Error(`Failed to confirm upload`);
+            return res;
+        }, constants_1.BACKOFF_CONFIG);
+    }
+    else {
+        const upload = uploadFile(image.uploadURI);
+        const res = await upload(path);
+        if (!res.ok) {
+            core.error(`Failed to upload file "${path.fullpath()}"`);
+            throw new Error(`Failed to upload file "${path.fullpath()}"`);
+        }
     }
     core.endGroup();
     return image.image;
