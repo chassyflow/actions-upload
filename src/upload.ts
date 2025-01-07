@@ -102,8 +102,8 @@ export const imageUpload = async (ctx: RunContext) => {
   if ('urls' in image) {
     const readStream = readFileSync(path.fullpath())
     let start = MULTI_PART_CHUNK_SIZE
-    const promises = image.urls.map(upload =>
-      (async () => {
+    const responses = await Promise.all(
+      image.urls.map(async upload => {
         // retry request while expiry time is not reached
         const res = await backOff(
           async () => {
@@ -134,9 +134,8 @@ export const imageUpload = async (ctx: RunContext) => {
         }
         // etag header
         return { etag: res.headers.get('ETag'), partNumber: upload.partNumber }
-      })()
+      })
     )
-    const responses = await Promise.all(promises)
     const fails = responses.filter(r => r.err)
     if (fails.length > 0) {
       core.error('Failed to upload one or more files')
@@ -144,7 +143,7 @@ export const imageUpload = async (ctx: RunContext) => {
       throw new Error(`Failed to upload files: (${errMsgs.join(',')})`)
     }
     // send confirmations
-    backOff(async () => {
+    await backOff(async () => {
       const res = await fetch(`${getBackendUrl(ctx.env).apiBaseUrl}/image`, {
         method: 'PUT',
         headers: {
