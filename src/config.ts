@@ -27,26 +27,29 @@ const imagePartitionSchema = v.object({
   partitionType: v.string()
 })
 
-const imageSchema = v.object({
-  type: v.literal('IMAGE'),
-  classification: v.union(
-    [v.literal('RFSIMAGE'), v.literal('YOCTO')],
-    errMsg('classification')
-  ),
-  partitions: v.optional(
-    v.pipe(
-      v.string(errMsg('partitions')),
-      v.transform(partitions => readFileSync(partitions, 'utf-8')),
-      v.transform(JSON.parse),
-      v.array(imagePartitionSchema, errMsg('partitions'))
-    )
-  ),
-  compressionScheme: v.optional(
-    v.union([v.literal('NONE'), v.literal('ZIP'), v.literal('TGZ')]),
-    'NONE'
-  ),
-  rawDiskScheme: v.optional(v.union([v.literal('IMG'), v.literal('ISO')]))
-})
+const imageSchema = v.object(
+  {
+    type: v.literal('IMAGE'),
+    classification: v.union(
+      [v.literal('RFSIMAGE'), v.literal('YOCTO')],
+      errMsg('classification')
+    ),
+    partitions: v.optional(
+      v.pipe(
+        v.string(errMsg('partitions')),
+        v.transform(partitions => readFileSync(partitions, 'utf-8')),
+        v.transform(JSON.parse),
+        v.array(imagePartitionSchema, errMsg('partitions'))
+      )
+    ),
+    compressionScheme: v.optional(
+      v.union([v.literal('NONE'), v.literal('ZIP'), v.literal('TGZ')]),
+      'NONE'
+    ),
+    rawDiskScheme: v.optional(v.union([v.literal('IMG'), v.literal('ISO')]))
+  },
+  errMsg('failed to parse image')
+)
 
 const packageSchema = v.object({
   type: v.union(
