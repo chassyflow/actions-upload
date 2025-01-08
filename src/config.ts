@@ -25,7 +25,7 @@ const imagePartitionSchema = v.object({
     v.integer('startSector must be integer'),
     v.minValue(0, 'startSector must be at least 0')
   ),
-  partitionType: v.string('partitionType must be string')
+  type: v.string('type must be string')
 })
 
 const imageSchema = v.object(

@@ -27299,7 +27299,7 @@ const imagePartitionSchema = v.object({
     name: v.string('name must be string'),
     size: v.pipe(v.string('size must be provided as string'), v.regex(/^\d+(\.\d+)?[mMgGbBkK]$/gm, 'Invalid size provided')),
     startSector: v.pipe(v.number('startSector must be number'), v.integer('startSector must be integer'), v.minValue(0, 'startSector must be at least 0')),
-    partitionType: v.string('partitionType must be string')
+    type: v.string('type must be string')
 });
 const imageSchema = v.object({
     type: v.literal('IMAGE'),
