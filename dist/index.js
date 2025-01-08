@@ -27718,7 +27718,7 @@ const imageUpload = async (ctx) => {
     core.startGroup('Computing checksum');
     let checksum;
     try {
-        checksum = await (0, checksum_1.computeChecksum)(path.fullpath(), 'md5');
+        checksum = `md5:${await (0, checksum_1.computeChecksum)(path.fullpath(), 'md5')}`;
     }
     catch (e) {
         if (e instanceof Error) {

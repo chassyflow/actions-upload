@@ -69,7 +69,7 @@ export const imageUpload = async (ctx: RunContext) => {
   core.startGroup('Computing checksum')
   let checksum
   try {
-    checksum = await computeChecksum(path.fullpath(), 'md5')
+    checksum = `md5:${await computeChecksum(path.fullpath(), 'md5')}`
   } catch (e: unknown) {
     if (e instanceof Error) {
       core.error(`Failed to compute checksum: ${e.message}`)
