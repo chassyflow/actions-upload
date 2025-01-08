@@ -100,22 +100,30 @@ export const configSchema = v.intersect(
 )
 export type Config = v.InferOutput<typeof configSchema>
 
+const dbg = <T>(x: T) => {
+  console.debug(x)
+  return x
+}
+
 /**
  * Get configuration options for environment
  */
 export const getConfig = () =>
-  v.parse(configSchema, {
-    name: core.getInput('name'),
-    path: core.getInput('path'),
-    compatibility: {
-      architecture: core.getInput('architecture'),
-      os: core.getInput('os'),
-      version: core.getInput('os_version')
-    },
-    partitions: core.getInput('partitions'),
-    compressionScheme: core.getInput('compression_scheme'),
-    rawDiskScheme: core.getInput('raw_disk_scheme'),
-    version: core.getInput('version'),
-    type: core.getInput('type'),
-    classification: core.getInput('classification')
-  })
+  v.parse(
+    configSchema,
+    dbg({
+      name: core.getInput('name'),
+      path: core.getInput('path'),
+      compatibility: {
+        architecture: core.getInput('architecture'),
+        os: core.getInput('os'),
+        version: core.getInput('os_version')
+      },
+      partitions: core.getInput('partitions'),
+      compressionScheme: core.getInput('compression_scheme'),
+      rawDiskScheme: core.getInput('raw_disk_scheme'),
+      version: core.getInput('version'),
+      type: core.getInput('type'),
+      classification: core.getInput('classification')
+    })
+  )

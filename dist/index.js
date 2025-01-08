@@ -27332,10 +27332,14 @@ exports.configSchema = v.intersect([
     exports.baseSchema,
     v.union([imageSchema, packageSchema], 'config must match image or package schema')
 ], 'malformed configuration');
+const dbg = (x) => {
+    console.debug(x);
+    return x;
+};
 /**
  * Get configuration options for environment
  */
-const getConfig = () => v.parse(exports.configSchema, {
+const getConfig = () => v.parse(exports.configSchema, dbg({
     name: core.getInput('name'),
     path: core.getInput('path'),
     compatibility: {
@@ -27349,7 +27353,7 @@ const getConfig = () => v.parse(exports.configSchema, {
     version: core.getInput('version'),
     type: core.getInput('type'),
     classification: core.getInput('classification')
-});
+}));
 exports.getConfig = getConfig;
 
 
