@@ -66,6 +66,18 @@ export const imageUpload = async (ctx: RunContext) => {
     partitions = readPartitionConfig(partitionPaths[0])
   }
 
+  core.startGroup('Computing checksum')
+  let checksum
+  try {
+    checksum = await computeChecksum(path.fullpath(), 'md5')
+  } catch (e: unknown) {
+    if (e instanceof Error) {
+      core.error(`Failed to compute checksum: ${e.message}`)
+      throw e
+    } else throw e
+  }
+  core.endGroup()
+
   // create image in Chassy Index
   const createUrl = `${getBackendUrl(ctx.env).apiBaseUrl}/image`
 
@@ -96,7 +108,7 @@ export const imageUpload = async (ctx: RunContext) => {
               }
             }
           : {}),
-        checksum: computeChecksum(path.fullpath(), 'md5'),
+        checksum,
         sizeInBytes: path.size,
         version: ctx.config.version
       })

@@ -27238,15 +27238,39 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.computeChecksum = void 0;
 const crypto_1 = __nccwpck_require__(6982);
 const fs_1 = __nccwpck_require__(9896);
-const computeChecksum = (path, algorithm) => {
-    const file = (0, fs_1.readFileSync)(path);
+const computeChecksum = (path, algorithm) => new Promise((resolve, reject) => {
+    const file = (0, fs_1.createReadStream)(path);
     switch (algorithm) {
-        case 'md5':
-            return (0, crypto_1.createHash)('md5').update(file).digest('hex');
-        case 'sha256':
-            return (0, crypto_1.createHash)('sha256').update(file).digest('hex');
+        case 'md5': {
+            const hash = (0, crypto_1.createHash)('md5');
+            file.on('data', chunk => {
+                hash.update(chunk);
+            });
+            file.on('end', () => {
+                resolve(hash.digest('hex'));
+            });
+            file.on('error', () => {
+                reject(new Error('Failed to read file'));
+            });
+            break;
+        }
+        case 'sha256': {
+            const hash = (0, crypto_1.createHash)('sha256');
+            file.on('data', chunk => {
+                hash.update(chunk);
+            });
+            file.on('end', () => {
+                resolve(hash.digest('hex'));
+            });
+            file.on('error', () => {
+                reject(new Error('Failed to read file'));
+            });
+            break;
+        }
+        default:
+            reject(new Error('Invalid algorithm'));
     }
-};
+});
 exports.computeChecksum = computeChecksum;
 
 
@@ -27691,6 +27715,20 @@ const imageUpload = async (ctx) => {
         // parse partitions file
         partitions = (0, config_1.readPartitionConfig)(partitionPaths[0]);
     }
+    core.startGroup('Computing checksum');
+    let checksum;
+    try {
+        checksum = await (0, checksum_1.computeChecksum)(path.fullpath(), 'md5');
+    }
+    catch (e) {
+        if (e instanceof Error) {
+            core.error(`Failed to compute checksum: ${e.message}`);
+            throw e;
+        }
+        else
+            throw e;
+    }
+    core.endGroup();
     // create image in Chassy Index
     const createUrl = `${(0, env_1.getBackendUrl)(ctx.env).apiBaseUrl}/image`;
     core.startGroup('Create Image in Chassy Index');
@@ -27720,7 +27758,7 @@ const imageUpload = async (ctx) => {
                         }
                     }
                     : {}),
-                checksum: (0, checksum_1.computeChecksum)(path.fullpath(), 'md5'),
+                checksum,
                 sizeInBytes: path.size,
                 version: ctx.config.version
             })
