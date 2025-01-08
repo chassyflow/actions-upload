@@ -109,8 +109,7 @@ export const imageUpload = async (ctx: RunContext) => {
             }
           : {}),
         checksum,
-        sizeInBytes: path.size,
-        version: ctx.config.version
+        sizeInBytes: path.size
       })
     })
     if (!res.ok)

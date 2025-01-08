@@ -27759,8 +27759,7 @@ const imageUpload = async (ctx) => {
                     }
                     : {}),
                 checksum,
-                sizeInBytes: path.size,
-                version: ctx.config.version
+                sizeInBytes: path.size
             })
         });
         if (!res.ok)
