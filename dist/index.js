@@ -27325,13 +27325,16 @@ const imagePartitionSchema = v.object({
     startSector: v.pipe(v.number('startSector must be number'), v.integer('startSector must be integer'), v.minValue(0, 'startSector must be at least 0')),
     type: v.string('type must be string')
 });
-const imageSchema = v.object({
-    type: v.literal('IMAGE'),
-    classification: v.union([v.literal('RFSIMAGE'), v.literal('YOCTO')], 'classification must be RFSIMAGE or YOCTO'),
-    partitions: v.optional(v.string('partitions (path) must be string')),
-    compressionScheme: v.optional(v.union([v.literal('NONE'), v.literal('ZIP'), v.literal('TGZ')]), 'NONE'),
-    rawDiskScheme: v.optional(v.union([v.literal('IMG'), v.literal('ISO')]))
-}, 'image malformed');
+const imageSchema = v.intersect([
+    v.object({
+        type: v.literal('IMAGE'),
+        classification: v.union([v.literal('RFSIMAGE'), v.literal('YOCTO')], 'classification must be RFSIMAGE or YOCTO'),
+        partitions: v.optional(v.string('partitions (path) must be string')),
+        compressionScheme: v.optional(v.union([v.literal('NONE'), v.literal('ZIP'), v.literal('TGZ')]), 'NONE'),
+        rawDiskScheme: v.union([v.literal('IMG'), v.literal('ISO')])
+    }, 'image malformed'),
+    v.union([v.object({})])
+]);
 const packageSchema = v.object({
     type: v.union([v.literal('FILE'), v.literal('ARCHIVE'), v.literal('FIRMWARE')], 'type must be FILE, ARCHIVE, or FIRMWARE'),
     classification: v.union([
@@ -27689,9 +27692,6 @@ const imageUpload = async (ctx) => {
     // it must be image
     if (ctx.config.type !== 'IMAGE')
         throw new Error('Attempted to upload generic package as image');
-    // if compressionScheme is provided, then rawDiskScheme must be provided
-    if (ctx.config.compressionScheme && !ctx.config.rawDiskScheme)
-        throw new Error('Compression scheme provided without raw disk scheme');
     // validate that files exist
     const paths = await (0, glob_1.glob)(ctx.config.path, { withFileTypes: true });
     core.info(`Found files: ${paths.map(f => f.fullpath()).join(',')}`);
@@ -27715,6 +27715,7 @@ const imageUpload = async (ctx) => {
         // parse partitions file
         partitions = (0, config_1.readPartitionConfig)(partitionPaths[0]);
     }
+    const { rawDiskScheme, compressionScheme } = ctx.config;
     core.startGroup('Computing checksum');
     let checksum;
     try {
@@ -27734,34 +27735,46 @@ const imageUpload = async (ctx) => {
     core.startGroup('Create Image in Chassy Index');
     let image;
     try {
-        const res = await fetch(createUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: ctx.authToken
-            },
-            body: JSON.stringify({
-                name: ctx.config.name,
-                type: ctx.config.classification,
-                compatibility: {
-                    versionID: ctx.config.compatibility.version,
-                    osID: ctx.config.compatibility.os,
-                    architecture: ctx.config.compatibility.architecture
-                },
-                provenanceURI: (0, env_1.getActionRunURL)(),
-                partitions,
-                ...(ctx.config.rawDiskScheme
-                    ? {
+        const res = await (0, exponential_backoff_1.backOff)(async () => {
+            try {
+                const res = await fetch(createUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: ctx.authToken
+                    },
+                    body: JSON.stringify({
+                        name: ctx.config.name,
+                        type: ctx.config.classification,
+                        compatibility: {
+                            versionID: ctx.config.compatibility.version,
+                            osID: ctx.config.compatibility.os,
+                            architecture: ctx.config.compatibility.architecture
+                        },
+                        provenanceURI: (0, env_1.getActionRunURL)(),
+                        partitions,
                         storageFormat: {
-                            compressionScheme: ctx.config.compressionScheme,
-                            rawDiskScheme: ctx.config.rawDiskScheme
-                        }
-                    }
-                    : {}),
-                checksum,
-                sizeInBytes: path.size
-            })
-        });
+                            compressionScheme,
+                            rawDiskScheme
+                        },
+                        checksum,
+                        sizeInBytes: path.size
+                    })
+                });
+                if (!res.ok) {
+                    throw new Error(`Failed to create image: status: ${res.statusText}, message: ${await res.text()}`);
+                }
+                return res;
+            }
+            catch (e) {
+                if (e instanceof Error) {
+                    core.error(`Failed to create new image: ${e.message}`);
+                    throw e;
+                }
+                else
+                    throw e;
+            }
+        }, constants_1.BACKOFF_CONFIG);
         if (!res.ok)
             throw new Error(`Failed to create image: status: ${res.statusText}, message: ${await res.text()}`);
         image = (0, valibot_1.parse)(api_1.createImageSchema, await res.json());

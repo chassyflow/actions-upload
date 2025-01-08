@@ -33,9 +33,6 @@ export const imageUpload = async (ctx: RunContext) => {
   // it must be image
   if (ctx.config.type !== 'IMAGE')
     throw new Error('Attempted to upload generic package as image')
-  // if compressionScheme is provided, then rawDiskScheme must be provided
-  if (ctx.config.compressionScheme && !ctx.config.rawDiskScheme)
-    throw new Error('Compression scheme provided without raw disk scheme')
   // validate that files exist
   const paths = await glob(ctx.config.path, { withFileTypes: true })
   core.info(`Found files: ${paths.map(f => f.fullpath()).join(',')}`)
@@ -66,6 +63,8 @@ export const imageUpload = async (ctx: RunContext) => {
     partitions = readPartitionConfig(partitionPaths[0])
   }
 
+  const { rawDiskScheme, compressionScheme } = ctx.config
+
   core.startGroup('Computing checksum')
   let checksum
   try {
@@ -84,34 +83,45 @@ export const imageUpload = async (ctx: RunContext) => {
   core.startGroup('Create Image in Chassy Index')
   let image: CreateImage
   try {
-    const res = await fetch(createUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: ctx.authToken
-      },
-      body: JSON.stringify({
-        name: ctx.config.name,
-        type: ctx.config.classification,
-        compatibility: {
-          versionID: ctx.config.compatibility.version,
-          osID: ctx.config.compatibility.os,
-          architecture: ctx.config.compatibility.architecture
-        },
-        provenanceURI: getActionRunURL(),
-        partitions,
-        ...(ctx.config.rawDiskScheme
-          ? {
-              storageFormat: {
-                compressionScheme: ctx.config.compressionScheme,
-                rawDiskScheme: ctx.config.rawDiskScheme
-              }
-            }
-          : {}),
-        checksum,
-        sizeInBytes: path.size
-      })
-    })
+    const res = await backOff(async () => {
+      try {
+        const res = await fetch(createUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: ctx.authToken
+          },
+          body: JSON.stringify({
+            name: ctx.config.name,
+            type: ctx.config.classification,
+            compatibility: {
+              versionID: ctx.config.compatibility.version,
+              osID: ctx.config.compatibility.os,
+              architecture: ctx.config.compatibility.architecture
+            },
+            provenanceURI: getActionRunURL(),
+            partitions,
+            storageFormat: {
+              compressionScheme,
+              rawDiskScheme
+            },
+            checksum,
+            sizeInBytes: path.size
+          })
+        })
+        if (!res.ok) {
+          throw new Error(
+            `Failed to create image: status: ${res.statusText}, message: ${await res.text()}`
+          )
+        }
+        return res
+      } catch (e: unknown) {
+        if (e instanceof Error) {
+          core.error(`Failed to create new image: ${e.message}`)
+          throw e
+        } else throw e
+      }
+    }, BACKOFF_CONFIG)
     if (!res.ok)
       throw new Error(
         `Failed to create image: status: ${res.statusText}, message: ${await res.text()}`

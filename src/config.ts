@@ -28,22 +28,25 @@ const imagePartitionSchema = v.object({
   type: v.string('type must be string')
 })
 
-const imageSchema = v.object(
-  {
-    type: v.literal('IMAGE'),
-    classification: v.union(
-      [v.literal('RFSIMAGE'), v.literal('YOCTO')],
-      'classification must be RFSIMAGE or YOCTO'
-    ),
-    partitions: v.optional(v.string('partitions (path) must be string')),
-    compressionScheme: v.optional(
-      v.union([v.literal('NONE'), v.literal('ZIP'), v.literal('TGZ')]),
-      'NONE'
-    ),
-    rawDiskScheme: v.optional(v.union([v.literal('IMG'), v.literal('ISO')]))
-  },
-  'image malformed'
-)
+const imageSchema = v.intersect([
+  v.object(
+    {
+      type: v.literal('IMAGE'),
+      classification: v.union(
+        [v.literal('RFSIMAGE'), v.literal('YOCTO')],
+        'classification must be RFSIMAGE or YOCTO'
+      ),
+      partitions: v.optional(v.string('partitions (path) must be string')),
+      compressionScheme: v.optional(
+        v.union([v.literal('NONE'), v.literal('ZIP'), v.literal('TGZ')]),
+        'NONE'
+      ),
+      rawDiskScheme: v.union([v.literal('IMG'), v.literal('ISO')])
+    },
+    'image malformed'
+  ),
+  v.union([v.object({})])
+])
 
 const packageSchema = v.object({
   type: v.union(
