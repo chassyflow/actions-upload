@@ -27285,7 +27285,6 @@ exports.getConfig = exports.configSchema = exports.baseSchema = void 0;
 const v = __importStar(__nccwpck_require__(8275));
 const core = __importStar(__nccwpck_require__(7484));
 const fs_1 = __nccwpck_require__(9896);
-const errMsg = (property) => (e) => `${e.kind} error: ${property} expected (${e.expected}) and received (${e.received}), raw: ${JSON.stringify(e.input)}, ${e.message}`;
 const architectureSchema = v.union([
     v.literal('AMD64'),
     v.literal('ARM64'),
@@ -27304,32 +27303,35 @@ const imagePartitionSchema = v.object({
 });
 const imageSchema = v.object({
     type: v.literal('IMAGE'),
-    classification: v.union([v.literal('RFSIMAGE'), v.literal('YOCTO')], errMsg('classification')),
-    partitions: v.optional(v.pipe(v.string(errMsg('partitions')), v.transform(partitions => (0, fs_1.readFileSync)(partitions, 'utf-8')), v.transform(JSON.parse), v.array(imagePartitionSchema, errMsg('partitions')))),
+    classification: v.union([v.literal('RFSIMAGE'), v.literal('YOCTO')], 'classification must be RFSIMAGE or YOCTO'),
+    partitions: v.optional(v.pipe(v.string('partitions must be string'), v.transform(partitions => (0, fs_1.readFileSync)(partitions, 'utf-8')), v.transform(JSON.parse), v.array(imagePartitionSchema, 'partitions must be a partition array'))),
     compressionScheme: v.optional(v.union([v.literal('NONE'), v.literal('ZIP'), v.literal('TGZ')]), 'NONE'),
     rawDiskScheme: v.optional(v.union([v.literal('IMG'), v.literal('ISO')]))
-});
+}, 'image malformed');
 const packageSchema = v.object({
-    type: v.union([v.literal('FILE'), v.literal('ARCHIVE'), v.literal('FIRMWARE')], errMsg('type')),
+    type: v.union([v.literal('FILE'), v.literal('ARCHIVE'), v.literal('FIRMWARE')], 'type must be FILE, ARCHIVE, or FIRMWARE'),
     classification: v.union([
         v.literal('EXECUTABLE'),
         v.literal('CONFIG'),
         v.literal('DATA'),
         v.literal('BUNDLE')
-    ], errMsg('classification')),
-    version: v.string(errMsg('version'))
+    ], 'classification must be EXECUTABLE, CONFIG, DATA, or BUNDLE'),
+    version: v.string('version must be string')
 });
 const compatibilitySchema = v.object({
     architecture: architectureSchema,
-    os: v.string(errMsg('os')),
-    version: v.pipe(v.string(errMsg('version')), v.minLength(3, errMsg('version')))
-}, errMsg('compatibility'));
+    os: v.string('os must be string'),
+    version: v.pipe(v.string('version must be string'), v.minLength(3, 'version must be at least 3 characters'))
+}, 'compatibility malformed, must have architecture, os, and version');
 exports.baseSchema = v.object({
-    name: v.pipe(v.string(errMsg('name')), v.minLength(1, errMsg('name'))),
-    path: v.pipe(v.string(errMsg('name')), v.minLength(1, errMsg('name'))),
+    name: v.pipe(v.string('name must be string'), v.minLength(1, 'name must be at least 1 character')),
+    path: v.pipe(v.string('path must be string'), v.minLength(1, 'path must be at least 1 character')),
     compatibility: compatibilitySchema
 });
-exports.configSchema = v.intersect([exports.baseSchema, v.union([imageSchema, packageSchema], errMsg('imageOrPackage'))], errMsg('config'));
+exports.configSchema = v.intersect([
+    exports.baseSchema,
+    v.union([imageSchema, packageSchema], 'config must match image or package schema')
+], 'malformed configuration');
 /**
  * Get configuration options for environment
  */

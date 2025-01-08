@@ -1,10 +1,6 @@
 import * as v from 'valibot'
-import type { BaseIssue } from 'valibot'
 import * as core from '@actions/core'
 import { readFileSync } from 'fs'
-
-const errMsg = (property: string) => (e: BaseIssue<unknown>) =>
-  `${e.kind} error: ${property} expected (${e.expected}) and received (${e.received}), raw: ${JSON.stringify(e.input)}, ${e.message}`
 
 const architectureSchema = v.union([
   v.literal('AMD64'),
@@ -32,14 +28,14 @@ const imageSchema = v.object(
     type: v.literal('IMAGE'),
     classification: v.union(
       [v.literal('RFSIMAGE'), v.literal('YOCTO')],
-      errMsg('classification')
+      'classification must be RFSIMAGE or YOCTO'
     ),
     partitions: v.optional(
       v.pipe(
-        v.string(errMsg('partitions')),
+        v.string('partitions must be string'),
         v.transform(partitions => readFileSync(partitions, 'utf-8')),
         v.transform(JSON.parse),
-        v.array(imagePartitionSchema, errMsg('partitions'))
+        v.array(imagePartitionSchema, 'partitions must be a partition array')
       )
     ),
     compressionScheme: v.optional(
@@ -48,13 +44,13 @@ const imageSchema = v.object(
     ),
     rawDiskScheme: v.optional(v.union([v.literal('IMG'), v.literal('ISO')]))
   },
-  errMsg('failed to parse image')
+  'image malformed'
 )
 
 const packageSchema = v.object({
   type: v.union(
     [v.literal('FILE'), v.literal('ARCHIVE'), v.literal('FIRMWARE')],
-    errMsg('type')
+    'type must be FILE, ARCHIVE, or FIRMWARE'
   ),
   classification: v.union(
     [
@@ -63,32 +59,44 @@ const packageSchema = v.object({
       v.literal('DATA'),
       v.literal('BUNDLE')
     ],
-    errMsg('classification')
+    'classification must be EXECUTABLE, CONFIG, DATA, or BUNDLE'
   ),
-  version: v.string(errMsg('version'))
+  version: v.string('version must be string')
 })
 
 const compatibilitySchema = v.object(
   {
     architecture: architectureSchema,
-    os: v.string(errMsg('os')),
+    os: v.string('os must be string'),
     version: v.pipe(
-      v.string(errMsg('version')),
-      v.minLength(3, errMsg('version'))
+      v.string('version must be string'),
+      v.minLength(3, 'version must be at least 3 characters')
     )
   },
-  errMsg('compatibility')
+  'compatibility malformed, must have architecture, os, and version'
 )
 
 export const baseSchema = v.object({
-  name: v.pipe(v.string(errMsg('name')), v.minLength(1, errMsg('name'))),
-  path: v.pipe(v.string(errMsg('name')), v.minLength(1, errMsg('name'))),
+  name: v.pipe(
+    v.string('name must be string'),
+    v.minLength(1, 'name must be at least 1 character')
+  ),
+  path: v.pipe(
+    v.string('path must be string'),
+    v.minLength(1, 'path must be at least 1 character')
+  ),
   compatibility: compatibilitySchema
 })
 
 export const configSchema = v.intersect(
-  [baseSchema, v.union([imageSchema, packageSchema], errMsg('imageOrPackage'))],
-  errMsg('config')
+  [
+    baseSchema,
+    v.union(
+      [imageSchema, packageSchema],
+      'config must match image or package schema'
+    )
+  ],
+  'malformed configuration'
 )
 export type Config = v.InferOutput<typeof configSchema>
 
