@@ -1,6 +1,7 @@
 import * as v from 'valibot'
 import * as core from '@actions/core'
 import { readFileSync } from 'fs'
+import { Path } from 'glob'
 
 const architectureSchema = v.union([
   v.literal('AMD64'),
@@ -30,14 +31,7 @@ const imageSchema = v.object(
       [v.literal('RFSIMAGE'), v.literal('YOCTO')],
       'classification must be RFSIMAGE or YOCTO'
     ),
-    partitions: v.optional(
-      v.pipe(
-        v.string('partitions must be string'),
-        v.transform(partitions => readFileSync(partitions, 'utf-8')),
-        v.transform(JSON.parse),
-        v.array(imagePartitionSchema, 'partitions must be a partition array')
-      )
-    ),
+    partitions: v.optional(v.string('partitions (path) must be string')),
     compressionScheme: v.optional(
       v.union([v.literal('NONE'), v.literal('ZIP'), v.literal('TGZ')]),
       'NONE'
@@ -100,8 +94,21 @@ export const configSchema = v.intersect(
 )
 export type Config = v.InferOutput<typeof configSchema>
 
-//const parse = (cfg: v.InferInput<typeof configSchema>) =>
-//  v.parse(configSchema, cfg)
+const parse = (cfg: v.InferInput<typeof configSchema>) =>
+  v.parse(configSchema, cfg)
+
+parse({
+  name: 'ubuntu-24.04-6.6-mate-odroid-xu4-20240911',
+  path: 'src/images/ubuntu-24.04-6.6-mate-odroid-xu4-20240911.img.zip',
+  compatibility: { architecture: 'ARM64', os: 'ubuntu', version: '24.04' },
+  partitions:
+    'src/images/ubuntu-24.04-6.6-mate-odroid-xu4-20240911.partitions.json',
+  compressionScheme: 'ZIP',
+  rawDiskScheme: 'IMG',
+  version: '6.6',
+  type: 'IMAGE',
+  classification: 'RFSIMAGE'
+})
 
 const dbg = <T>(x: T) => {
   console.debug(x)
@@ -130,3 +137,11 @@ export const getConfig = () =>
       classification: core.getInput('classification')
     })
   )
+
+export const readPartitionConfig = (path: Path) => {
+  const file = readFileSync(path.fullpath())
+  // parse partition file
+  return v.parse(v.array(imagePartitionSchema), JSON.parse(file.toString()))
+}
+
+export type Partition = v.InferOutput<typeof imagePartitionSchema>

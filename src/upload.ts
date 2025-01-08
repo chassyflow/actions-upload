@@ -9,6 +9,7 @@ import { readFileSync, statSync } from 'fs'
 import { isArchive, zipBundle } from './archives'
 import { computeChecksum } from './checksum'
 import { BACKOFF_CONFIG, MULTI_PART_CHUNK_SIZE } from './constants'
+import { Partition, readPartitionConfig } from './config'
 
 const uploadFile = (url: string) => async (path: Path) => {
   const readStream = readFileSync(path.fullpath())
@@ -45,6 +46,25 @@ export const imageUpload = async (ctx: RunContext) => {
     )
   else if (!path)
     throw new Error(`No files found in provided path: ${ctx.config.path}`)
+  // if partition configuration is provided, validate that it exists and is valid
+  let partitions: Partition[] = []
+  if (ctx.config.partitions) {
+    const partitionPaths = await glob(ctx.config.partitions, {
+      withFileTypes: true
+    })
+    if (partitionPaths.length === 0)
+      throw new Error(
+        `No partitions file found in provided path: ${ctx.config.partitions}`
+      )
+    if (partitionPaths.length > 1)
+      throw new Error(
+        `Too many partitions files found: ${partitionPaths
+          .map(i => `"${i.fullpath()}"`)
+          .join(',')}`
+      )
+    // parse partitions file
+    partitions = readPartitionConfig(partitionPaths[0])
+  }
 
   // create image in Chassy Index
   const createUrl = `${getBackendUrl(ctx.env).apiBaseUrl}/image`
@@ -67,7 +87,7 @@ export const imageUpload = async (ctx: RunContext) => {
           architecture: ctx.config.compatibility.architecture
         },
         provenanceURI: getActionRunURL(),
-        partitions: ctx.config.partitions ?? [],
+        partitions,
         ...(ctx.config.rawDiskScheme
           ? {
               storageFormat: {

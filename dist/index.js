@@ -27281,7 +27281,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.getConfig = exports.configSchema = exports.baseSchema = void 0;
+exports.readPartitionConfig = exports.getConfig = exports.configSchema = exports.baseSchema = void 0;
 const v = __importStar(__nccwpck_require__(8275));
 const core = __importStar(__nccwpck_require__(7484));
 const fs_1 = __nccwpck_require__(9896);
@@ -27304,7 +27304,7 @@ const imagePartitionSchema = v.object({
 const imageSchema = v.object({
     type: v.literal('IMAGE'),
     classification: v.union([v.literal('RFSIMAGE'), v.literal('YOCTO')], 'classification must be RFSIMAGE or YOCTO'),
-    partitions: v.optional(v.pipe(v.string('partitions must be string'), v.transform(partitions => (0, fs_1.readFileSync)(partitions, 'utf-8')), v.transform(JSON.parse), v.array(imagePartitionSchema, 'partitions must be a partition array'))),
+    partitions: v.optional(v.string('partitions (path) must be string')),
     compressionScheme: v.optional(v.union([v.literal('NONE'), v.literal('ZIP'), v.literal('TGZ')]), 'NONE'),
     rawDiskScheme: v.optional(v.union([v.literal('IMG'), v.literal('ISO')]))
 }, 'image malformed');
@@ -27332,8 +27332,18 @@ exports.configSchema = v.intersect([
     exports.baseSchema,
     v.union([imageSchema, packageSchema], 'config must match image or package schema')
 ], 'malformed configuration');
-//const parse = (cfg: v.InferInput<typeof configSchema>) =>
-//  v.parse(configSchema, cfg)
+const parse = (cfg) => v.parse(exports.configSchema, cfg);
+parse({
+    name: 'ubuntu-24.04-6.6-mate-odroid-xu4-20240911',
+    path: 'src/images/ubuntu-24.04-6.6-mate-odroid-xu4-20240911.img.zip',
+    compatibility: { architecture: 'ARM64', os: 'ubuntu', version: '24.04' },
+    partitions: 'src/images/ubuntu-24.04-6.6-mate-odroid-xu4-20240911.partitions.json',
+    compressionScheme: 'ZIP',
+    rawDiskScheme: 'IMG',
+    version: '6.6',
+    type: 'IMAGE',
+    classification: 'RFSIMAGE'
+});
 const dbg = (x) => {
     console.debug(x);
     return x;
@@ -27357,6 +27367,12 @@ const getConfig = () => v.parse(exports.configSchema, dbg({
     classification: core.getInput('classification')
 }));
 exports.getConfig = getConfig;
+const readPartitionConfig = (path) => {
+    const file = (0, fs_1.readFileSync)(path.fullpath());
+    // parse partition file
+    return v.parse(v.array(imagePartitionSchema), JSON.parse(file.toString()));
+};
+exports.readPartitionConfig = readPartitionConfig;
 
 
 /***/ }),
@@ -27629,6 +27645,7 @@ const fs_1 = __nccwpck_require__(9896);
 const archives_1 = __nccwpck_require__(6792);
 const checksum_1 = __nccwpck_require__(4596);
 const constants_1 = __nccwpck_require__(7242);
+const config_1 = __nccwpck_require__(2973);
 const uploadFile = (url) => async (path) => {
     const readStream = (0, fs_1.readFileSync)(path.fullpath());
     core.debug(`Uploading file: ${path.fullpath()}`);
@@ -27659,6 +27676,21 @@ const imageUpload = async (ctx) => {
         throw new Error(`Too many files found: ${paths.map(i => `"${i.fullpath()}"`).join(',')}`);
     else if (!path)
         throw new Error(`No files found in provided path: ${ctx.config.path}`);
+    // if partition configuration is provided, validate that it exists and is valid
+    let partitions = [];
+    if (ctx.config.partitions) {
+        const partitionPaths = await (0, glob_1.glob)(ctx.config.partitions, {
+            withFileTypes: true
+        });
+        if (partitionPaths.length === 0)
+            throw new Error(`No partitions file found in provided path: ${ctx.config.partitions}`);
+        if (partitionPaths.length > 1)
+            throw new Error(`Too many partitions files found: ${partitionPaths
+                .map(i => `"${i.fullpath()}"`)
+                .join(',')}`);
+        // parse partitions file
+        partitions = (0, config_1.readPartitionConfig)(partitionPaths[0]);
+    }
     // create image in Chassy Index
     const createUrl = `${(0, env_1.getBackendUrl)(ctx.env).apiBaseUrl}/image`;
     core.startGroup('Create Image in Chassy Index');
@@ -27679,7 +27711,7 @@ const imageUpload = async (ctx) => {
                     architecture: ctx.config.compatibility.architecture
                 },
                 provenanceURI: (0, env_1.getActionRunURL)(),
-                partitions: ctx.config.partitions ?? [],
+                partitions,
                 ...(ctx.config.rawDiskScheme
                     ? {
                         storageFormat: {
