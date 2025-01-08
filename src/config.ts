@@ -145,7 +145,10 @@ export const getConfig = () =>
 export const readPartitionConfig = (path: Path) => {
   const file = readFileSync(path.fullpath())
   // parse partition file
-  return v.parse(v.array(imagePartitionSchema), JSON.parse(file.toString()))
+  return v.parse(
+    v.array(imagePartitionSchema),
+    dbg(JSON.parse(file.toString()))
+  )
 }
 
 export type Partition = v.InferOutput<typeof imagePartitionSchema>

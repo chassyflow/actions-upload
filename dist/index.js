@@ -27370,7 +27370,7 @@ exports.getConfig = getConfig;
 const readPartitionConfig = (path) => {
     const file = (0, fs_1.readFileSync)(path.fullpath());
     // parse partition file
-    return v.parse(v.array(imagePartitionSchema), JSON.parse(file.toString()));
+    return v.parse(v.array(imagePartitionSchema), dbg(JSON.parse(file.toString())));
 };
 exports.readPartitionConfig = readPartitionConfig;
 
