@@ -13,15 +13,19 @@ const architectureSchema = v.union([
 ])
 
 const imagePartitionSchema = v.object({
-  filesystemType: v.string(),
-  mountPoint: v.string(),
-  name: v.string(),
+  filesystemType: v.string('filesystemType must be string'),
+  mountPoint: v.string('mountPoint must be string'),
+  name: v.string('name must be string'),
   size: v.pipe(
-    v.string(),
+    v.string('size must be provided as string'),
     v.regex(/^\d+(\.\d+)?[mMgGbBkK]$/gm, 'Invalid size provided')
   ),
-  startSector: v.pipe(v.number(), v.integer(), v.minValue(0)),
-  partitionType: v.string()
+  startSector: v.pipe(
+    v.number('startSector must be number'),
+    v.integer('startSector must be integer'),
+    v.minValue(0, 'startSector must be at least 0')
+  ),
+  partitionType: v.string('partitionType must be string')
 })
 
 const imageSchema = v.object(
