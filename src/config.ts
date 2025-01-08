@@ -69,7 +69,10 @@ const compatibilitySchema = v.object(
   {
     architecture: architectureSchema,
     os: v.string(errMsg('os')),
-    version: v.string(errMsg('version'))
+    version: v.pipe(
+      v.string(errMsg('version')),
+      v.minLength(3, errMsg('version'))
+    )
   },
   errMsg('compatibility')
 )

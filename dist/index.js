@@ -27322,7 +27322,7 @@ const packageSchema = v.object({
 const compatibilitySchema = v.object({
     architecture: architectureSchema,
     os: v.string(errMsg('os')),
-    version: v.string(errMsg('version'))
+    version: v.pipe(v.string(errMsg('version')), v.minLength(3, errMsg('version')))
 }, errMsg('compatibility'));
 exports.baseSchema = v.object({
     name: v.pipe(v.string(errMsg('name')), v.minLength(1, errMsg('name'))),
