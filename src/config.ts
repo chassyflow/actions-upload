@@ -60,8 +60,7 @@ const packageSchema = v.object({
       v.literal('BUNDLE')
     ],
     'classification must be EXECUTABLE, CONFIG, DATA, or BUNDLE'
-  ),
-  version: v.string('version must be string')
+  )
 })
 
 const compatibilitySchema = v.object(
@@ -85,7 +84,8 @@ export const baseSchema = v.object({
     v.string('path must be string'),
     v.minLength(1, 'path must be at least 1 character')
   ),
-  compatibility: compatibilitySchema
+  compatibility: compatibilitySchema,
+  version: v.string('version must be string')
 })
 
 export const configSchema = v.intersect(
@@ -99,6 +99,9 @@ export const configSchema = v.intersect(
   'malformed configuration'
 )
 export type Config = v.InferOutput<typeof configSchema>
+
+//const parse = (cfg: v.InferInput<typeof configSchema>) =>
+//  v.parse(configSchema, cfg)
 
 const dbg = <T>(x: T) => {
   console.debug(x)

@@ -27315,8 +27315,7 @@ const packageSchema = v.object({
         v.literal('CONFIG'),
         v.literal('DATA'),
         v.literal('BUNDLE')
-    ], 'classification must be EXECUTABLE, CONFIG, DATA, or BUNDLE'),
-    version: v.string('version must be string')
+    ], 'classification must be EXECUTABLE, CONFIG, DATA, or BUNDLE')
 });
 const compatibilitySchema = v.object({
     architecture: architectureSchema,
@@ -27326,12 +27325,15 @@ const compatibilitySchema = v.object({
 exports.baseSchema = v.object({
     name: v.pipe(v.string('name must be string'), v.minLength(1, 'name must be at least 1 character')),
     path: v.pipe(v.string('path must be string'), v.minLength(1, 'path must be at least 1 character')),
-    compatibility: compatibilitySchema
+    compatibility: compatibilitySchema,
+    version: v.string('version must be string')
 });
 exports.configSchema = v.intersect([
     exports.baseSchema,
     v.union([imageSchema, packageSchema], 'config must match image or package schema')
 ], 'malformed configuration');
+//const parse = (cfg: v.InferInput<typeof configSchema>) =>
+//  v.parse(configSchema, cfg)
 const dbg = (x) => {
     console.debug(x);
     return x;
@@ -27687,7 +27689,8 @@ const imageUpload = async (ctx) => {
                     }
                     : {}),
                 checksum: (0, checksum_1.computeChecksum)(path.fullpath(), 'md5'),
-                sizeInBytes: path.size
+                sizeInBytes: path.size,
+                version: ctx.config.version
             })
         });
         if (!res.ok)

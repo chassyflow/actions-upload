@@ -77,7 +77,8 @@ export const imageUpload = async (ctx: RunContext) => {
             }
           : {}),
         checksum: computeChecksum(path.fullpath(), 'md5'),
-        sizeInBytes: path.size
+        sizeInBytes: path.size,
+        version: ctx.config.version
       })
     })
     if (!res.ok)
