@@ -161,7 +161,6 @@ export const imageUpload = async (ctx: RunContext) => {
           async () => {
             const res = await fetch(upload.uploadURI, {
               method: 'PUT',
-              headers: { 'Content-Type': 'binary/octet-stream' },
               body: Readable.from(
                 createReadStream(path.fullpath(), {
                   start,

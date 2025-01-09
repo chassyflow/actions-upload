@@ -27811,7 +27811,6 @@ const imageUpload = async (ctx) => {
             const res = await (0, exponential_backoff_1.backOff)(async () => {
                 const res = await fetch(upload.uploadURI, {
                     method: 'PUT',
-                    headers: { 'Content-Type': 'binary/octet-stream' },
                     body: stream_1.Readable.from((0, fs_1.createReadStream)(path.fullpath(), {
                         start,
                         end: start + constants_1.MULTI_PART_CHUNK_SIZE - 1
