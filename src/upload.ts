@@ -149,7 +149,7 @@ export const imageUpload = async (ctx: RunContext) => {
       image.urls.map(async upload => {
         // parse expiry timestamp
         const expiryTimestamp = new Date(upload.expiryTimestamp)
-        console.log(expiryTimestamp)
+        console.log(expiryTimestamp.getMilliseconds(), Date.now())
         // retry request while expiry time is not reached
         const res = await backOff(
           async () => {
