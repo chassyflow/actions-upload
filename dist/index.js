@@ -27674,6 +27674,7 @@ const archives_1 = __nccwpck_require__(6792);
 const checksum_1 = __nccwpck_require__(4596);
 const constants_1 = __nccwpck_require__(7242);
 const config_1 = __nccwpck_require__(2973);
+const stream_1 = __nccwpck_require__(2203);
 const uploadFile = (url) => async (path) => {
     const readStream = (0, fs_1.readFileSync)(path.fullpath());
     core.debug(`Uploading file: ${path.fullpath()}`);
@@ -27795,8 +27796,15 @@ const imageUpload = async (ctx) => {
     core.startGroup('Uploading files');
     // upload image using returned URL
     if ('urls' in image) {
-        const readStream = (0, fs_1.readFileSync)(path.fullpath());
+        const readStream = (0, fs_1.createReadStream)(path.fullpath(), {
+            highWaterMark: constants_1.MULTI_PART_CHUNK_SIZE
+        });
+        readStream.read(4);
         let start = constants_1.MULTI_PART_CHUNK_SIZE;
+        for await (const chunk of readStream) {
+            console.log(chunk);
+            break;
+        }
         const responses = await Promise.all(image.urls.map(async (upload) => {
             // parse expiry timestamp
             const expiryTimestamp = new Date(upload.expiryTimestamp);
@@ -27804,7 +27812,11 @@ const imageUpload = async (ctx) => {
             const res = await (0, exponential_backoff_1.backOff)(async () => {
                 const res = await fetch(upload.uploadURI, {
                     method: 'PUT',
-                    body: readStream.slice(start, start + constants_1.MULTI_PART_CHUNK_SIZE)
+                    headers: { 'Content-Type': 'binary/octet-stream' },
+                    body: stream_1.Readable.from((0, fs_1.createReadStream)(path.fullpath(), {
+                        start,
+                        end: start + constants_1.MULTI_PART_CHUNK_SIZE - 1
+                    }))
                 });
                 start += constants_1.MULTI_PART_CHUNK_SIZE;
                 if (!res.ok) {

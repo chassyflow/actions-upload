@@ -5,11 +5,12 @@ import { parse } from 'valibot'
 import { getActionRunURL, getBackendUrl } from './env'
 import { createImageSchema, CreatePackage, CreateImage } from './api'
 import { glob, Path } from 'glob'
-import { readFileSync, statSync } from 'fs'
+import { createReadStream, readFileSync, statSync } from 'fs'
 import { isArchive, zipBundle } from './archives'
 import { computeChecksum } from './checksum'
 import { BACKOFF_CONFIG, MULTI_PART_CHUNK_SIZE } from './constants'
 import { dbg, Partition, readPartitionConfig } from './config'
+import { Readable } from 'stream'
 
 const uploadFile = (url: string) => async (path: Path) => {
   const readStream = readFileSync(path.fullpath())
@@ -143,8 +144,15 @@ export const imageUpload = async (ctx: RunContext) => {
 
   // upload image using returned URL
   if ('urls' in image) {
-    const readStream = readFileSync(path.fullpath())
+    const readStream = createReadStream(path.fullpath(), {
+      highWaterMark: MULTI_PART_CHUNK_SIZE
+    })
+    readStream.read(4)
     let start = MULTI_PART_CHUNK_SIZE
+    for await (const chunk of readStream) {
+      console.log(chunk)
+      break
+    }
     const responses = await Promise.all(
       image.urls.map(async upload => {
         // parse expiry timestamp
@@ -154,7 +162,13 @@ export const imageUpload = async (ctx: RunContext) => {
           async () => {
             const res = await fetch(upload.uploadURI, {
               method: 'PUT',
-              body: readStream.slice(start, start + MULTI_PART_CHUNK_SIZE)
+              headers: { 'Content-Type': 'binary/octet-stream' },
+              body: Readable.from(
+                createReadStream(path.fullpath(), {
+                  start,
+                  end: start + MULTI_PART_CHUNK_SIZE - 1
+                })
+              ) as unknown as BodyInit
             })
             start += MULTI_PART_CHUNK_SIZE
             if (!res.ok) {
