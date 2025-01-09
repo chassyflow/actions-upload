@@ -159,6 +159,10 @@ export const imageUpload = async (ctx: RunContext) => {
         // retry request while expiry time is not reached
         const res = await backOff(
           async () => {
+            console.log(`attempting to upload part ${upload.partNumber}`)
+            if (Date.now() >= expiryTimestamp.getMilliseconds()) {
+              return { err: 'Upload expired', partNumber: upload.partNumber }
+            }
             const res = await fetch(upload.uploadURI, {
               method: 'PUT',
               body: Readable.from(
@@ -179,12 +183,18 @@ export const imageUpload = async (ctx: RunContext) => {
           },
           {
             ...BACKOFF_CONFIG,
-            numOfAttempts: 999,
-            retry: () => Date.now() < expiryTimestamp.getMilliseconds()
+            numOfAttempts: 999
           }
         )
         //res => res.ok,
         //() => Date.now() < upload.expiryTimestamp.getMilliseconds()
+        if ('err' in res) {
+          core.error(`Failed to upload file "${path.fullpath()}"`)
+          return {
+            err: `Failed to upload file "${path.fullpath()}" due to "${res.err}"`,
+            partNumber: upload.partNumber
+          }
+        }
         if (!res.ok) {
           core.error(`Failed to upload file "${path.fullpath()}"`)
           return {

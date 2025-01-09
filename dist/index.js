@@ -27809,6 +27809,10 @@ const imageUpload = async (ctx) => {
             const expiryTimestamp = new Date(upload.expiryTimestamp);
             // retry request while expiry time is not reached
             const res = await (0, exponential_backoff_1.backOff)(async () => {
+                console.log(`attempting to upload part ${upload.partNumber}`);
+                if (Date.now() >= expiryTimestamp.getMilliseconds()) {
+                    return { err: 'Upload expired', partNumber: upload.partNumber };
+                }
                 const res = await fetch(upload.uploadURI, {
                     method: 'PUT',
                     body: stream_1.Readable.from((0, fs_1.createReadStream)(path.fullpath(), {
@@ -27824,11 +27828,17 @@ const imageUpload = async (ctx) => {
                 return res;
             }, {
                 ...constants_1.BACKOFF_CONFIG,
-                numOfAttempts: 999,
-                retry: () => Date.now() < expiryTimestamp.getMilliseconds()
+                numOfAttempts: 999
             });
             //res => res.ok,
             //() => Date.now() < upload.expiryTimestamp.getMilliseconds()
+            if ('err' in res) {
+                core.error(`Failed to upload file "${path.fullpath()}"`);
+                return {
+                    err: `Failed to upload file "${path.fullpath()}" due to "${res.err}"`,
+                    partNumber: upload.partNumber
+                };
+            }
             if (!res.ok) {
                 core.error(`Failed to upload file "${path.fullpath()}"`);
                 return {
