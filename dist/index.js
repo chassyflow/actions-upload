@@ -27714,6 +27714,7 @@ const imageUpload = async (ctx) => {
                 .join(',')}`);
         // parse partitions file
         partitions = (0, config_1.readPartitionConfig)(partitionPaths[0]);
+        console.log(partitions);
     }
     const { rawDiskScheme, compressionScheme } = ctx.config;
     core.startGroup('Computing checksum');

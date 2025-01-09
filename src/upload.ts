@@ -61,6 +61,7 @@ export const imageUpload = async (ctx: RunContext) => {
       )
     // parse partitions file
     partitions = readPartitionConfig(partitionPaths[0])
+    console.log(partitions)
   }
 
   const { rawDiskScheme, compressionScheme } = ctx.config
