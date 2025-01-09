@@ -27800,6 +27800,8 @@ const imageUpload = async (ctx) => {
         const responses = await Promise.all(image.urls.map(async (upload) => {
             // parse expiry timestamp
             const expiryTimestamp = new Date(upload.expiryTimestamp);
+            console.log(expiryTimestamp);
+            console.log(expiryTimestamp.toLocaleDateString());
             console.log(expiryTimestamp.getMilliseconds(), Date.now());
             // retry request while expiry time is not reached
             const res = await (0, exponential_backoff_1.backOff)(async () => {
