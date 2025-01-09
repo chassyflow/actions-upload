@@ -147,7 +147,6 @@ export const imageUpload = async (ctx: RunContext) => {
     const readStream = createReadStream(path.fullpath(), {
       highWaterMark: MULTI_PART_CHUNK_SIZE
     })
-    readStream.read(4)
     let start = MULTI_PART_CHUNK_SIZE
     for await (const chunk of readStream) {
       console.log(chunk)
@@ -173,7 +172,9 @@ export const imageUpload = async (ctx: RunContext) => {
             } as RequestInit)
             start += MULTI_PART_CHUNK_SIZE
             if (!res.ok) {
-              throw new Error(`Failed to upload part "${upload.partNumber}"`)
+              throw new Error(
+                `Failed to upload part "${upload.partNumber}", "${await res.text()}"`
+              )
             }
             return res
           },

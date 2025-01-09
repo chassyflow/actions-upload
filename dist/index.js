@@ -27799,7 +27799,6 @@ const imageUpload = async (ctx) => {
         const readStream = (0, fs_1.createReadStream)(path.fullpath(), {
             highWaterMark: constants_1.MULTI_PART_CHUNK_SIZE
         });
-        readStream.read(4);
         let start = constants_1.MULTI_PART_CHUNK_SIZE;
         for await (const chunk of readStream) {
             console.log(chunk);
@@ -27821,7 +27820,7 @@ const imageUpload = async (ctx) => {
                 });
                 start += constants_1.MULTI_PART_CHUNK_SIZE;
                 if (!res.ok) {
-                    throw new Error(`Failed to upload part "${upload.partNumber}"`);
+                    throw new Error(`Failed to upload part "${upload.partNumber}", "${await res.text()}"`);
                 }
                 return res;
             }, {
