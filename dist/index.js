@@ -27796,17 +27796,11 @@ const imageUpload = async (ctx) => {
     core.startGroup('Uploading files');
     // upload image using returned URL
     if ('urls' in image) {
-        const readStream = (0, fs_1.createReadStream)(path.fullpath(), {
-            highWaterMark: constants_1.MULTI_PART_CHUNK_SIZE
-        });
         let start = constants_1.MULTI_PART_CHUNK_SIZE;
-        for await (const chunk of readStream) {
-            console.log(chunk);
-            break;
-        }
         const responses = await Promise.all(image.urls.map(async (upload) => {
             // parse expiry timestamp
             const expiryTimestamp = new Date(upload.expiryTimestamp);
+            console.log(expiryTimestamp);
             // retry request while expiry time is not reached
             const res = await (0, exponential_backoff_1.backOff)(async () => {
                 console.log(`attempting to upload part ${upload.partNumber}`);

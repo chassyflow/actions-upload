@@ -144,18 +144,12 @@ export const imageUpload = async (ctx: RunContext) => {
 
   // upload image using returned URL
   if ('urls' in image) {
-    const readStream = createReadStream(path.fullpath(), {
-      highWaterMark: MULTI_PART_CHUNK_SIZE
-    })
     let start = MULTI_PART_CHUNK_SIZE
-    for await (const chunk of readStream) {
-      console.log(chunk)
-      break
-    }
     const responses = await Promise.all(
       image.urls.map(async upload => {
         // parse expiry timestamp
         const expiryTimestamp = new Date(upload.expiryTimestamp)
+        console.log(expiryTimestamp)
         // retry request while expiry time is not reached
         const res = await backOff(
           async () => {
