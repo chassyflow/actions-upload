@@ -168,8 +168,9 @@ export const imageUpload = async (ctx: RunContext) => {
                   start,
                   end: start + MULTI_PART_CHUNK_SIZE - 1
                 })
-              ) as unknown as BodyInit
-            })
+              ) as unknown as BodyInit,
+              duplex: 'half'
+            } as RequestInit)
             start += MULTI_PART_CHUNK_SIZE
             if (!res.ok) {
               throw new Error(`Failed to upload part "${upload.partNumber}"`)

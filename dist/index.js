@@ -27816,7 +27816,8 @@ const imageUpload = async (ctx) => {
                     body: stream_1.Readable.from((0, fs_1.createReadStream)(path.fullpath(), {
                         start,
                         end: start + constants_1.MULTI_PART_CHUNK_SIZE - 1
-                    }))
+                    })),
+                    duplex: 'half'
                 });
                 start += constants_1.MULTI_PART_CHUNK_SIZE;
                 if (!res.ok) {
