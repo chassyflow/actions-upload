@@ -20,7 +20,7 @@ inputs:
     description: 'operating system version for compatibility tracking'
     required: true
   version:
-    description: 'version of package or image'
+    description: 'version of package (not image)'
     required: false
   type:
     description: 'what is the artifact type'

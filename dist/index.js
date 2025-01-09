@@ -27305,7 +27305,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.readPartitionConfig = exports.getConfig = exports.dbg = exports.configSchema = exports.baseSchema = void 0;
+exports.readPartitionConfig = exports.getConfig = exports.configSchema = exports.baseSchema = void 0;
 const v = __importStar(__nccwpck_require__(8275));
 const core = __importStar(__nccwpck_require__(7484));
 const fs_1 = __nccwpck_require__(9896);
@@ -27359,15 +27359,10 @@ exports.configSchema = v.intersect([
     exports.baseSchema,
     v.union([imageSchema, packageSchema], 'config must match image or package schema')
 ], 'malformed configuration');
-const dbg = (x) => {
-    console.debug(x);
-    return x;
-};
-exports.dbg = dbg;
 /**
  * Get configuration options for environment
  */
-const getConfig = () => v.parse(exports.configSchema, (0, exports.dbg)({
+const getConfig = () => v.parse(exports.configSchema, {
     name: core.getInput('name'),
     path: core.getInput('path'),
     compatibility: {
@@ -27381,12 +27376,12 @@ const getConfig = () => v.parse(exports.configSchema, (0, exports.dbg)({
     version: core.getInput('version'),
     type: core.getInput('type'),
     classification: core.getInput('classification')
-}));
+});
 exports.getConfig = getConfig;
 const readPartitionConfig = (path) => {
     const file = (0, fs_1.readFileSync)(path.fullpath());
     // parse partition file
-    return v.parse(v.array(imagePartitionSchema), (0, exports.dbg)(JSON.parse(file.toString())));
+    return v.parse(v.array(imagePartitionSchema), JSON.parse(file.toString()));
 };
 exports.readPartitionConfig = readPartitionConfig;
 
@@ -27768,7 +27763,7 @@ const imageUpload = async (ctx) => {
         }, constants_1.BACKOFF_CONFIG);
         if (!res.ok)
             throw new Error(`Failed to create image: status: ${res.statusText}, message: ${await res.text()}`);
-        image = (0, valibot_1.parse)(api_1.createImageSchema, (0, config_1.dbg)(await res.json()));
+        image = (0, valibot_1.parse)(api_1.createImageSchema, await res.json());
     }
     catch (e) {
         if (e instanceof Error) {
@@ -27779,22 +27774,15 @@ const imageUpload = async (ctx) => {
             throw e;
     }
     core.endGroup();
-    core.debug(`Created image: ${JSON.stringify(image)}`);
     core.info(`Image Id: ${image.image.id}`);
     core.startGroup('Uploading files');
     // upload image using returned URL
     if ('urls' in image) {
         let start = constants_1.MULTI_PART_CHUNK_SIZE;
         const responses = await Promise.all(image.urls.map(async (upload) => {
-            // parse expiry timestamp
             const expiryTimestamp = new Date(upload.expiryTimestamp);
-            console.log(expiryTimestamp);
-            console.log(new Date());
-            console.log(expiryTimestamp.toLocaleDateString());
-            console.log(expiryTimestamp.getMilliseconds(), Date.now());
             // retry request while expiry time is not reached
             const res = await (0, exponential_backoff_1.backOff)(async () => {
-                console.log(`attempting to upload part ${upload.partNumber}`);
                 if (new Date() >= expiryTimestamp) {
                     return { err: 'Upload expired', partNumber: upload.partNumber };
                 }
@@ -27809,7 +27797,6 @@ const imageUpload = async (ctx) => {
                 start += constants_1.MULTI_PART_CHUNK_SIZE;
                 if (!res.ok) {
                     const errMsg = `Failed to upload part "${upload.partNumber}", "${await res.text()}"`;
-                    console.log(errMsg);
                     throw new Error(errMsg);
                 }
                 return res;
@@ -27817,8 +27804,6 @@ const imageUpload = async (ctx) => {
                 ...constants_1.BACKOFF_CONFIG,
                 numOfAttempts: 999
             });
-            //res => res.ok,
-            //() => Date.now() < upload.expiryTimestamp.getMilliseconds()
             if ('err' in res) {
                 core.error(`Failed to upload file "${path.fullpath()}"`);
                 return {

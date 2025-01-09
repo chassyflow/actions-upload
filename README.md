@@ -47,14 +47,18 @@ If `CHASSY_TOKEN` isn't defined, the action will fail to execute the workflow.
 Each of these options can be used in the `with` section when you call this
 action.
 
-| Configuration    | Description                                          | Type     |
-| ---------------- | ---------------------------------------------------- | -------- |
-| `path`           | Fully qualified or glob path to file(s) for artifact | `string` |
-| `architecture`   | Architecture of image to be uploaded                 | `string` |
-| `os`             | operating system name for compatibility tracking     | `string` |
-| `os_version`     | operating system version for compatibility tracking  | `string` |
-| `type`           | what is the artifact type                            | `string` |
-| `classification` | for file and archives, what is the class of artifact | `string` |
+| Configuration        | Description                                          | Type     |
+| -------------------- | ---------------------------------------------------- | -------- |
+| `path`               | Fully qualified or glob path to file(s) for artifact | `string` |
+| `architecture`       | Architecture of image to be uploaded                 | `string` |
+| `os`                 | operating system name for compatibility tracking     | `string` |
+| `os_version`         | operating system version for compatibility tracking  | `string` |
+| `type`               | what is the artifact type                            | `string` |
+| `classification`     | for file and archives, what is the class of artifact | `string` |
+| `version`            | package version (not images)                         | `string` |
+| `partitions`         | path of partition spec (for images)                  | `string` |
+| `compression_scheme` | compression scheme for image                         | `string` |
+| `raw_disk_scheme`    | raw disk scheme for image                            | `string` |
 
 As of now, all of the configurations are required.
 
@@ -165,3 +169,51 @@ File and firmware artifacts support the following classifications:
 - `EXECUTABLE`
 - `CONFIG`
 - `DATA`
+
+### Partitions
+
+Partitions is a string pointing to a partition spec file. This is only used when
+uploading an image. This file can match glob patterns but should only match a
+single file. It is to be a JSON file of the structure below:
+
+```json
+[
+  {
+    "filesystemType": "ext4",
+    "mountPoint": "/",
+    "name": "root",
+    "size": "0G",
+    "startSector": 0,
+    "partitionType": "83"
+  }
+]
+```
+
+This array can have as many partitions as you'd like so long as they fit the
+structure. All of the fields are required.
+
+If you provide no partitions, an empty array will be assumed.
+
+### Compression Scheme
+
+Compression scheme is a string that specifies the compression scheme used for
+the image. The accepted values are:
+
+- `NONE`
+- `ZIP`
+- `TGZ`
+
+It's important to understand that specifying a compression scheme will not
+compress the image. It is simply a way to inform Chassy how the image was
+compressed beforehand. We do recommend compressing your images before uploading
+them because they can be quite large.
+
+Otherwise, the default value is `NONE`.
+
+### Raw Disk Scheme
+
+Raw disk scheme is a string that specifies the raw disk scheme used for the
+image. The accepted values are:
+
+- `IMG`
+- `ISO`

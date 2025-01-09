@@ -9,7 +9,7 @@ import { createReadStream, readFileSync, statSync } from 'fs'
 import { isArchive, zipBundle } from './archives'
 import { computeChecksum } from './checksum'
 import { BACKOFF_CONFIG, MULTI_PART_CHUNK_SIZE } from './constants'
-import { dbg, Partition, readPartitionConfig } from './config'
+import { Partition, readPartitionConfig } from './config'
 import { Readable } from 'stream'
 
 const uploadFile = (url: string) => async (path: Path) => {
@@ -128,7 +128,7 @@ export const imageUpload = async (ctx: RunContext) => {
       throw new Error(
         `Failed to create image: status: ${res.statusText}, message: ${await res.text()}`
       )
-    image = parse(createImageSchema, dbg(await res.json()))
+    image = parse(createImageSchema, await res.json())
   } catch (e: unknown) {
     if (e instanceof Error) {
       core.error(`Failed to create new image: ${e.message}`)
@@ -137,7 +137,6 @@ export const imageUpload = async (ctx: RunContext) => {
   }
   core.endGroup()
 
-  core.debug(`Created image: ${JSON.stringify(image)}`)
   core.info(`Image Id: ${image.image.id}`)
 
   core.startGroup('Uploading files')
@@ -147,16 +146,10 @@ export const imageUpload = async (ctx: RunContext) => {
     let start = MULTI_PART_CHUNK_SIZE
     const responses = await Promise.all(
       image.urls.map(async upload => {
-        // parse expiry timestamp
         const expiryTimestamp = new Date(upload.expiryTimestamp)
-        console.log(expiryTimestamp)
-        console.log(new Date())
-        console.log(expiryTimestamp.toLocaleDateString())
-        console.log(expiryTimestamp.getMilliseconds(), Date.now())
         // retry request while expiry time is not reached
         const res = await backOff(
           async () => {
-            console.log(`attempting to upload part ${upload.partNumber}`)
             if (new Date() >= expiryTimestamp) {
               return { err: 'Upload expired', partNumber: upload.partNumber }
             }
@@ -173,7 +166,6 @@ export const imageUpload = async (ctx: RunContext) => {
             start += MULTI_PART_CHUNK_SIZE
             if (!res.ok) {
               const errMsg = `Failed to upload part "${upload.partNumber}", "${await res.text()}"`
-              console.log(errMsg)
               throw new Error(errMsg)
             }
             return res
@@ -183,8 +175,6 @@ export const imageUpload = async (ctx: RunContext) => {
             numOfAttempts: 999
           }
         )
-        //res => res.ok,
-        //() => Date.now() < upload.expiryTimestamp.getMilliseconds()
         if ('err' in res) {
           core.error(`Failed to upload file "${path.fullpath()}"`)
           return {
