@@ -228,7 +228,8 @@ export const imageUpload = async (ctx: RunContext) => {
           }
         })
       })
-      if (!res.ok) throw new Error(`Failed to confirm upload`)
+      if (!res.ok)
+        throw new Error(`Failed to confirm upload: ${await res.text()}`)
       return res
     }, BACKOFF_CONFIG)
   } else {

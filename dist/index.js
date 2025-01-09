@@ -27874,7 +27874,7 @@ const imageUpload = async (ctx) => {
                 })
             });
             if (!res.ok)
-                throw new Error(`Failed to confirm upload`);
+                throw new Error(`Failed to confirm upload: ${await res.text()}`);
             return res;
         }, constants_1.BACKOFF_CONFIG);
     }
