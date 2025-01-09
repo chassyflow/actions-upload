@@ -171,9 +171,9 @@ export const imageUpload = async (ctx: RunContext) => {
             } as RequestInit)
             start += MULTI_PART_CHUNK_SIZE
             if (!res.ok) {
-              throw new Error(
-                `Failed to upload part "${upload.partNumber}", "${await res.text()}"`
-              )
+              const errMsg = `Failed to upload part "${upload.partNumber}", "${await res.text()}"`
+              console.log(errMsg)
+              throw new Error(errMsg)
             }
             return res
           },
