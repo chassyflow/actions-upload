@@ -27806,7 +27806,7 @@ const imageUpload = async (ctx) => {
             // retry request while expiry time is not reached
             const res = await (0, exponential_backoff_1.backOff)(async () => {
                 console.log(`attempting to upload part ${upload.partNumber}`);
-                if (Date.now() >= expiryTimestamp.getMilliseconds()) {
+                if (new Date() >= expiryTimestamp) {
                     return { err: 'Upload expired', partNumber: upload.partNumber };
                 }
                 const res = await fetch(upload.uploadURI, {
