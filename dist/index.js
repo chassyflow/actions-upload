@@ -27342,7 +27342,8 @@ const packageSchema = v.object({
         v.literal('CONFIG'),
         v.literal('DATA'),
         v.literal('BUNDLE')
-    ], 'classification must be EXECUTABLE, CONFIG, DATA, or BUNDLE')
+    ], 'classification must be EXECUTABLE, CONFIG, DATA, or BUNDLE'),
+    version: v.string('version must be string')
 });
 const compatibilitySchema = v.object({
     architecture: architectureSchema,
@@ -27352,25 +27353,12 @@ const compatibilitySchema = v.object({
 exports.baseSchema = v.object({
     name: v.pipe(v.string('name must be string'), v.minLength(1, 'name must be at least 1 character')),
     path: v.pipe(v.string('path must be string'), v.minLength(1, 'path must be at least 1 character')),
-    compatibility: compatibilitySchema,
-    version: v.string('version must be string')
+    compatibility: compatibilitySchema
 });
 exports.configSchema = v.intersect([
     exports.baseSchema,
     v.union([imageSchema, packageSchema], 'config must match image or package schema')
 ], 'malformed configuration');
-const parse = (cfg) => v.parse(exports.configSchema, cfg);
-parse({
-    name: 'ubuntu-24.04-6.6-mate-odroid-xu4-20240911',
-    path: 'src/images/ubuntu-24.04-6.6-mate-odroid-xu4-20240911.img.zip',
-    compatibility: { architecture: 'ARM64', os: 'ubuntu', version: '24.04' },
-    partitions: 'src/images/ubuntu-24.04-6.6-mate-odroid-xu4-20240911.partitions.json',
-    compressionScheme: 'ZIP',
-    rawDiskScheme: 'IMG',
-    version: '6.6',
-    type: 'IMAGE',
-    classification: 'RFSIMAGE'
-});
 const dbg = (x) => {
     console.debug(x);
     return x;

@@ -55,7 +55,6 @@ action.
 | `os_version`     | operating system version for compatibility tracking  | `string` |
 | `type`           | what is the artifact type                            | `string` |
 | `classification` | for file and archives, what is the class of artifact | `string` |
-| `version`        | package version                                      | `string` |
 
 As of now, all of the configurations are required.
 
