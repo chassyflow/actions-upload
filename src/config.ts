@@ -117,7 +117,7 @@ parse({
   classification: 'RFSIMAGE'
 })
 
-const dbg = <T>(x: T) => {
+export const dbg = <T>(x: T) => {
   console.debug(x)
   return x
 }

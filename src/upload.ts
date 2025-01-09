@@ -9,7 +9,7 @@ import { readFileSync, statSync } from 'fs'
 import { isArchive, zipBundle } from './archives'
 import { computeChecksum } from './checksum'
 import { BACKOFF_CONFIG, MULTI_PART_CHUNK_SIZE } from './constants'
-import { Partition, readPartitionConfig } from './config'
+import { dbg, Partition, readPartitionConfig } from './config'
 
 const uploadFile = (url: string) => async (path: Path) => {
   const readStream = readFileSync(path.fullpath())
@@ -127,7 +127,7 @@ export const imageUpload = async (ctx: RunContext) => {
       throw new Error(
         `Failed to create image: status: ${res.statusText}, message: ${await res.text()}`
       )
-    image = parse(createImageSchema, await res.json())
+    image = parse(createImageSchema, dbg(await res.json()))
   } catch (e: unknown) {
     if (e instanceof Error) {
       core.error(`Failed to create new image: ${e.message}`)

@@ -27305,7 +27305,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.readPartitionConfig = exports.getConfig = exports.configSchema = exports.baseSchema = void 0;
+exports.readPartitionConfig = exports.getConfig = exports.dbg = exports.configSchema = exports.baseSchema = void 0;
 const v = __importStar(__nccwpck_require__(8275));
 const core = __importStar(__nccwpck_require__(7484));
 const fs_1 = __nccwpck_require__(9896);
@@ -27375,10 +27375,11 @@ const dbg = (x) => {
     console.debug(x);
     return x;
 };
+exports.dbg = dbg;
 /**
  * Get configuration options for environment
  */
-const getConfig = () => v.parse(exports.configSchema, dbg({
+const getConfig = () => v.parse(exports.configSchema, (0, exports.dbg)({
     name: core.getInput('name'),
     path: core.getInput('path'),
     compatibility: {
@@ -27397,7 +27398,7 @@ exports.getConfig = getConfig;
 const readPartitionConfig = (path) => {
     const file = (0, fs_1.readFileSync)(path.fullpath());
     // parse partition file
-    return v.parse(v.array(imagePartitionSchema), dbg(JSON.parse(file.toString())));
+    return v.parse(v.array(imagePartitionSchema), (0, exports.dbg)(JSON.parse(file.toString())));
 };
 exports.readPartitionConfig = readPartitionConfig;
 
@@ -27778,7 +27779,7 @@ const imageUpload = async (ctx) => {
         }, constants_1.BACKOFF_CONFIG);
         if (!res.ok)
             throw new Error(`Failed to create image: status: ${res.statusText}, message: ${await res.text()}`);
-        image = (0, valibot_1.parse)(api_1.createImageSchema, await res.json());
+        image = (0, valibot_1.parse)(api_1.createImageSchema, (0, config_1.dbg)(await res.json()));
     }
     catch (e) {
         if (e instanceof Error) {
