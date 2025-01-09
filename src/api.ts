@@ -16,16 +16,19 @@ const imageSchema = v.object({
 export const createImageSchema = v.union([
   v.object({
     image: imageSchema,
-    uploadURI: v.string()
+    uploadURI: v.string('uploadURI must be string')
   }),
   v.object({
     image: imageSchema,
-    uploadId: v.string(),
+    uploadId: v.string('uploadId must be string'),
     urls: v.array(
       v.object({
-        uploadURI: v.string(),
-        expiryTimestamp: v.date(),
-        partNumber: v.pipe(v.number(), v.integer())
+        uploadURI: v.string('uploadURI must be string'),
+        expiryTimestamp: v.string('expiryTimestamp must be string'),
+        partNumber: v.pipe(
+          v.number('partNumber must be number'),
+          v.integer('partNumber must be integer')
+        )
       })
     )
   })

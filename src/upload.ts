@@ -147,6 +147,8 @@ export const imageUpload = async (ctx: RunContext) => {
     let start = MULTI_PART_CHUNK_SIZE
     const responses = await Promise.all(
       image.urls.map(async upload => {
+        // parse expiry timestamp
+        const expiryTimestamp = new Date(upload.expiryTimestamp)
         // retry request while expiry time is not reached
         const res = await backOff(
           async () => {
@@ -163,7 +165,7 @@ export const imageUpload = async (ctx: RunContext) => {
           {
             ...BACKOFF_CONFIG,
             numOfAttempts: 999,
-            retry: () => Date.now() < upload.expiryTimestamp.getMilliseconds()
+            retry: () => Date.now() < expiryTimestamp.getMilliseconds()
           }
         )
         //res => res.ok,

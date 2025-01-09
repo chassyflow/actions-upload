@@ -27147,15 +27147,15 @@ const imageSchema = v.object({
 exports.createImageSchema = v.union([
     v.object({
         image: imageSchema,
-        uploadURI: v.string()
+        uploadURI: v.string('uploadURI must be string')
     }),
     v.object({
         image: imageSchema,
-        uploadId: v.string(),
+        uploadId: v.string('uploadId must be string'),
         urls: v.array(v.object({
-            uploadURI: v.string(),
-            expiryTimestamp: v.date(),
-            partNumber: v.pipe(v.number(), v.integer())
+            uploadURI: v.string('uploadURI must be string'),
+            expiryTimestamp: v.string('expiryTimestamp must be string'),
+            partNumber: v.pipe(v.number('partNumber must be number'), v.integer('partNumber must be integer'))
         }))
     })
 ]);
@@ -27798,6 +27798,8 @@ const imageUpload = async (ctx) => {
         const readStream = (0, fs_1.readFileSync)(path.fullpath());
         let start = constants_1.MULTI_PART_CHUNK_SIZE;
         const responses = await Promise.all(image.urls.map(async (upload) => {
+            // parse expiry timestamp
+            const expiryTimestamp = new Date(upload.expiryTimestamp);
             // retry request while expiry time is not reached
             const res = await (0, exponential_backoff_1.backOff)(async () => {
                 const res = await fetch(upload.uploadURI, {
@@ -27812,7 +27814,7 @@ const imageUpload = async (ctx) => {
             }, {
                 ...constants_1.BACKOFF_CONFIG,
                 numOfAttempts: 999,
-                retry: () => Date.now() < upload.expiryTimestamp.getMilliseconds()
+                retry: () => Date.now() < expiryTimestamp.getMilliseconds()
             });
             //res => res.ok,
             //() => Date.now() < upload.expiryTimestamp.getMilliseconds()
