@@ -55,8 +55,8 @@ action.
 | `os_version`         | operating system version for compatibility tracking  | `string` |
 | `type`               | what is the artifact type                            | `string` |
 | `classification`     | for file and archives, what is the class of artifact | `string` |
-| `version`            | package version (not images)                         | `string` |
-| `partitions`         | path of partition spec (for images)                  | `string` |
+| `version`            | package version                                      | `string` |
+| `partitions`         | path of image partition spec                         | `string` |
 | `compression_scheme` | compression scheme for image                         | `string` |
 | `raw_disk_scheme`    | raw disk scheme for image                            | `string` |
 
