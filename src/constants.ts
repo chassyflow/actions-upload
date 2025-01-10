@@ -7,4 +7,5 @@ export const BACKOFF_CONFIG: BackoffOptions = {
   maxDelay: 45
 }
 
+// 4 GB
 export const MULTI_PART_CHUNK_SIZE = 4 * 1024 * 1024 * 1024
