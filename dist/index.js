@@ -27377,7 +27377,6 @@ const getConfig = () => {
             version: core.getInput('os_version')
         },
         partitions: nullIfEmpty(core.getInput('partitions')),
-        compressionScheme: nullIfEmpty(core.getInput('compression_scheme')),
         rawDiskScheme: core.getInput('raw_disk_scheme'),
         version: core.getInput('version'),
         type: core.getInput('type'),
