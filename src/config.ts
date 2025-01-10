@@ -20,7 +20,12 @@ const imagePartitionSchema = v.object({
   name: v.string('name must be string'),
   size: v.pipe(
     v.string('size must be provided as string'),
-    v.regex(/^\d+(\.\d+)?[mMgGbBkK]$/gm, 'Invalid size provided')
+    v.regex(/^\d+(\.\d+)?[mMgGbBkK]$/gm, 'Invalid size provided'),
+    v.check((e: string) => {
+      // check if number is greater than 0 (not including last unit char)
+      const num = parseFloat(e.slice(0, -1))
+      return num > 0
+    })
   ),
   startSector: v.pipe(
     v.number('startSector must be number'),
