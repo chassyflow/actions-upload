@@ -27309,6 +27309,7 @@ exports.readPartitionConfig = exports.getConfig = exports.configSchema = exports
 const v = __importStar(__nccwpck_require__(8275));
 const core = __importStar(__nccwpck_require__(7484));
 const fs_1 = __nccwpck_require__(9896);
+const nullIfEmpty = (value) => (value === '' ? null : value);
 const architectureSchema = v.union([
     v.literal('AMD64'),
     v.literal('ARM64'),
@@ -27362,21 +27363,23 @@ exports.configSchema = v.intersect([
 /**
  * Get configuration options for environment
  */
-const getConfig = () => v.parse(exports.configSchema, {
-    name: core.getInput('name'),
-    path: core.getInput('path'),
-    compatibility: {
-        architecture: core.getInput('architecture'),
-        os: core.getInput('os'),
-        version: core.getInput('os_version')
-    },
-    partitions: core.getInput('partitions'),
-    compressionScheme: core.getInput('compression_scheme'),
-    rawDiskScheme: core.getInput('raw_disk_scheme'),
-    version: core.getInput('version'),
-    type: core.getInput('type'),
-    classification: core.getInput('classification')
-});
+const getConfig = () => {
+    return v.parse(exports.configSchema, {
+        name: core.getInput('name'),
+        path: core.getInput('path'),
+        compatibility: {
+            architecture: core.getInput('architecture'),
+            os: core.getInput('os'),
+            version: core.getInput('os_version')
+        },
+        partitions: nullIfEmpty(core.getInput('partitions')),
+        compressionScheme: nullIfEmpty(core.getInput('compression_scheme')),
+        rawDiskScheme: core.getInput('raw_disk_scheme'),
+        version: core.getInput('version'),
+        type: core.getInput('type'),
+        classification: core.getInput('classification')
+    });
+};
 exports.getConfig = getConfig;
 const readPartitionConfig = (path) => {
     core.info('reading partition configurations');

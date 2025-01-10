@@ -3,6 +3,8 @@ import * as core from '@actions/core'
 import { readFileSync } from 'fs'
 import { Path } from 'glob'
 
+const nullIfEmpty = (value: string) => (value === '' ? null : value)
+
 const architectureSchema = v.union([
   v.literal('AMD64'),
   v.literal('ARM64'),
@@ -104,8 +106,8 @@ export type Config = v.InferOutput<typeof configSchema>
 /**
  * Get configuration options for environment
  */
-export const getConfig = () =>
-  v.parse(configSchema, {
+export const getConfig = () => {
+  return v.parse(configSchema, {
     name: core.getInput('name'),
     path: core.getInput('path'),
     compatibility: {
@@ -113,13 +115,14 @@ export const getConfig = () =>
       os: core.getInput('os'),
       version: core.getInput('os_version')
     },
-    partitions: core.getInput('partitions'),
-    compressionScheme: core.getInput('compression_scheme'),
+    partitions: nullIfEmpty(core.getInput('partitions')),
+    compressionScheme: nullIfEmpty(core.getInput('compression_scheme')),
     rawDiskScheme: core.getInput('raw_disk_scheme'),
     version: core.getInput('version'),
     type: core.getInput('type'),
     classification: core.getInput('classification')
   })
+}
 
 export const readPartitionConfig = (path: Path) => {
   core.info('reading partition configurations')
