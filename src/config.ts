@@ -122,6 +122,7 @@ export const getConfig = () =>
   })
 
 export const readPartitionConfig = (path: Path) => {
+  core.info('reading partition configurations')
   const file = readFileSync(path.fullpath())
   // parse partition file
   return v.parse(v.array(imagePartitionSchema), JSON.parse(file.toString()))

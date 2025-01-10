@@ -27379,6 +27379,7 @@ const getConfig = () => v.parse(exports.configSchema, {
 });
 exports.getConfig = getConfig;
 const readPartitionConfig = (path) => {
+    core.info('reading partition configurations');
     const file = (0, fs_1.readFileSync)(path.fullpath());
     // parse partition file
     return v.parse(v.array(imagePartitionSchema), JSON.parse(file.toString()));
@@ -27444,6 +27445,7 @@ const constants_1 = __nccwpck_require__(7242);
 const createRunContext = async () => {
     core.startGroup('Validating configuration');
     const config = (0, config_1.getConfig)();
+    console.log(config);
     core.endGroup();
     core.startGroup('Validating environment');
     const env = (0, env_1.getEnv)();
