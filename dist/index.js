@@ -27309,7 +27309,7 @@ exports.readPartitionConfig = exports.getConfig = exports.configSchema = exports
 const v = __importStar(__nccwpck_require__(8275));
 const core = __importStar(__nccwpck_require__(7484));
 const fs_1 = __nccwpck_require__(9896);
-const nullIfEmpty = (value) => (value === '' ? null : value);
+const undefinedIfEmpty = (value) => (value === '' ? undefined : value);
 const architectureSchema = v.union([
     v.literal('AMD64'),
     v.literal('ARM64'),
@@ -27376,7 +27376,8 @@ const getConfig = () => {
             os: core.getInput('os'),
             version: core.getInput('os_version')
         },
-        partitions: nullIfEmpty(core.getInput('partitions')),
+        partitions: undefinedIfEmpty(core.getInput('partitions')),
+        compressionScheme: undefinedIfEmpty(core.getInput('compression_scheme')),
         rawDiskScheme: core.getInput('raw_disk_scheme'),
         version: core.getInput('version'),
         type: core.getInput('type'),

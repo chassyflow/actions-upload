@@ -3,7 +3,7 @@ import * as core from '@actions/core'
 import { readFileSync } from 'fs'
 import { Path } from 'glob'
 
-const nullIfEmpty = (value: string) => (value === '' ? null : value)
+const undefinedIfEmpty = (value: string) => (value === '' ? undefined : value)
 
 const architectureSchema = v.union([
   v.literal('AMD64'),
@@ -122,7 +122,8 @@ export const getConfig = () => {
         os: core.getInput('os'),
         version: core.getInput('os_version')
       },
-      partitions: nullIfEmpty(core.getInput('partitions')),
+      partitions: undefinedIfEmpty(core.getInput('partitions')),
+      compressionScheme: undefinedIfEmpty(core.getInput('compression_scheme')),
       rawDiskScheme: core.getInput('raw_disk_scheme'),
       version: core.getInput('version'),
       type: core.getInput('type'),
