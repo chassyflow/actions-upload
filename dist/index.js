@@ -27326,7 +27326,7 @@ const imagePartitionSchema = v.object({
         // check if number is greater than 0 (not including last unit char)
         const num = parseFloat(e.slice(0, -1));
         return num > 0;
-    })),
+    }, 'size must exceed 0B')),
     startSector: v.pipe(v.number('startSector must be number'), v.integer('startSector must be integer'), v.minValue(0, 'startSector must be at least 0')),
     partitionType: v.string('partitionType must be string')
 });
