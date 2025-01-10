@@ -103,34 +103,25 @@ export const configSchema = v.intersect(
 )
 export type Config = v.InferOutput<typeof configSchema>
 
-const dbg = <T>(value: T) => {
-  console.log(value)
-  return value
-}
-
 /**
  * Get configuration options for environment
  */
-export const getConfig = () => {
-  return v.parse(
-    configSchema,
-    dbg({
-      name: core.getInput('name'),
-      path: core.getInput('path'),
-      compatibility: {
-        architecture: core.getInput('architecture'),
-        os: core.getInput('os'),
-        version: core.getInput('os_version')
-      },
-      partitions: undefinedIfEmpty(core.getInput('partitions')),
-      compressionScheme: undefinedIfEmpty(core.getInput('compression_scheme')),
-      rawDiskScheme: core.getInput('raw_disk_scheme'),
-      version: core.getInput('version'),
-      type: core.getInput('type'),
-      classification: core.getInput('classification')
-    })
-  )
-}
+export const getConfig = () =>
+  v.parse(configSchema, {
+    name: core.getInput('name'),
+    path: core.getInput('path'),
+    compatibility: {
+      architecture: core.getInput('architecture'),
+      os: core.getInput('os'),
+      version: core.getInput('os_version')
+    },
+    partitions: undefinedIfEmpty(core.getInput('partitions')),
+    compressionScheme: undefinedIfEmpty(core.getInput('compression_scheme')),
+    rawDiskScheme: core.getInput('raw_disk_scheme'),
+    version: core.getInput('version'),
+    type: core.getInput('type'),
+    classification: core.getInput('classification')
+  })
 
 export const readPartitionConfig = (path: Path) => {
   core.info('reading partition configurations')

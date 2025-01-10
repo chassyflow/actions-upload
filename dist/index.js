@@ -27360,30 +27360,24 @@ exports.configSchema = v.intersect([
     exports.baseSchema,
     v.union([imageSchema, packageSchema], 'config must match image or package schema')
 ], 'malformed configuration');
-const dbg = (value) => {
-    console.log(value);
-    return value;
-};
 /**
  * Get configuration options for environment
  */
-const getConfig = () => {
-    return v.parse(exports.configSchema, dbg({
-        name: core.getInput('name'),
-        path: core.getInput('path'),
-        compatibility: {
-            architecture: core.getInput('architecture'),
-            os: core.getInput('os'),
-            version: core.getInput('os_version')
-        },
-        partitions: undefinedIfEmpty(core.getInput('partitions')),
-        compressionScheme: undefinedIfEmpty(core.getInput('compression_scheme')),
-        rawDiskScheme: core.getInput('raw_disk_scheme'),
-        version: core.getInput('version'),
-        type: core.getInput('type'),
-        classification: core.getInput('classification')
-    }));
-};
+const getConfig = () => v.parse(exports.configSchema, {
+    name: core.getInput('name'),
+    path: core.getInput('path'),
+    compatibility: {
+        architecture: core.getInput('architecture'),
+        os: core.getInput('os'),
+        version: core.getInput('os_version')
+    },
+    partitions: undefinedIfEmpty(core.getInput('partitions')),
+    compressionScheme: undefinedIfEmpty(core.getInput('compression_scheme')),
+    rawDiskScheme: core.getInput('raw_disk_scheme'),
+    version: core.getInput('version'),
+    type: core.getInput('type'),
+    classification: core.getInput('classification')
+});
 exports.getConfig = getConfig;
 const readPartitionConfig = (path) => {
     core.info('reading partition configurations');
