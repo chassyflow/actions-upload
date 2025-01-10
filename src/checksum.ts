@@ -1,7 +1,7 @@
 import { createHash } from 'crypto'
 import { createReadStream } from 'fs'
 
-export const computeChecksum = (
+export const computeChecksum = async (
   path: string,
   algorithm: 'md5' | 'sha256'
 ): Promise<string> =>

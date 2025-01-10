@@ -27238,7 +27238,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.computeChecksum = void 0;
 const crypto_1 = __nccwpck_require__(6982);
 const fs_1 = __nccwpck_require__(9896);
-const computeChecksum = (path, algorithm) => new Promise((resolve, reject) => {
+const computeChecksum = async (path, algorithm) => new Promise((resolve, reject) => {
     const file = (0, fs_1.createReadStream)(path);
     switch (algorithm) {
         case 'md5': {
