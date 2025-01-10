@@ -27360,11 +27360,15 @@ exports.configSchema = v.intersect([
     exports.baseSchema,
     v.union([imageSchema, packageSchema], 'config must match image or package schema')
 ], 'malformed configuration');
+const dbg = (value) => {
+    console.log(value);
+    return value;
+};
 /**
  * Get configuration options for environment
  */
 const getConfig = () => {
-    return v.parse(exports.configSchema, {
+    return v.parse(exports.configSchema, dbg({
         name: core.getInput('name'),
         path: core.getInput('path'),
         compatibility: {
@@ -27378,7 +27382,7 @@ const getConfig = () => {
         version: core.getInput('version'),
         type: core.getInput('type'),
         classification: core.getInput('classification')
-    });
+    }));
 };
 exports.getConfig = getConfig;
 const readPartitionConfig = (path) => {
