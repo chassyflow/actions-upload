@@ -120,8 +120,8 @@ export const imageUpload = async (ctx: RunContext) => {
       } catch (e: unknown) {
         if (e instanceof Error) {
           core.error(`Failed to create new image: ${e.message}`)
-          throw e
-        } else throw e
+        }
+        throw e
       }
     }, BACKOFF_CONFIG)
     if (!res.ok)
@@ -132,8 +132,8 @@ export const imageUpload = async (ctx: RunContext) => {
   } catch (e: unknown) {
     if (e instanceof Error) {
       core.error(`Failed to create new image: ${e.message}`)
-      throw e
-    } else throw e
+    }
+    throw e
   }
   core.endGroup()
 
@@ -287,8 +287,8 @@ export const archiveUpload = async (ctx: RunContext) => {
   } catch (e: unknown) {
     if (e instanceof Error) {
       core.error(`Failed to create new archive: ${e.message}`)
-      throw e
-    } else throw e
+    }
+    throw e
   }
   core.endGroup()
 
@@ -372,8 +372,8 @@ export const packageUpload = async (ctx: RunContext) => {
   } catch (e: unknown) {
     if (e instanceof Error) {
       core.error(`Failed to create new package: ${e.message}`)
-      throw e
-    } else throw e
+    }
+    throw e
   }
   core.debug(`Created package: ${JSON.stringify(pkg)}`)
   core.info(`Package Id: ${pkg.package.id}`)
