@@ -1,5 +1,5 @@
-name: 'Package Upload'
-description: 'Uploads a package to Chassy Index'
+name: 'Chassy Upload'
+description: 'Uploads an artifact to Chassy Index'
 author: 'Chassy'
 
 inputs:
@@ -20,13 +20,22 @@ inputs:
     description: 'operating system version for compatibility tracking'
     required: true
   version:
-    description: 'version of package or image'
+    description: 'version of package (not image)'
     required: false
   type:
     description: 'what is the artifact type'
     required: true
   classification:
     description: 'for file and archives, what is the class of artifact'
+    required: false
+  partitions:
+    description: 'for images, specify path to JSON file with partition info'
+    required: false
+  compression_scheme:
+    description: 'for images, specify compression scheme (NONE, ZIP, TGZ)'
+    required: false
+  raw_disk_scheme:
+    description: 'for images, specify raw disk scheme (ISO, IMG)'
     required: false
 outputs:
   id:

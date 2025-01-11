@@ -27110,6 +27110,59 @@ module.exports = {
 
 /***/ }),
 
+/***/ 6879:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.createImageSchema = void 0;
+const v = __importStar(__nccwpck_require__(8275));
+const imageSchema = v.object({
+    id: v.string()
+});
+exports.createImageSchema = v.union([
+    v.object({
+        image: imageSchema,
+        uploadURI: v.string('uploadURI must be string')
+    }),
+    v.object({
+        image: imageSchema,
+        uploadId: v.string('uploadId must be string'),
+        urls: v.array(v.object({
+            uploadURI: v.string('uploadURI must be string'),
+            expiryTimestamp: v.string('expiryTimestamp must be string'),
+            partNumber: v.pipe(v.number('partNumber must be number'), v.integer('partNumber must be integer'))
+        }))
+    })
+]);
+
+
+/***/ }),
+
 /***/ 6792:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
@@ -27176,6 +27229,53 @@ exports.isArchive = isArchive;
 
 /***/ }),
 
+/***/ 4596:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.computeChecksum = void 0;
+const crypto_1 = __nccwpck_require__(6982);
+const fs_1 = __nccwpck_require__(9896);
+const computeChecksum = async (path, algorithm) => new Promise((resolve, reject) => {
+    const file = (0, fs_1.createReadStream)(path);
+    switch (algorithm) {
+        case 'md5': {
+            const hash = (0, crypto_1.createHash)('md5');
+            file.on('data', chunk => {
+                hash.update(chunk);
+            });
+            file.on('end', () => {
+                resolve(hash.digest('hex'));
+            });
+            file.on('error', () => {
+                reject(new Error('Failed to read file'));
+            });
+            break;
+        }
+        case 'sha256': {
+            const hash = (0, crypto_1.createHash)('sha256');
+            file.on('data', chunk => {
+                hash.update(chunk);
+            });
+            file.on('end', () => {
+                resolve(hash.digest('hex'));
+            });
+            file.on('error', () => {
+                reject(new Error('Failed to read file'));
+            });
+            break;
+        }
+        default:
+            reject(new Error('Invalid algorithm'));
+    }
+});
+exports.computeChecksum = computeChecksum;
+
+
+/***/ }),
+
 /***/ 2973:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
@@ -27205,10 +27305,11 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.getConfig = exports.configSchema = exports.baseSchema = void 0;
+exports.readPartitionConfig = exports.getConfig = exports.configSchema = exports.baseSchema = void 0;
 const v = __importStar(__nccwpck_require__(8275));
 const core = __importStar(__nccwpck_require__(7484));
-const errMsg = (property) => (e) => `${e.kind} error: ${property} expected (${e.expected}) and received (${e.received}), raw: ${JSON.stringify(e.input)}, ${e.message}`;
+const fs_1 = __nccwpck_require__(9896);
+const undefinedIfEmpty = (value) => (value === '' ? undefined : value);
 const architectureSchema = v.union([
     v.literal('AMD64'),
     v.literal('ARM64'),
@@ -27217,31 +27318,52 @@ const architectureSchema = v.union([
     v.literal('RISCV'),
     v.literal('UNKNOWN')
 ]);
-const imageSchema = v.object({
-    type: v.literal('IMAGE'),
-    classification: v.union([v.literal('RFSIMAGE'), v.literal('YOCTO')], errMsg('classification'))
+const imagePartitionSchema = v.object({
+    filesystemType: v.string('filesystemType must be string'),
+    mountPoint: v.string('mountPoint must be string'),
+    name: v.string('name must be string'),
+    size: v.pipe(v.string('size must be provided as string'), v.regex(/^\d+(\.\d+)?[mMgGbBkK]$/gm, 'Invalid size provided'), v.check((e) => {
+        // check if number is greater than 0 (not including last unit char)
+        const num = parseFloat(e.slice(0, -1));
+        return num > 0;
+    }, 'size must exceed 0B')),
+    startSector: v.pipe(v.number('startSector must be number'), v.integer('startSector must be integer'), v.minValue(0, 'startSector must be at least 0')),
+    partitionType: v.string('partitionType must be string')
 });
+const imageSchema = v.intersect([
+    v.object({
+        type: v.literal('IMAGE'),
+        classification: v.union([v.literal('RFSIMAGE'), v.literal('YOCTO')], 'classification must be RFSIMAGE or YOCTO'),
+        partitions: v.optional(v.string('partitions (path) must be string')),
+        compressionScheme: v.optional(v.union([v.literal('NONE'), v.literal('ZIP'), v.literal('TGZ')]), 'NONE'),
+        rawDiskScheme: v.union([v.literal('IMG'), v.literal('ISO')])
+    }, 'image malformed'),
+    v.union([v.object({})])
+]);
 const packageSchema = v.object({
-    type: v.union([v.literal('FILE'), v.literal('ARCHIVE'), v.literal('FIRMWARE')], errMsg('type')),
+    type: v.union([v.literal('FILE'), v.literal('ARCHIVE'), v.literal('FIRMWARE')], 'type must be FILE, ARCHIVE, or FIRMWARE'),
     classification: v.union([
         v.literal('EXECUTABLE'),
         v.literal('CONFIG'),
         v.literal('DATA'),
         v.literal('BUNDLE')
-    ], errMsg('classification')),
-    version: v.string(errMsg('version'))
+    ], 'classification must be EXECUTABLE, CONFIG, DATA, or BUNDLE'),
+    version: v.string('version must be string')
 });
 const compatibilitySchema = v.object({
     architecture: architectureSchema,
-    os: v.string(errMsg('os')),
-    version: v.string(errMsg('version'))
-}, errMsg('compatibility'));
+    os: v.string('os must be string'),
+    version: v.pipe(v.string('version must be string'), v.minLength(3, 'version must be at least 3 characters'))
+}, 'compatibility malformed, must have architecture, os, and version');
 exports.baseSchema = v.object({
-    name: v.pipe(v.string(errMsg('name')), v.minLength(1, errMsg('name'))),
-    path: v.pipe(v.string(errMsg('name')), v.minLength(1, errMsg('name'))),
+    name: v.pipe(v.string('name must be string'), v.minLength(1, 'name must be at least 1 character')),
+    path: v.pipe(v.string('path must be string'), v.minLength(1, 'path must be at least 1 character')),
     compatibility: compatibilitySchema
 });
-exports.configSchema = v.intersect([exports.baseSchema, v.union([imageSchema, packageSchema], errMsg('imageOrPackage'))], errMsg('config'));
+exports.configSchema = v.intersect([
+    exports.baseSchema,
+    v.union([imageSchema, packageSchema], 'config must match image or package schema')
+], 'malformed configuration');
 /**
  * Get configuration options for environment
  */
@@ -27253,11 +27375,21 @@ const getConfig = () => v.parse(exports.configSchema, {
         os: core.getInput('os'),
         version: core.getInput('os_version')
     },
+    partitions: undefinedIfEmpty(core.getInput('partitions')),
+    compressionScheme: undefinedIfEmpty(core.getInput('compression_scheme')),
+    rawDiskScheme: core.getInput('raw_disk_scheme'),
     version: core.getInput('version'),
     type: core.getInput('type'),
     classification: core.getInput('classification')
 });
 exports.getConfig = getConfig;
+const readPartitionConfig = (path) => {
+    core.info('reading partition configurations');
+    const file = (0, fs_1.readFileSync)(path.fullpath());
+    // parse partition file
+    return v.parse(v.array(imagePartitionSchema), JSON.parse(file.toString()));
+};
+exports.readPartitionConfig = readPartitionConfig;
 
 
 /***/ }),
@@ -27268,12 +27400,15 @@ exports.getConfig = getConfig;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.BACKOFF_CONFIG = void 0;
+exports.MULTI_PART_CHUNK_SIZE = exports.BACKOFF_CONFIG = void 0;
 exports.BACKOFF_CONFIG = {
     numOfAttempts: 6,
     timeMultiple: 2,
-    startingDelay: 2
+    startingDelay: 2,
+    maxDelay: 45
 };
+// 4 GB
+exports.MULTI_PART_CHUNK_SIZE = 4 * 1024 * 1024 * 1024;
 
 
 /***/ }),
@@ -27316,6 +27451,7 @@ const constants_1 = __nccwpck_require__(7242);
 const createRunContext = async () => {
     core.startGroup('Validating configuration');
     const config = (0, config_1.getConfig)();
+    console.log(config);
     core.endGroup();
     core.startGroup('Validating environment');
     const env = (0, env_1.getEnv)();
@@ -27519,10 +27655,17 @@ var __importStar = (this && this.__importStar) || function (mod) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.packageUpload = exports.archiveUpload = exports.imageUpload = void 0;
 const core = __importStar(__nccwpck_require__(7484));
+const exponential_backoff_1 = __nccwpck_require__(1675);
+const valibot_1 = __nccwpck_require__(8275);
 const env_1 = __nccwpck_require__(8204);
+const api_1 = __nccwpck_require__(6879);
 const glob_1 = __nccwpck_require__(1363);
 const fs_1 = __nccwpck_require__(9896);
 const archives_1 = __nccwpck_require__(6792);
+const checksum_1 = __nccwpck_require__(4596);
+const constants_1 = __nccwpck_require__(7242);
+const config_1 = __nccwpck_require__(2973);
+const stream_1 = __nccwpck_require__(2203);
 const uploadFile = (url) => async (path) => {
     const readStream = (0, fs_1.readFileSync)(path.fullpath());
     core.debug(`Uploading file: ${path.fullpath()}`);
@@ -27550,50 +27693,175 @@ const imageUpload = async (ctx) => {
         throw new Error(`Too many files found: ${paths.map(i => `"${i.fullpath()}"`).join(',')}`);
     else if (!path)
         throw new Error(`No files found in provided path: ${ctx.config.path}`);
-    // create image in Chassy Index
-    const createUrl = `${(0, env_1.getBackendUrl)(ctx.env).apiBaseUrl}/image`;
-    core.startGroup('Create Image in Chassy Index');
-    let image;
-    try {
-        const res = await fetch(createUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: ctx.authToken
-            },
-            body: JSON.stringify({
-                name: ctx.config.name,
-                type: ctx.config.classification,
-                compatibility: {
-                    versionID: ctx.config.compatibility.version,
-                    osID: ctx.config.compatibility.os,
-                    architecture: ctx.config.compatibility.architecture
-                },
-                provenanceURI: (0, env_1.getActionRunURL)()
-            })
+    // if partition configuration is provided, validate that it exists and is valid
+    let partitions = [];
+    if (ctx.config.partitions) {
+        const partitionPaths = await (0, glob_1.glob)(ctx.config.partitions, {
+            withFileTypes: true
         });
-        if (!res.ok)
-            throw new Error(`Failed to create image: status: ${res.statusText}, message: ${await res.text()}`);
-        image = (await res.json());
+        if (partitionPaths.length === 0)
+            throw new Error(`No partitions file found in provided path: ${ctx.config.partitions}`);
+        if (partitionPaths.length > 1)
+            throw new Error(`Too many partitions files found: ${partitionPaths
+                .map(i => `"${i.fullpath()}"`)
+                .join(',')}`);
+        // parse partitions file
+        partitions = (0, config_1.readPartitionConfig)(partitionPaths[0]);
+        console.log(partitions);
+    }
+    const { rawDiskScheme, compressionScheme } = ctx.config;
+    core.startGroup('Computing checksum');
+    let checksum;
+    try {
+        checksum = `md5:${await (0, checksum_1.computeChecksum)(path.fullpath(), 'md5')}`;
     }
     catch (e) {
         if (e instanceof Error) {
-            core.error(`Failed to create new image: ${e.message}`);
+            core.error(`Failed to compute checksum: ${e.message}`);
             throw e;
         }
         else
             throw e;
     }
     core.endGroup();
-    core.debug(`Created image: ${JSON.stringify(image)}`);
+    // create image in Chassy Index
+    const createUrl = `${(0, env_1.getBackendUrl)(ctx.env).apiBaseUrl}/image`;
+    core.startGroup('Create Image in Chassy Index');
+    let image;
+    try {
+        const res = await (0, exponential_backoff_1.backOff)(async () => {
+            try {
+                const res = await fetch(createUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: ctx.authToken
+                    },
+                    body: JSON.stringify({
+                        name: ctx.config.name,
+                        type: ctx.config.classification,
+                        compatibility: {
+                            versionID: ctx.config.compatibility.version,
+                            osID: ctx.config.compatibility.os,
+                            architecture: ctx.config.compatibility.architecture
+                        },
+                        provenanceURI: (0, env_1.getActionRunURL)(),
+                        partitions,
+                        storageFormat: {
+                            compressionScheme,
+                            rawDiskScheme
+                        },
+                        checksum,
+                        sizeInBytes: path.size
+                    })
+                });
+                if (!res.ok) {
+                    throw new Error(`Failed to create image: status: ${res.statusText}, message: ${await res.text()}`);
+                }
+                return res;
+            }
+            catch (e) {
+                if (e instanceof Error) {
+                    core.error(`Failed to create new image: ${e.message}`);
+                }
+                throw e;
+            }
+        }, constants_1.BACKOFF_CONFIG);
+        if (!res.ok)
+            throw new Error(`Failed to create image: status: ${res.statusText}, message: ${await res.text()}`);
+        image = (0, valibot_1.parse)(api_1.createImageSchema, await res.json());
+    }
+    catch (e) {
+        if (e instanceof Error) {
+            core.error(`Failed to create new image: ${e.message}`);
+        }
+        throw e;
+    }
+    core.endGroup();
     core.info(`Image Id: ${image.image.id}`);
-    // upload image using returned URL
-    const upload = uploadFile(image.uploadURI);
     core.startGroup('Uploading files');
-    const res = await upload(path);
-    if (!res.ok) {
-        core.error(`Failed to upload file "${path.fullpath()}"`);
-        throw new Error(`Failed to upload file "${path.fullpath()}"`);
+    // upload image using returned URL
+    if ('urls' in image) {
+        let start = constants_1.MULTI_PART_CHUNK_SIZE;
+        const responses = await Promise.all(image.urls.map(async (upload) => {
+            const expiryTimestamp = new Date(upload.expiryTimestamp);
+            // retry request while expiry time is not reached
+            const res = await (0, exponential_backoff_1.backOff)(async () => {
+                if (new Date() >= expiryTimestamp) {
+                    return { err: 'Upload expired', partNumber: upload.partNumber };
+                }
+                const res = await fetch(upload.uploadURI, {
+                    method: 'PUT',
+                    body: stream_1.Readable.from((0, fs_1.createReadStream)(path.fullpath(), {
+                        start,
+                        end: start + constants_1.MULTI_PART_CHUNK_SIZE - 1
+                    })),
+                    duplex: 'half'
+                });
+                start += constants_1.MULTI_PART_CHUNK_SIZE;
+                if (!res.ok) {
+                    const errMsg = `Failed to upload part "${upload.partNumber}", "${await res.text()}"`;
+                    throw new Error(errMsg);
+                }
+                return res;
+            }, {
+                ...constants_1.BACKOFF_CONFIG,
+                numOfAttempts: 999
+            });
+            if ('err' in res) {
+                core.error(`Failed to upload file "${path.fullpath()}"`);
+                return {
+                    err: `Failed to upload file "${path.fullpath()}" due to "${res.err}"`,
+                    partNumber: upload.partNumber
+                };
+            }
+            if (!res.ok) {
+                core.error(`Failed to upload file "${path.fullpath()}"`);
+                return {
+                    err: `Failed to upload file "${path.fullpath()}"`,
+                    partNumber: upload.partNumber
+                };
+            }
+            // etag header
+            return { etag: res.headers.get('ETag'), partNumber: upload.partNumber };
+        }));
+        const fails = responses.filter(r => r.err);
+        if (fails.length > 0) {
+            core.error('Failed to upload one or more files');
+            const errMsgs = fails.map(f => `[${f.err}]`);
+            throw new Error(`Failed to upload files: (${errMsgs.join(',')})`);
+        }
+        // send confirmations
+        await (0, exponential_backoff_1.backOff)(async () => {
+            const res = await fetch(`${(0, env_1.getBackendUrl)(ctx.env).apiBaseUrl}/image`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: ctx.authToken
+                },
+                body: JSON.stringify({
+                    id: image.image.id,
+                    confirmation: {
+                        uploadId: image.uploadId,
+                        etags: responses.map(r => ({
+                            partNumber: r.partNumber,
+                            etag: r.etag
+                        }))
+                    }
+                })
+            });
+            if (!res.ok)
+                throw new Error(`Failed to confirm upload: ${await res.text()}`);
+            return res;
+        }, constants_1.BACKOFF_CONFIG);
+    }
+    else {
+        const upload = uploadFile(image.uploadURI);
+        const res = await upload(path);
+        if (!res.ok) {
+            core.error(`Failed to upload file "${path.fullpath()}"`);
+            throw new Error(`Failed to upload file "${path.fullpath()}"`);
+        }
     }
     core.endGroup();
     return image.image;
@@ -27646,10 +27914,8 @@ const archiveUpload = async (ctx) => {
     catch (e) {
         if (e instanceof Error) {
             core.error(`Failed to create new archive: ${e.message}`);
-            throw e;
         }
-        else
-            throw e;
+        throw e;
     }
     core.endGroup();
     core.debug(`Created archive: ${JSON.stringify(pkg)}`);
@@ -27723,10 +27989,8 @@ const packageUpload = async (ctx) => {
     catch (e) {
         if (e instanceof Error) {
             core.error(`Failed to create new package: ${e.message}`);
-            throw e;
         }
-        else
-            throw e;
+        throw e;
     }
     core.debug(`Created package: ${JSON.stringify(pkg)}`);
     core.info(`Package Id: ${pkg.package.id}`);
