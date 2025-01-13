@@ -141,12 +141,19 @@ export const imageUpload = async (ctx: RunContext) => {
 
   core.startGroup('Uploading files')
 
+  const size = statSync(path.fullpath()).size
+
   // upload image using returned URL
   if ('urls' in image) {
-    let start = MULTI_PART_CHUNK_SIZE
+    let starter = 0
     const responses = await Promise.all(
       image.urls.map(async upload => {
+        const [start, end] = [
+          starter,
+          Math.min(starter + MULTI_PART_CHUNK_SIZE - 1, size - 1)
+        ]
         const expiryTimestamp = new Date(upload.expiryTimestamp)
+
         // retry request while expiry time is not reached
         const res = await backOff(
           async () => {
@@ -158,12 +165,11 @@ export const imageUpload = async (ctx: RunContext) => {
               body: Readable.from(
                 createReadStream(path.fullpath(), {
                   start,
-                  end: start + MULTI_PART_CHUNK_SIZE - 1
+                  end
                 })
               ) as unknown as BodyInit,
               duplex: 'half'
             } as RequestInit)
-            start += MULTI_PART_CHUNK_SIZE
             if (!res.ok) {
               const errMsg = `Failed to upload part "${upload.partNumber}", "${await res.text()}"`
               throw new Error(errMsg)
@@ -175,6 +181,7 @@ export const imageUpload = async (ctx: RunContext) => {
             numOfAttempts: 999
           }
         )
+        starter += MULTI_PART_CHUNK_SIZE
         if ('err' in res) {
           core.error(`Failed to upload file "${path.fullpath()}"`)
           return {

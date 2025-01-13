@@ -27780,10 +27780,15 @@ const imageUpload = async (ctx) => {
     core.endGroup();
     core.info(`Image Id: ${image.image.id}`);
     core.startGroup('Uploading files');
+    const size = (0, fs_1.statSync)(path.fullpath()).size;
     // upload image using returned URL
     if ('urls' in image) {
-        let start = constants_1.MULTI_PART_CHUNK_SIZE;
+        let starter = 0;
         const responses = await Promise.all(image.urls.map(async (upload) => {
+            const [start, end] = [
+                starter,
+                Math.min(starter + constants_1.MULTI_PART_CHUNK_SIZE - 1, size - 1)
+            ];
             const expiryTimestamp = new Date(upload.expiryTimestamp);
             // retry request while expiry time is not reached
             const res = await (0, exponential_backoff_1.backOff)(async () => {
@@ -27794,11 +27799,10 @@ const imageUpload = async (ctx) => {
                     method: 'PUT',
                     body: stream_1.Readable.from((0, fs_1.createReadStream)(path.fullpath(), {
                         start,
-                        end: start + constants_1.MULTI_PART_CHUNK_SIZE - 1
+                        end
                     })),
                     duplex: 'half'
                 });
-                start += constants_1.MULTI_PART_CHUNK_SIZE;
                 if (!res.ok) {
                     const errMsg = `Failed to upload part "${upload.partNumber}", "${await res.text()}"`;
                     throw new Error(errMsg);
@@ -27808,6 +27812,7 @@ const imageUpload = async (ctx) => {
                 ...constants_1.BACKOFF_CONFIG,
                 numOfAttempts: 999
             });
+            starter += constants_1.MULTI_PART_CHUNK_SIZE;
             if ('err' in res) {
                 core.error(`Failed to upload file "${path.fullpath()}"`);
                 return {
