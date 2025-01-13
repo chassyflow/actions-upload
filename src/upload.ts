@@ -158,6 +158,8 @@ export const imageUpload = async (ctx: RunContext) => {
         const res = await backOff(
           async () => {
             if (new Date() >= expiryTimestamp) {
+              console.log('NOW', new Date().toLocaleDateString())
+              console.log('EXPIRED', expiryTimestamp.toLocaleDateString())
               return { err: 'Upload expired', partNumber: upload.partNumber }
             }
             const res = await fetch(upload.uploadURI, {
