@@ -27669,6 +27669,7 @@ const readPortion = async (path, start, end) => new Promise(resolve => {
     const result = [];
     const stream = (0, fs_1.createReadStream)(path, { start, end });
     stream.on('data', data => {
+        console.log('READING DATA');
         if (typeof data === 'string') {
             data = Buffer.from(data);
         }

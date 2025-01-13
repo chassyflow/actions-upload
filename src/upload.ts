@@ -20,6 +20,7 @@ const readPortion = async (
     const result: Buffer[] = []
     const stream = createReadStream(path, { start, end })
     stream.on('data', data => {
+      console.log('READING DATA')
       if (typeof data === 'string') {
         data = Buffer.from(data)
       }
