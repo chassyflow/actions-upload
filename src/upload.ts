@@ -11,7 +11,7 @@ import { computeChecksum } from './checksum'
 import { BACKOFF_CONFIG, MULTI_PART_CHUNK_SIZE } from './constants'
 import { Partition, readPartitionConfig } from './config'
 
-const readPortion = (
+const readPortion = async (
   path: string,
   start: number,
   end: number

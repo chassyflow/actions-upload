@@ -27665,7 +27665,7 @@ const archives_1 = __nccwpck_require__(6792);
 const checksum_1 = __nccwpck_require__(4596);
 const constants_1 = __nccwpck_require__(7242);
 const config_1 = __nccwpck_require__(2973);
-const readPortion = (path, start, end) => new Promise(resolve => {
+const readPortion = async (path, start, end) => new Promise(resolve => {
     const result = [];
     const stream = (0, fs_1.createReadStream)(path, { start, end });
     stream.on('data', data => {
