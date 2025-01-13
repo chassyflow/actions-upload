@@ -27802,8 +27802,7 @@ const imageUpload = async (ctx) => {
                     body: stream_1.Readable.from((0, fs_1.createReadStream)(path.fullpath(), {
                         start,
                         end
-                    })),
-                    duplex: 'half'
+                    }))
                 });
                 if (!res.ok) {
                     const errMsg = `Failed to upload part "${upload.partNumber}", "${await res.text()}"`;
