@@ -164,7 +164,7 @@ export const imageUpload = async (ctx: RunContext) => {
 
   // upload image using returned URL
   if ('urls' in image) {
-    let starter = MULTI_PART_CHUNK_SIZE
+    let starter = 0
     const responses = await Promise.all(
       image.urls.map(async upload => {
         const start = starter
@@ -185,7 +185,6 @@ export const imageUpload = async (ctx: RunContext) => {
               method: 'PUT',
               body: chunk as unknown as BodyInit
             })
-            starter += MULTI_PART_CHUNK_SIZE
             if (!res.ok) {
               const errMsg = `Failed to upload part "${upload.partNumber}", "${await res.text()}"`
               throw new Error(errMsg)
@@ -197,6 +196,7 @@ export const imageUpload = async (ctx: RunContext) => {
             numOfAttempts: 999
           }
         )
+        starter += MULTI_PART_CHUNK_SIZE
         if ('err' in res) {
           core.error(`Failed to upload file "${path.fullpath()}"`)
           return {

@@ -27797,7 +27797,7 @@ const imageUpload = async (ctx) => {
     core.startGroup('Uploading files');
     // upload image using returned URL
     if ('urls' in image) {
-        let starter = constants_1.MULTI_PART_CHUNK_SIZE;
+        let starter = 0;
         const responses = await Promise.all(image.urls.map(async (upload) => {
             const start = starter;
             const expiryTimestamp = new Date(upload.expiryTimestamp);
@@ -27812,7 +27812,6 @@ const imageUpload = async (ctx) => {
                     method: 'PUT',
                     body: chunk
                 });
-                starter += constants_1.MULTI_PART_CHUNK_SIZE;
                 if (!res.ok) {
                     const errMsg = `Failed to upload part "${upload.partNumber}", "${await res.text()}"`;
                     throw new Error(errMsg);
@@ -27822,6 +27821,7 @@ const imageUpload = async (ctx) => {
                 ...constants_1.BACKOFF_CONFIG,
                 numOfAttempts: 999
             });
+            starter += constants_1.MULTI_PART_CHUNK_SIZE;
             if ('err' in res) {
                 core.error(`Failed to upload file "${path.fullpath()}"`);
                 return {
