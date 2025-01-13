@@ -27793,8 +27793,8 @@ const imageUpload = async (ctx) => {
             // retry request while expiry time is not reached
             const res = await (0, exponential_backoff_1.backOff)(async () => {
                 if (new Date() >= expiryTimestamp) {
-                    console.log('NOW', new Date().toLocaleDateString());
-                    console.log('EXPIRED', expiryTimestamp.toLocaleDateString());
+                    console.log('NOW', new Date().toString());
+                    console.log('EXPIRED', expiryTimestamp.toString());
                     return { err: 'Upload expired', partNumber: upload.partNumber };
                 }
                 const res = await fetch(upload.uploadURI, {
