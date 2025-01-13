@@ -178,7 +178,7 @@ export const imageUpload = async (ctx: RunContext) => {
             const chunk = await readPortion(
               path.fullpath(),
               start,
-              Math.min(start + MULTI_PART_CHUNK_SIZE - 1, size)
+              Math.min(start + MULTI_PART_CHUNK_SIZE - 1, size - 1)
             )
             console.debug('CHUNK LEN: ', chunk.length)
             const res = await fetch(upload.uploadURI, {
