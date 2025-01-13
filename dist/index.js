@@ -27802,9 +27802,11 @@ const imageUpload = async (ctx) => {
                 if (new Date() >= expiryTimestamp) {
                     return { err: 'Upload expired', partNumber: upload.partNumber };
                 }
+                const chunk = await readPortion(path.fullpath(), start, start + constants_1.MULTI_PART_CHUNK_SIZE - 1);
+                console.debug('CHUNK LEN: ', chunk.length);
                 const res = await fetch(upload.uploadURI, {
                     method: 'PUT',
-                    body: readPortion(path.fullpath(), start, start + constants_1.MULTI_PART_CHUNK_SIZE - 1)
+                    body: chunk
                 });
                 start += constants_1.MULTI_PART_CHUNK_SIZE;
                 if (!res.ok) {
