@@ -18,10 +18,12 @@ const readPortion = async (
 ): Promise<Buffer> => {
   const chunks: Buffer[] = []
   const stream = createReadStream(path, { start, end })
+  console.log('reading: ', stream.readableLength)
   for await (const chunk of stream) {
     console.log('READING CHUNK')
     chunks.push(chunk)
   }
+  console.log('amount of chunks: ', chunks.length)
   return Buffer.concat(chunks)
 }
 

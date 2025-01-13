@@ -27668,10 +27668,12 @@ const config_1 = __nccwpck_require__(2973);
 const readPortion = async (path, start, end) => {
     const chunks = [];
     const stream = (0, fs_1.createReadStream)(path, { start, end });
+    console.log('reading: ', stream.readableLength);
     for await (const chunk of stream) {
         console.log('READING CHUNK');
         chunks.push(chunk);
     }
+    console.log('amount of chunks: ', chunks.length);
     return Buffer.concat(chunks);
 };
 const uploadFile = (url) => async (path) => {
