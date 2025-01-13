@@ -27803,7 +27803,7 @@ const imageUpload = async (ctx) => {
                         start,
                         end
                     })),
-                    duplex: 'full'
+                    duplex: 'half'
                 });
                 if (!res.ok) {
                     const errMsg = `Failed to upload part "${upload.partNumber}", "${await res.text()}"`;
