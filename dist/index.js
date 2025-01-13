@@ -27723,7 +27723,7 @@ const imageUpload = async (ctx) => {
     try {
         checksum = `md5:${await (0, checksum_1.computeChecksum)(path.fullpath(), 'md5')}`;
         core.setOutput('imageChecksum', checksum);
-        console.debug('CHECKSUM: checksum');
+        console.debug('CHECKSUM ', checksum);
     }
     catch (e) {
         if (e instanceof Error) {
