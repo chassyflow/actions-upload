@@ -27665,20 +27665,14 @@ const archives_1 = __nccwpck_require__(6792);
 const checksum_1 = __nccwpck_require__(4596);
 const constants_1 = __nccwpck_require__(7242);
 const config_1 = __nccwpck_require__(2973);
-const readPortion = async (path, start, end) => new Promise(resolve => {
-    const result = [];
+const readPortion = async (path, start, end) => {
+    const chunks = [];
     const stream = (0, fs_1.createReadStream)(path, { start, end });
-    stream.on('data', data => {
-        console.log('READING DATA');
-        if (typeof data === 'string') {
-            data = Buffer.from(data);
-        }
-        result.push(data);
-    });
-    stream.on('end', () => {
-        resolve(Buffer.concat(result));
-    });
-});
+    for await (const chunk of stream) {
+        chunks.push(chunk);
+    }
+    return Buffer.concat(chunks);
+};
 const uploadFile = (url) => async (path) => {
     const readStream = (0, fs_1.readFileSync)(path.fullpath());
     core.debug(`Uploading file: ${path.fullpath()}`);
@@ -27727,6 +27721,8 @@ const imageUpload = async (ctx) => {
     let checksum;
     try {
         checksum = `md5:${await (0, checksum_1.computeChecksum)(path.fullpath(), 'md5')}`;
+        core.setOutput('imageChecksum', checksum);
+        console.debug('CHECKSUM: checksum');
     }
     catch (e) {
         if (e instanceof Error) {

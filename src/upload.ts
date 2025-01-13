@@ -15,21 +15,14 @@ const readPortion = async (
   path: string,
   start: number,
   end: number
-): Promise<Buffer> =>
-  new Promise(resolve => {
-    const result: Buffer[] = []
-    const stream = createReadStream(path, { start, end })
-    stream.on('data', data => {
-      console.log('READING DATA')
-      if (typeof data === 'string') {
-        data = Buffer.from(data)
-      }
-      result.push(data)
-    })
-    stream.on('end', () => {
-      resolve(Buffer.concat(result))
-    })
-  })
+): Promise<Buffer> => {
+  const chunks: Buffer[] = []
+  const stream = createReadStream(path, { start, end })
+  for await (const chunk of stream) {
+    chunks.push(chunk)
+  }
+  return Buffer.concat(chunks)
+}
 
 const uploadFile = (url: string) => async (path: Path) => {
   const readStream = readFileSync(path.fullpath())
@@ -90,6 +83,8 @@ export const imageUpload = async (ctx: RunContext) => {
   let checksum
   try {
     checksum = `md5:${await computeChecksum(path.fullpath(), 'md5')}`
+    core.setOutput('imageChecksum', checksum)
+    console.debug('CHECKSUM: checksum')
   } catch (e: unknown) {
     if (e instanceof Error) {
       core.error(`Failed to compute checksum: ${e.message}`)
