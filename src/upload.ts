@@ -19,6 +19,7 @@ const readPortion = async (
   const chunks: Buffer[] = []
   const stream = createReadStream(path, { start, end })
   for await (const chunk of stream) {
+    console.log('READING CHUNK')
     chunks.push(chunk)
   }
   return Buffer.concat(chunks)

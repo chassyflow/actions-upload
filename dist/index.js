@@ -27669,6 +27669,7 @@ const readPortion = async (path, start, end) => {
     const chunks = [];
     const stream = (0, fs_1.createReadStream)(path, { start, end });
     for await (const chunk of stream) {
+        console.log('READING CHUNK');
         chunks.push(chunk);
     }
     return Buffer.concat(chunks);
