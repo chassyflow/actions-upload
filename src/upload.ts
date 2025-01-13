@@ -5,7 +5,7 @@ import { parse } from 'valibot'
 import { getActionRunURL, getBackendUrl } from './env'
 import { createImageSchema, CreatePackage, CreateImage } from './api'
 import { glob, Path } from 'glob'
-import { createReadStream, readFileSync, statSync } from 'fs'
+import { createReadStream, readFileSync, statfsSync, statSync } from 'fs'
 import { isArchive, zipBundle } from './archives'
 import { computeChecksum } from './checksum'
 import { BACKOFF_CONFIG, MULTI_PART_CHUNK_SIZE } from './constants'
@@ -157,14 +157,17 @@ export const imageUpload = async (ctx: RunContext) => {
 
   core.info(`Image Id: ${image.image.id}`)
 
+  // file size
+  const size = statSync(path.fullpath()).size
+
   core.startGroup('Uploading files')
 
   // upload image using returned URL
   if ('urls' in image) {
-    let start = MULTI_PART_CHUNK_SIZE
+    let starter = MULTI_PART_CHUNK_SIZE
     const responses = await Promise.all(
       image.urls.map(async upload => {
-        console.log('START NOW: ', start)
+        const start = starter
         const expiryTimestamp = new Date(upload.expiryTimestamp)
         // retry request while expiry time is not reached
         const res = await backOff(
@@ -175,14 +178,14 @@ export const imageUpload = async (ctx: RunContext) => {
             const chunk = await readPortion(
               path.fullpath(),
               start,
-              start + MULTI_PART_CHUNK_SIZE - 1
+              Math.min(start + MULTI_PART_CHUNK_SIZE - 1, size)
             )
             console.debug('CHUNK LEN: ', chunk.length)
             const res = await fetch(upload.uploadURI, {
               method: 'PUT',
               body: chunk as unknown as BodyInit
             })
-            start += MULTI_PART_CHUNK_SIZE
+            starter += MULTI_PART_CHUNK_SIZE
             if (!res.ok) {
               const errMsg = `Failed to upload part "${upload.partNumber}", "${await res.text()}"`
               throw new Error(errMsg)

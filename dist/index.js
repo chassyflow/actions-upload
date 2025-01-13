@@ -27792,25 +27792,27 @@ const imageUpload = async (ctx) => {
     }
     core.endGroup();
     core.info(`Image Id: ${image.image.id}`);
+    // file size
+    const size = (0, fs_1.statSync)(path.fullpath()).size;
     core.startGroup('Uploading files');
     // upload image using returned URL
     if ('urls' in image) {
-        let start = constants_1.MULTI_PART_CHUNK_SIZE;
+        let starter = constants_1.MULTI_PART_CHUNK_SIZE;
         const responses = await Promise.all(image.urls.map(async (upload) => {
-            console.log('START NOW: ', start);
+            const start = starter;
             const expiryTimestamp = new Date(upload.expiryTimestamp);
             // retry request while expiry time is not reached
             const res = await (0, exponential_backoff_1.backOff)(async () => {
                 if (new Date() >= expiryTimestamp) {
                     return { err: 'Upload expired', partNumber: upload.partNumber };
                 }
-                const chunk = await readPortion(path.fullpath(), start, start + constants_1.MULTI_PART_CHUNK_SIZE - 1);
+                const chunk = await readPortion(path.fullpath(), start, Math.min(start + constants_1.MULTI_PART_CHUNK_SIZE - 1, size));
                 console.debug('CHUNK LEN: ', chunk.length);
                 const res = await fetch(upload.uploadURI, {
                     method: 'PUT',
                     body: chunk
                 });
-                start += constants_1.MULTI_PART_CHUNK_SIZE;
+                starter += constants_1.MULTI_PART_CHUNK_SIZE;
                 if (!res.ok) {
                     const errMsg = `Failed to upload part "${upload.partNumber}", "${await res.text()}"`;
                     throw new Error(errMsg);
