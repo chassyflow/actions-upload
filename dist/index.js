@@ -27665,7 +27665,19 @@ const archives_1 = __nccwpck_require__(6792);
 const checksum_1 = __nccwpck_require__(4596);
 const constants_1 = __nccwpck_require__(7242);
 const config_1 = __nccwpck_require__(2973);
-const stream_1 = __nccwpck_require__(2203);
+const readPortion = (path, start, end) => new Promise(resolve => {
+    const result = [];
+    const stream = (0, fs_1.createReadStream)(path, { start, end });
+    stream.on('data', data => {
+        if (typeof data === 'string') {
+            data = Buffer.from(data);
+        }
+        result.push(data);
+    });
+    stream.on('end', () => {
+        resolve(Buffer.concat(result));
+    });
+});
 const uploadFile = (url) => async (path) => {
     const readStream = (0, fs_1.readFileSync)(path.fullpath());
     core.debug(`Uploading file: ${path.fullpath()}`);
@@ -27792,11 +27804,7 @@ const imageUpload = async (ctx) => {
                 }
                 const res = await fetch(upload.uploadURI, {
                     method: 'PUT',
-                    body: stream_1.Readable.from((0, fs_1.createReadStream)(path.fullpath(), {
-                        start,
-                        end: start + constants_1.MULTI_PART_CHUNK_SIZE - 1
-                    })),
-                    duplex: 'half'
+                    body: readPortion(path.fullpath(), start, start + constants_1.MULTI_PART_CHUNK_SIZE - 1)
                 });
                 start += constants_1.MULTI_PART_CHUNK_SIZE;
                 if (!res.ok) {

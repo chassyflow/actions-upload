@@ -10,7 +10,25 @@ import { isArchive, zipBundle } from './archives'
 import { computeChecksum } from './checksum'
 import { BACKOFF_CONFIG, MULTI_PART_CHUNK_SIZE } from './constants'
 import { Partition, readPartitionConfig } from './config'
-import { Readable } from 'stream'
+
+const readPortion = (
+  path: string,
+  start: number,
+  end: number
+): Promise<Buffer> =>
+  new Promise(resolve => {
+    const result: Buffer[] = []
+    const stream = createReadStream(path, { start, end })
+    stream.on('data', data => {
+      if (typeof data === 'string') {
+        data = Buffer.from(data)
+      }
+      result.push(data)
+    })
+    stream.on('end', () => {
+      resolve(Buffer.concat(result))
+    })
+  })
 
 const uploadFile = (url: string) => async (path: Path) => {
   const readStream = readFileSync(path.fullpath())
@@ -155,14 +173,12 @@ export const imageUpload = async (ctx: RunContext) => {
             }
             const res = await fetch(upload.uploadURI, {
               method: 'PUT',
-              body: Readable.from(
-                createReadStream(path.fullpath(), {
-                  start,
-                  end: start + MULTI_PART_CHUNK_SIZE - 1
-                })
-              ) as unknown as BodyInit,
-              duplex: 'half'
-            } as RequestInit)
+              body: readPortion(
+                path.fullpath(),
+                start,
+                start + MULTI_PART_CHUNK_SIZE - 1
+              ) as unknown as BodyInit
+            })
             start += MULTI_PART_CHUNK_SIZE
             if (!res.ok) {
               const errMsg = `Failed to upload part "${upload.partNumber}", "${await res.text()}"`
