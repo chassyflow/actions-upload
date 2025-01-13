@@ -164,6 +164,7 @@ export const imageUpload = async (ctx: RunContext) => {
     let start = MULTI_PART_CHUNK_SIZE
     const responses = await Promise.all(
       image.urls.map(async upload => {
+        console.log('START NOW: ', start)
         const expiryTimestamp = new Date(upload.expiryTimestamp)
         // retry request while expiry time is not reached
         const res = await backOff(

@@ -27797,6 +27797,7 @@ const imageUpload = async (ctx) => {
     if ('urls' in image) {
         let start = constants_1.MULTI_PART_CHUNK_SIZE;
         const responses = await Promise.all(image.urls.map(async (upload) => {
+            console.log('START NOW: ', start);
             const expiryTimestamp = new Date(upload.expiryTimestamp);
             // retry request while expiry time is not reached
             const res = await (0, exponential_backoff_1.backOff)(async () => {
