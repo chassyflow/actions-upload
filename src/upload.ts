@@ -16,6 +16,7 @@ const readPortion = async (
   start: number,
   end: number
 ): Promise<Buffer> => {
+  console.log('reading portion: ', start, end)
   const chunks: Buffer[] = []
   const stream = createReadStream(path, { start, end })
   console.log('reading: ', stream.readableLength)
