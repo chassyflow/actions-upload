@@ -169,7 +169,8 @@ export const imageUpload = async (ctx: RunContext) => {
                   start,
                   end
                 })
-              ) as unknown as BodyInit
+              ) as unknown as BodyInit,
+              duplex: 'full'
             } as RequestInit)
             if (!res.ok) {
               const errMsg = `Failed to upload part "${upload.partNumber}", "${await res.text()}"`
