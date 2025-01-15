@@ -27784,10 +27784,8 @@ const imageUpload = async (ctx) => {
     if ('urls' in image) {
         let starter = 0;
         const responses = await Promise.all(image.urls.map(async (upload) => {
-            const [start, end] = [
-                starter,
-                Math.min(starter + constants_1.MULTI_PART_CHUNK_SIZE - 1, size - 1)
-            ];
+            const start = starter;
+            const end = Math.min(start + constants_1.MULTI_PART_CHUNK_SIZE - 1, size - 1);
             starter += constants_1.MULTI_PART_CHUNK_SIZE;
             const expiryTimestamp = new Date(upload.expiryTimestamp);
             console.log(`Reading, START: ${start}, END: ${end}`);

@@ -148,10 +148,8 @@ export const imageUpload = async (ctx: RunContext) => {
     let starter = 0
     const responses = await Promise.all(
       image.urls.map(async upload => {
-        const [start, end] = [
-          starter,
-          Math.min(starter + MULTI_PART_CHUNK_SIZE - 1, size - 1)
-        ]
+        const start = starter
+        const end = Math.min(start + MULTI_PART_CHUNK_SIZE - 1, size - 1)
         starter += MULTI_PART_CHUNK_SIZE
         const expiryTimestamp = new Date(upload.expiryTimestamp)
         console.log(`Reading, START: ${start}, END: ${end}`)
