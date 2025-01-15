@@ -27407,8 +27407,8 @@ exports.BACKOFF_CONFIG = {
     startingDelay: 2,
     maxDelay: 45
 };
-// 4 GB
-exports.MULTI_PART_CHUNK_SIZE = 4 * 1024 * 1024 * 1024;
+// 500 MB
+exports.MULTI_PART_CHUNK_SIZE = 500 * 1024 * 1024;
 
 
 /***/ }),
