@@ -27789,11 +27789,14 @@ const imageUpload = async (ctx) => {
                 Math.min(starter + constants_1.MULTI_PART_CHUNK_SIZE - 1, size - 1)
             ];
             const expiryTimestamp = new Date(upload.expiryTimestamp);
+            console.log(`Reading, START: ${start}, END: ${end}`);
             const data = [];
             const fileStream = (0, fs_1.createReadStream)(path.fullpath(), { start, end });
             for await (const chunk of fileStream) {
                 data.push(chunk);
             }
+            console.log(`Done Reading, START: ${start}, END: ${end}`);
+            const body = Buffer.concat(data);
             // retry request while expiry time is not reached
             const res = await (0, exponential_backoff_1.backOff)(async () => {
                 if (new Date() >= expiryTimestamp) {
@@ -27803,7 +27806,7 @@ const imageUpload = async (ctx) => {
                 }
                 const res = await fetch(upload.uploadURI, {
                     method: 'PUT',
-                    body: data
+                    body
                 });
                 if (!res.ok) {
                     const errMsg = `Failed to upload part "${upload.partNumber}", "${await res.text()}"`;
