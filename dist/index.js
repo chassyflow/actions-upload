@@ -27652,27 +27652,32 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.packageUpload = exports.archiveUpload = exports.imageUpload = void 0;
 const core = __importStar(__nccwpck_require__(7484));
+const os_1 = __importDefault(__nccwpck_require__(857));
+const path_1 = __nccwpck_require__(6928);
 const exponential_backoff_1 = __nccwpck_require__(1675);
 const valibot_1 = __nccwpck_require__(8275);
 const env_1 = __nccwpck_require__(8204);
 const api_1 = __nccwpck_require__(6879);
 const glob_1 = __nccwpck_require__(1363);
-const fs_1 = __nccwpck_require__(9896);
+const fs_1 = __importDefault(__nccwpck_require__(9896));
 const archives_1 = __nccwpck_require__(6792);
 const checksum_1 = __nccwpck_require__(4596);
 const constants_1 = __nccwpck_require__(7242);
 const config_1 = __nccwpck_require__(2973);
 const uploadFile = (url) => async (path) => {
-    const readStream = (0, fs_1.readFileSync)(path.fullpath());
+    const readStream = fs_1.default.readFileSync(path.fullpath());
     core.debug(`Uploading file: ${path.fullpath()}`);
     return fetch(url, {
         method: 'PUT',
         headers: {
             'Content-Type': 'application/octet-stream',
-            'Content-Length': (0, fs_1.statSync)(path.fullpath()).size.toString()
+            'Content-Length': fs_1.default.statSync(path.fullpath()).size.toString()
         },
         body: readStream
     });
@@ -27779,23 +27784,27 @@ const imageUpload = async (ctx) => {
     core.endGroup();
     core.info(`Image Id: ${image.image.id}`);
     core.startGroup('Uploading files');
-    const size = (0, fs_1.statSync)(path.fullpath()).size;
+    const size = fs_1.default.statSync(path.fullpath()).size;
     // upload image using returned URL
     if ('urls' in image) {
-        let starter = 0;
-        const responses = await Promise.all(image.urls.map(async (upload) => {
-            const start = starter;
+        // create chunks in temporary directory
+        core.info('Chunking data');
+        const tempDir = fs_1.default.mkdtempSync((0, path_1.join)(os_1.default.tmpdir(), 'chassy-upload-'));
+        let start = 0;
+        const files = [];
+        for (let i = 0; i < image.urls.length; i++) {
             const end = Math.min(start + constants_1.MULTI_PART_CHUNK_SIZE - 1, size - 1);
-            starter += constants_1.MULTI_PART_CHUNK_SIZE;
+            const tempFilePath = (0, path_1.join)(tempDir, `chunk-${i}`);
+            files.push(tempFilePath);
+            const fileStream = fs_1.default.createReadStream(path.fullpath(), { start, end });
+            await fs_1.default.promises.writeFile(tempFilePath, fileStream);
+            start += constants_1.MULTI_PART_CHUNK_SIZE;
+        }
+        core.info('Finished chunking data');
+        let pathIdx = 0;
+        const responses = await Promise.all(image.urls.map(async (upload) => {
             const expiryTimestamp = new Date(upload.expiryTimestamp);
-            console.log(`Reading, START: ${start}, END: ${end}`);
-            const data = [];
-            const fileStream = (0, fs_1.createReadStream)(path.fullpath(), { start, end });
-            for await (const chunk of fileStream) {
-                data.push(chunk);
-            }
-            console.log(`Done Reading, START: ${start}, END: ${end}`);
-            const body = Buffer.concat(data);
+            const body = fs_1.default.readFileSync(files[pathIdx++]);
             // retry request while expiry time is not reached
             const res = await (0, exponential_backoff_1.backOff)(async () => {
                 if (new Date() >= expiryTimestamp) {
@@ -27834,6 +27843,7 @@ const imageUpload = async (ctx) => {
             // etag header
             return { etag: res.headers.get('ETag'), partNumber: upload.partNumber };
         }));
+        fs_1.default.rmSync(tempDir, { recursive: true });
         console.log('uploaded');
         const fails = responses.filter(r => r.err);
         if (fails.length > 0) {
