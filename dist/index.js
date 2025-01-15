@@ -27869,9 +27869,9 @@ const imageUpload = async (ctx) => {
                     id: image.image.id,
                     confirmation: {
                         uploadId: image.uploadId,
-                        etags: responses.map(r => ({
+                        eTags: responses.map(r => ({
                             partNumber: r.partNumber,
-                            etag: r.etag
+                            eTag: r.etag
                         }))
                     }
                 }))

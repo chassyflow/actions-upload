@@ -236,9 +236,9 @@ export const imageUpload = async (ctx: RunContext) => {
             id: image.image.id,
             confirmation: {
               uploadId: image.uploadId,
-              etags: responses.map(r => ({
+              eTags: responses.map(r => ({
                 partNumber: r.partNumber,
-                etag: r.etag
+                eTag: r.etag
               }))
             }
           })
