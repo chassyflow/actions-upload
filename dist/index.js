@@ -27834,6 +27834,7 @@ const imageUpload = async (ctx) => {
             // etag header
             return { etag: res.headers.get('ETag'), partNumber: upload.partNumber };
         }));
+        console.log('uploaded');
         const fails = responses.filter(r => r.err);
         if (fails.length > 0) {
             core.error('Failed to upload one or more files');
