@@ -27788,6 +27788,7 @@ const imageUpload = async (ctx) => {
                 starter,
                 Math.min(starter + constants_1.MULTI_PART_CHUNK_SIZE - 1, size - 1)
             ];
+            starter += constants_1.MULTI_PART_CHUNK_SIZE;
             const expiryTimestamp = new Date(upload.expiryTimestamp);
             console.log(`Reading, START: ${start}, END: ${end}`);
             const data = [];
@@ -27818,7 +27819,6 @@ const imageUpload = async (ctx) => {
                 ...constants_1.BACKOFF_CONFIG,
                 numOfAttempts: 999
             });
-            starter += constants_1.MULTI_PART_CHUNK_SIZE;
             if ('err' in res) {
                 core.error(`Failed to upload file "${path.fullpath()}"`);
                 return {

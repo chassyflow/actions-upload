@@ -152,6 +152,7 @@ export const imageUpload = async (ctx: RunContext) => {
           starter,
           Math.min(starter + MULTI_PART_CHUNK_SIZE - 1, size - 1)
         ]
+        starter += MULTI_PART_CHUNK_SIZE
         const expiryTimestamp = new Date(upload.expiryTimestamp)
         console.log(`Reading, START: ${start}, END: ${end}`)
         const data: Buffer[] = []
@@ -186,7 +187,6 @@ export const imageUpload = async (ctx: RunContext) => {
             numOfAttempts: 999
           }
         )
-        starter += MULTI_PART_CHUNK_SIZE
         if ('err' in res) {
           core.error(`Failed to upload file "${path.fullpath()}"`)
           return {
