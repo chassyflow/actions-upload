@@ -222,8 +222,8 @@ export const imageUpload = async (ctx: RunContext) => {
       throw new Error(`Failed to upload files: (${errMsgs.join(',')})`)
     }
     // send confirmations
+    console.debug('confirming', image)
     await backOff(async () => {
-      console.debug('confirming', image)
       const res = await fetch(`${getBackendUrl(ctx.env).apiBaseUrl}/image`, {
         method: 'PUT',
         headers: {

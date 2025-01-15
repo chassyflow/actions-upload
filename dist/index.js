@@ -27856,8 +27856,8 @@ const imageUpload = async (ctx) => {
             throw new Error(`Failed to upload files: (${errMsgs.join(',')})`);
         }
         // send confirmations
+        console.debug('confirming', image);
         await (0, exponential_backoff_1.backOff)(async () => {
-            console.debug('confirming', image);
             const res = await fetch(`${(0, env_1.getBackendUrl)(ctx.env).apiBaseUrl}/image`, {
                 method: 'PUT',
                 headers: {
