@@ -27665,7 +27665,6 @@ const archives_1 = __nccwpck_require__(6792);
 const checksum_1 = __nccwpck_require__(4596);
 const constants_1 = __nccwpck_require__(7242);
 const config_1 = __nccwpck_require__(2973);
-const stream_1 = __nccwpck_require__(2203);
 const uploadFile = (url) => async (path) => {
     const readStream = (0, fs_1.readFileSync)(path.fullpath());
     core.debug(`Uploading file: ${path.fullpath()}`);
@@ -27790,6 +27789,11 @@ const imageUpload = async (ctx) => {
                 Math.min(starter + constants_1.MULTI_PART_CHUNK_SIZE - 1, size - 1)
             ];
             const expiryTimestamp = new Date(upload.expiryTimestamp);
+            const data = [];
+            const fileStream = (0, fs_1.createReadStream)(path.fullpath(), { start, end });
+            for await (const chunk of fileStream) {
+                data.push(chunk);
+            }
             // retry request while expiry time is not reached
             const res = await (0, exponential_backoff_1.backOff)(async () => {
                 if (new Date() >= expiryTimestamp) {
@@ -27799,11 +27803,7 @@ const imageUpload = async (ctx) => {
                 }
                 const res = await fetch(upload.uploadURI, {
                     method: 'PUT',
-                    body: stream_1.Readable.from((0, fs_1.createReadStream)(path.fullpath(), {
-                        start,
-                        end
-                    })),
-                    duplex: 'half'
+                    body: data
                 });
                 if (!res.ok) {
                     const errMsg = `Failed to upload part "${upload.partNumber}", "${await res.text()}"`;
