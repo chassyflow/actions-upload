@@ -27670,6 +27670,10 @@ const archives_1 = __nccwpck_require__(6792);
 const checksum_1 = __nccwpck_require__(4596);
 const constants_1 = __nccwpck_require__(7242);
 const config_1 = __nccwpck_require__(2973);
+const dbg = (a) => {
+    console.debug(a);
+    return a;
+};
 const uploadFile = (url) => async (path) => {
     const readStream = fs_1.default.readFileSync(path.fullpath());
     core.debug(`Uploading file: ${path.fullpath()}`);
@@ -27853,13 +27857,14 @@ const imageUpload = async (ctx) => {
         }
         // send confirmations
         await (0, exponential_backoff_1.backOff)(async () => {
+            console.debug('confirming', image);
             const res = await fetch(`${(0, env_1.getBackendUrl)(ctx.env).apiBaseUrl}/image`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
                     Authorization: ctx.authToken
                 },
-                body: JSON.stringify({
+                body: dbg(JSON.stringify({
                     id: image.image.id,
                     confirmation: {
                         uploadId: image.uploadId,
@@ -27868,7 +27873,7 @@ const imageUpload = async (ctx) => {
                             etag: r.etag
                         }))
                     }
-                })
+                }))
             });
             if (!res.ok)
                 throw new Error(`Failed to confirm upload: ${await res.text()}`);

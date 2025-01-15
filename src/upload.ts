@@ -13,6 +13,11 @@ import { computeChecksum } from './checksum'
 import { BACKOFF_CONFIG, MULTI_PART_CHUNK_SIZE } from './constants'
 import { Partition, readPartitionConfig } from './config'
 
+const dbg = <T>(a: T) => {
+  console.debug(a)
+  return a
+}
+
 const uploadFile = (url: string) => async (path: Path) => {
   const readStream = fs.readFileSync(path.fullpath())
 
@@ -218,22 +223,25 @@ export const imageUpload = async (ctx: RunContext) => {
     }
     // send confirmations
     await backOff(async () => {
+      console.debug('confirming', image)
       const res = await fetch(`${getBackendUrl(ctx.env).apiBaseUrl}/image`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           Authorization: ctx.authToken
         },
-        body: JSON.stringify({
-          id: image.image.id,
-          confirmation: {
-            uploadId: image.uploadId,
-            etags: responses.map(r => ({
-              partNumber: r.partNumber,
-              etag: r.etag
-            }))
-          }
-        })
+        body: dbg(
+          JSON.stringify({
+            id: image.image.id,
+            confirmation: {
+              uploadId: image.uploadId,
+              etags: responses.map(r => ({
+                partNumber: r.partNumber,
+                etag: r.etag
+              }))
+            }
+          })
+        )
       })
       if (!res.ok)
         throw new Error(`Failed to confirm upload: ${await res.text()}`)
