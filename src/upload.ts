@@ -213,6 +213,7 @@ export const imageUpload = async (ctx: RunContext) => {
         return { etag: res.headers.get('ETag'), partNumber: upload.partNumber }
       })
     )
+    console.log(responses)
     fs.rmSync(tempDir, { recursive: true })
     console.log('uploaded')
     const fails = responses.filter(r => r.err)

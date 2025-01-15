@@ -27847,6 +27847,7 @@ const imageUpload = async (ctx) => {
             // etag header
             return { etag: res.headers.get('ETag'), partNumber: upload.partNumber };
         }));
+        console.log(responses);
         fs_1.default.rmSync(tempDir, { recursive: true });
         console.log('uploaded');
         const fails = responses.filter(r => r.err);
