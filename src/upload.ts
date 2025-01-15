@@ -169,6 +169,9 @@ export const imageUpload = async (ctx: RunContext) => {
     const responses = await Promise.all(
       image.urls.map(async upload => {
         const expiryTimestamp = new Date(upload.expiryTimestamp)
+        console.log(
+          `Uploading part ${upload.partNumber}, size: ${fs.statSync(files[pathIdx]).size}`
+        )
         const body = fs.readFileSync(files[pathIdx++])
 
         // retry request while expiry time is not reached
@@ -231,18 +234,16 @@ export const imageUpload = async (ctx: RunContext) => {
           'Content-Type': 'application/json',
           Authorization: ctx.authToken
         },
-        body: dbg(
-          JSON.stringify({
-            id: image.image.id,
-            confirmation: {
-              uploadId: image.uploadId,
-              eTags: responses.map(r => ({
-                partNumber: r.partNumber,
-                eTag: r.etag
-              }))
-            }
-          })
-        )
+        body: JSON.stringify({
+          id: image.image.id,
+          confirmation: {
+            uploadId: image.uploadId,
+            eTags: responses.map(r => ({
+              partNumber: r.partNumber,
+              eTag: r.etag
+            }))
+          }
+        })
       })
       if (!res.ok)
         throw new Error(`Failed to confirm upload: ${await res.text()}`)

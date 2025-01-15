@@ -27808,6 +27808,7 @@ const imageUpload = async (ctx) => {
         let pathIdx = 0;
         const responses = await Promise.all(image.urls.map(async (upload) => {
             const expiryTimestamp = new Date(upload.expiryTimestamp);
+            console.log(`Uploading part ${upload.partNumber}, size: ${fs_1.default.statSync(files[pathIdx]).size}`);
             const body = fs_1.default.readFileSync(files[pathIdx++]);
             // retry request while expiry time is not reached
             const res = await (0, exponential_backoff_1.backOff)(async () => {
@@ -27865,7 +27866,7 @@ const imageUpload = async (ctx) => {
                     'Content-Type': 'application/json',
                     Authorization: ctx.authToken
                 },
-                body: dbg(JSON.stringify({
+                body: JSON.stringify({
                     id: image.image.id,
                     confirmation: {
                         uploadId: image.uploadId,
@@ -27874,7 +27875,7 @@ const imageUpload = async (ctx) => {
                             eTag: r.etag
                         }))
                     }
-                }))
+                })
             });
             if (!res.ok)
                 throw new Error(`Failed to confirm upload: ${await res.text()}`);
