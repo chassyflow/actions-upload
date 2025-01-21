@@ -27599,6 +27599,7 @@ async function run() {
     try {
         // get context
         const ctx = await (0, context_1.createRunContext)();
+        core.debug(`Config: ${JSON.stringify(ctx, null, 2)}`);
         let output;
         if (ctx.config.type === 'IMAGE') {
             output = await (0, upload_1.imageUpload)(ctx);
@@ -27710,6 +27711,7 @@ const imageUpload = async (ctx) => {
                 .join(',')}`);
         // parse partitions file
         partitions = (0, config_1.readPartitionConfig)(partitionPaths[0]);
+        core.debug(`Partitions: ${JSON.stringify(partitions, null, 2)}`);
     }
     const { rawDiskScheme, compressionScheme } = ctx.config;
     core.startGroup('Computing checksum');
@@ -27726,8 +27728,10 @@ const imageUpload = async (ctx) => {
             throw e;
     }
     core.endGroup();
+    core.debug(`Checksum: ${checksum}`);
     // create image in Chassy Index
     const createUrl = `${(0, env_1.getBackendUrl)(ctx.env).apiBaseUrl}/image`;
+    core.debug(`CreateURL: ${createUrl}`);
     core.startGroup('Create Image in Chassy Index');
     let image;
     try {
@@ -27932,7 +27936,7 @@ const archiveUpload = async (ctx) => {
         throw e;
     }
     core.endGroup();
-    core.debug(`Created archive: ${JSON.stringify(pkg)}`);
+    core.debug(`Created archive: ${JSON.stringify(pkg, null, 2)}`);
     core.info(`Package Id: ${pkg.package.id}`);
     // upload image using returned URL
     const upload = uploadFile(pkg.uploadURI);
@@ -28006,7 +28010,7 @@ const packageUpload = async (ctx) => {
         }
         throw e;
     }
-    core.debug(`Created package: ${JSON.stringify(pkg)}`);
+    core.debug(`Created package: ${JSON.stringify(pkg, null, 2)}`);
     core.info(`Package Id: ${pkg.package.id}`);
     // upload image using returned URL
     const upload = uploadFile(pkg.uploadURI);

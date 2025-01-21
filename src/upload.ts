@@ -63,6 +63,7 @@ export const imageUpload = async (ctx: RunContext) => {
       )
     // parse partitions file
     partitions = readPartitionConfig(partitionPaths[0])
+    core.debug(`Partitions: ${JSON.stringify(partitions, null, 2)}`)
   }
 
   const { rawDiskScheme, compressionScheme } = ctx.config
@@ -78,9 +79,11 @@ export const imageUpload = async (ctx: RunContext) => {
     } else throw e
   }
   core.endGroup()
+  core.debug(`Checksum: ${checksum}`)
 
   // create image in Chassy Index
   const createUrl = `${getBackendUrl(ctx.env).apiBaseUrl}/image`
+  core.debug(`CreateURL: ${createUrl}`)
 
   core.startGroup('Create Image in Chassy Index')
   let image: CreateImage
@@ -304,7 +307,7 @@ export const archiveUpload = async (ctx: RunContext) => {
   }
   core.endGroup()
 
-  core.debug(`Created archive: ${JSON.stringify(pkg)}`)
+  core.debug(`Created archive: ${JSON.stringify(pkg, null, 2)}`)
   core.info(`Package Id: ${pkg.package.id}`)
 
   // upload image using returned URL
@@ -387,7 +390,7 @@ export const packageUpload = async (ctx: RunContext) => {
     }
     throw e
   }
-  core.debug(`Created package: ${JSON.stringify(pkg)}`)
+  core.debug(`Created package: ${JSON.stringify(pkg, null, 2)}`)
   core.info(`Package Id: ${pkg.package.id}`)
 
   // upload image using returned URL

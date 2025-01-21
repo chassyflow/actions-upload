@@ -12,6 +12,7 @@ export async function run(): Promise<void> {
   try {
     // get context
     const ctx = await createRunContext()
+    core.debug(`Config: ${JSON.stringify(ctx, null, 2)}`)
 
     let output: Image | Package
     if (ctx.config.type === 'IMAGE') {
