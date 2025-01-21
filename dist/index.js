@@ -27451,7 +27451,6 @@ const constants_1 = __nccwpck_require__(7242);
 const createRunContext = async () => {
     core.startGroup('Validating configuration');
     const config = (0, config_1.getConfig)();
-    console.log(config);
     core.endGroup();
     core.startGroup('Validating environment');
     const env = (0, env_1.getEnv)();
@@ -27670,10 +27669,6 @@ const archives_1 = __nccwpck_require__(6792);
 const checksum_1 = __nccwpck_require__(4596);
 const constants_1 = __nccwpck_require__(7242);
 const config_1 = __nccwpck_require__(2973);
-const dbg = (a) => {
-    console.debug(a);
-    return a;
-};
 const uploadFile = (url) => async (path) => {
     const readStream = fs_1.default.readFileSync(path.fullpath());
     core.debug(`Uploading file: ${path.fullpath()}`);
@@ -27715,7 +27710,6 @@ const imageUpload = async (ctx) => {
                 .join(',')}`);
         // parse partitions file
         partitions = (0, config_1.readPartitionConfig)(partitionPaths[0]);
-        console.log(partitions);
     }
     const { rawDiskScheme, compressionScheme } = ctx.config;
     core.startGroup('Computing checksum');
@@ -27808,13 +27802,10 @@ const imageUpload = async (ctx) => {
         let pathIdx = 0;
         const responses = await Promise.all(image.urls.map(async (upload) => {
             const expiryTimestamp = new Date(upload.expiryTimestamp);
-            console.log(`Uploading part ${upload.partNumber}, size: ${fs_1.default.statSync(files[pathIdx]).size}`);
             const body = fs_1.default.readFileSync(files[pathIdx++]);
             // retry request while expiry time is not reached
             const res = await (0, exponential_backoff_1.backOff)(async () => {
                 if (new Date() >= expiryTimestamp) {
-                    console.log('NOW', new Date().toString());
-                    console.log('EXPIRED', expiryTimestamp.toString());
                     return { err: 'Upload expired', partNumber: upload.partNumber };
                 }
                 const res = await fetch(upload.uploadURI, {
@@ -27823,7 +27814,6 @@ const imageUpload = async (ctx) => {
                 });
                 if (!res.ok) {
                     const errMsg = `Failed to upload part "${upload.partNumber}", "${await res.text()}"`;
-                    console.debug(errMsg);
                     throw new Error(errMsg);
                 }
                 return res;
@@ -27848,9 +27838,7 @@ const imageUpload = async (ctx) => {
             // etag header
             return { etag: res.headers.get('ETag'), partNumber: upload.partNumber };
         }));
-        console.log(responses);
         fs_1.default.rmSync(tempDir, { recursive: true });
-        console.log('uploaded');
         const fails = responses.filter(r => r.err);
         if (fails.length > 0) {
             core.error('Failed to upload one or more files');
@@ -27858,7 +27846,6 @@ const imageUpload = async (ctx) => {
             throw new Error(`Failed to upload files: (${errMsgs.join(',')})`);
         }
         // send confirmations
-        console.debug('confirming', image);
         await (0, exponential_backoff_1.backOff)(async () => {
             const res = await fetch(`${(0, env_1.getBackendUrl)(ctx.env).apiBaseUrl}/image`, {
                 method: 'PUT',

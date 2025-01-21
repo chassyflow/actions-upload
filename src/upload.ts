@@ -13,11 +13,6 @@ import { computeChecksum } from './checksum'
 import { BACKOFF_CONFIG, MULTI_PART_CHUNK_SIZE } from './constants'
 import { Partition, readPartitionConfig } from './config'
 
-const dbg = <T>(a: T) => {
-  console.debug(a)
-  return a
-}
-
 const uploadFile = (url: string) => async (path: Path) => {
   const readStream = fs.readFileSync(path.fullpath())
 
@@ -68,7 +63,6 @@ export const imageUpload = async (ctx: RunContext) => {
       )
     // parse partitions file
     partitions = readPartitionConfig(partitionPaths[0])
-    console.log(partitions)
   }
 
   const { rawDiskScheme, compressionScheme } = ctx.config
@@ -169,17 +163,12 @@ export const imageUpload = async (ctx: RunContext) => {
     const responses = await Promise.all(
       image.urls.map(async upload => {
         const expiryTimestamp = new Date(upload.expiryTimestamp)
-        console.log(
-          `Uploading part ${upload.partNumber}, size: ${fs.statSync(files[pathIdx]).size}`
-        )
         const body = fs.readFileSync(files[pathIdx++])
 
         // retry request while expiry time is not reached
         const res = await backOff(
           async () => {
             if (new Date() >= expiryTimestamp) {
-              console.log('NOW', new Date().toString())
-              console.log('EXPIRED', expiryTimestamp.toString())
               return { err: 'Upload expired', partNumber: upload.partNumber }
             }
             const res = await fetch(upload.uploadURI, {
@@ -188,7 +177,6 @@ export const imageUpload = async (ctx: RunContext) => {
             } as unknown as RequestInit)
             if (!res.ok) {
               const errMsg = `Failed to upload part "${upload.partNumber}", "${await res.text()}"`
-              console.debug(errMsg)
               throw new Error(errMsg)
             }
             return res
@@ -216,9 +204,7 @@ export const imageUpload = async (ctx: RunContext) => {
         return { etag: res.headers.get('ETag'), partNumber: upload.partNumber }
       })
     )
-    console.log(responses)
     fs.rmSync(tempDir, { recursive: true })
-    console.log('uploaded')
     const fails = responses.filter(r => r.err)
     if (fails.length > 0) {
       core.error('Failed to upload one or more files')
@@ -226,7 +212,6 @@ export const imageUpload = async (ctx: RunContext) => {
       throw new Error(`Failed to upload files: (${errMsgs.join(',')})`)
     }
     // send confirmations
-    console.debug('confirming', image)
     await backOff(async () => {
       const res = await fetch(`${getBackendUrl(ctx.env).apiBaseUrl}/image`, {
         method: 'PUT',
