@@ -1,19 +1,20 @@
 import { RunContext } from './context'
 import * as core from '@actions/core'
+import os from 'os'
+import { join } from 'path'
 import { backOff } from 'exponential-backoff'
 import { parse } from 'valibot'
 import { getActionRunURL, getBackendUrl } from './env'
 import { createImageSchema, CreatePackage, CreateImage } from './api'
 import { glob, Path } from 'glob'
-import { createReadStream, readFileSync, statSync } from 'fs'
+import fs from 'fs'
 import { isArchive, zipBundle } from './archives'
 import { computeChecksum } from './checksum'
 import { BACKOFF_CONFIG, MULTI_PART_CHUNK_SIZE } from './constants'
 import { Partition, readPartitionConfig } from './config'
-import { Readable } from 'stream'
 
 const uploadFile = (url: string) => async (path: Path) => {
-  const readStream = readFileSync(path.fullpath())
+  const readStream = fs.readFileSync(path.fullpath())
 
   core.debug(`Uploading file: ${path.fullpath()}`)
 
@@ -21,7 +22,7 @@ const uploadFile = (url: string) => async (path: Path) => {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/octet-stream',
-      'Content-Length': statSync(path.fullpath()).size.toString()
+      'Content-Length': fs.statSync(path.fullpath()).size.toString()
     },
     body: readStream
   })
@@ -62,7 +63,7 @@ export const imageUpload = async (ctx: RunContext) => {
       )
     // parse partitions file
     partitions = readPartitionConfig(partitionPaths[0])
-    console.log(partitions)
+    core.debug(`Partitions: ${JSON.stringify(partitions, null, 2)}`)
   }
 
   const { rawDiskScheme, compressionScheme } = ctx.config
@@ -78,9 +79,11 @@ export const imageUpload = async (ctx: RunContext) => {
     } else throw e
   }
   core.endGroup()
+  core.debug(`Checksum: ${checksum}`)
 
   // create image in Chassy Index
   const createUrl = `${getBackendUrl(ctx.env).apiBaseUrl}/image`
+  core.debug(`CreateURL: ${createUrl}`)
 
   core.startGroup('Create Image in Chassy Index')
   let image: CreateImage
@@ -141,12 +144,30 @@ export const imageUpload = async (ctx: RunContext) => {
 
   core.startGroup('Uploading files')
 
+  const size = fs.statSync(path.fullpath()).size
+
   // upload image using returned URL
   if ('urls' in image) {
-    let start = MULTI_PART_CHUNK_SIZE
+    // create chunks in temporary directory
+    core.info('Chunking data')
+    const tempDir = fs.mkdtempSync(join(os.tmpdir(), 'chassy-upload-'))
+    let start = 0
+    const files: string[] = []
+    for (let i = 0; i < image.urls.length; i++) {
+      const end = Math.min(start + MULTI_PART_CHUNK_SIZE - 1, size - 1)
+      const tempFilePath = join(tempDir, `chunk-${i}`)
+      files.push(tempFilePath)
+      const fileStream = fs.createReadStream(path.fullpath(), { start, end })
+      await fs.promises.writeFile(tempFilePath, fileStream)
+      start += MULTI_PART_CHUNK_SIZE
+    }
+    core.info('Finished chunking data')
+    let pathIdx = 0
     const responses = await Promise.all(
       image.urls.map(async upload => {
         const expiryTimestamp = new Date(upload.expiryTimestamp)
+        const body = fs.readFileSync(files[pathIdx++])
+
         // retry request while expiry time is not reached
         const res = await backOff(
           async () => {
@@ -155,15 +176,8 @@ export const imageUpload = async (ctx: RunContext) => {
             }
             const res = await fetch(upload.uploadURI, {
               method: 'PUT',
-              body: Readable.from(
-                createReadStream(path.fullpath(), {
-                  start,
-                  end: start + MULTI_PART_CHUNK_SIZE - 1
-                })
-              ) as unknown as BodyInit,
-              duplex: 'half'
-            } as RequestInit)
-            start += MULTI_PART_CHUNK_SIZE
+              body
+            } as unknown as RequestInit)
             if (!res.ok) {
               const errMsg = `Failed to upload part "${upload.partNumber}", "${await res.text()}"`
               throw new Error(errMsg)
@@ -193,6 +207,7 @@ export const imageUpload = async (ctx: RunContext) => {
         return { etag: res.headers.get('ETag'), partNumber: upload.partNumber }
       })
     )
+    fs.rmSync(tempDir, { recursive: true })
     const fails = responses.filter(r => r.err)
     if (fails.length > 0) {
       core.error('Failed to upload one or more files')
@@ -211,9 +226,9 @@ export const imageUpload = async (ctx: RunContext) => {
           id: image.image.id,
           confirmation: {
             uploadId: image.uploadId,
-            etags: responses.map(r => ({
+            eTags: responses.map(r => ({
               partNumber: r.partNumber,
-              etag: r.etag
+              eTag: r.etag
             }))
           }
         })
@@ -292,7 +307,7 @@ export const archiveUpload = async (ctx: RunContext) => {
   }
   core.endGroup()
 
-  core.debug(`Created archive: ${JSON.stringify(pkg)}`)
+  core.debug(`Created archive: ${JSON.stringify(pkg, null, 2)}`)
   core.info(`Package Id: ${pkg.package.id}`)
 
   // upload image using returned URL
@@ -375,7 +390,7 @@ export const packageUpload = async (ctx: RunContext) => {
     }
     throw e
   }
-  core.debug(`Created package: ${JSON.stringify(pkg)}`)
+  core.debug(`Created package: ${JSON.stringify(pkg, null, 2)}`)
   core.info(`Package Id: ${pkg.package.id}`)
 
   // upload image using returned URL

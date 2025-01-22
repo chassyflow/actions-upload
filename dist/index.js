@@ -27407,8 +27407,8 @@ exports.BACKOFF_CONFIG = {
     startingDelay: 2,
     maxDelay: 45
 };
-// 4 GB
-exports.MULTI_PART_CHUNK_SIZE = 4 * 1024 * 1024 * 1024;
+// 500 MB
+exports.MULTI_PART_CHUNK_SIZE = 500 * 1024 * 1024;
 
 
 /***/ }),
@@ -27451,7 +27451,6 @@ const constants_1 = __nccwpck_require__(7242);
 const createRunContext = async () => {
     core.startGroup('Validating configuration');
     const config = (0, config_1.getConfig)();
-    console.log(config);
     core.endGroup();
     core.startGroup('Validating environment');
     const env = (0, env_1.getEnv)();
@@ -27600,6 +27599,7 @@ async function run() {
     try {
         // get context
         const ctx = await (0, context_1.createRunContext)();
+        core.debug(`Config: ${JSON.stringify(ctx, null, 2)}`);
         let output;
         if (ctx.config.type === 'IMAGE') {
             output = await (0, upload_1.imageUpload)(ctx);
@@ -27652,28 +27652,32 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.packageUpload = exports.archiveUpload = exports.imageUpload = void 0;
 const core = __importStar(__nccwpck_require__(7484));
+const os_1 = __importDefault(__nccwpck_require__(857));
+const path_1 = __nccwpck_require__(6928);
 const exponential_backoff_1 = __nccwpck_require__(1675);
 const valibot_1 = __nccwpck_require__(8275);
 const env_1 = __nccwpck_require__(8204);
 const api_1 = __nccwpck_require__(6879);
 const glob_1 = __nccwpck_require__(1363);
-const fs_1 = __nccwpck_require__(9896);
+const fs_1 = __importDefault(__nccwpck_require__(9896));
 const archives_1 = __nccwpck_require__(6792);
 const checksum_1 = __nccwpck_require__(4596);
 const constants_1 = __nccwpck_require__(7242);
 const config_1 = __nccwpck_require__(2973);
-const stream_1 = __nccwpck_require__(2203);
 const uploadFile = (url) => async (path) => {
-    const readStream = (0, fs_1.readFileSync)(path.fullpath());
+    const readStream = fs_1.default.readFileSync(path.fullpath());
     core.debug(`Uploading file: ${path.fullpath()}`);
     return fetch(url, {
         method: 'PUT',
         headers: {
             'Content-Type': 'application/octet-stream',
-            'Content-Length': (0, fs_1.statSync)(path.fullpath()).size.toString()
+            'Content-Length': fs_1.default.statSync(path.fullpath()).size.toString()
         },
         body: readStream
     });
@@ -27707,7 +27711,7 @@ const imageUpload = async (ctx) => {
                 .join(',')}`);
         // parse partitions file
         partitions = (0, config_1.readPartitionConfig)(partitionPaths[0]);
-        console.log(partitions);
+        core.debug(`Partitions: ${JSON.stringify(partitions, null, 2)}`);
     }
     const { rawDiskScheme, compressionScheme } = ctx.config;
     core.startGroup('Computing checksum');
@@ -27724,8 +27728,10 @@ const imageUpload = async (ctx) => {
             throw e;
     }
     core.endGroup();
+    core.debug(`Checksum: ${checksum}`);
     // create image in Chassy Index
     const createUrl = `${(0, env_1.getBackendUrl)(ctx.env).apiBaseUrl}/image`;
+    core.debug(`CreateURL: ${createUrl}`);
     core.startGroup('Create Image in Chassy Index');
     let image;
     try {
@@ -27780,11 +27786,27 @@ const imageUpload = async (ctx) => {
     core.endGroup();
     core.info(`Image Id: ${image.image.id}`);
     core.startGroup('Uploading files');
+    const size = fs_1.default.statSync(path.fullpath()).size;
     // upload image using returned URL
     if ('urls' in image) {
-        let start = constants_1.MULTI_PART_CHUNK_SIZE;
+        // create chunks in temporary directory
+        core.info('Chunking data');
+        const tempDir = fs_1.default.mkdtempSync((0, path_1.join)(os_1.default.tmpdir(), 'chassy-upload-'));
+        let start = 0;
+        const files = [];
+        for (let i = 0; i < image.urls.length; i++) {
+            const end = Math.min(start + constants_1.MULTI_PART_CHUNK_SIZE - 1, size - 1);
+            const tempFilePath = (0, path_1.join)(tempDir, `chunk-${i}`);
+            files.push(tempFilePath);
+            const fileStream = fs_1.default.createReadStream(path.fullpath(), { start, end });
+            await fs_1.default.promises.writeFile(tempFilePath, fileStream);
+            start += constants_1.MULTI_PART_CHUNK_SIZE;
+        }
+        core.info('Finished chunking data');
+        let pathIdx = 0;
         const responses = await Promise.all(image.urls.map(async (upload) => {
             const expiryTimestamp = new Date(upload.expiryTimestamp);
+            const body = fs_1.default.readFileSync(files[pathIdx++]);
             // retry request while expiry time is not reached
             const res = await (0, exponential_backoff_1.backOff)(async () => {
                 if (new Date() >= expiryTimestamp) {
@@ -27792,13 +27814,8 @@ const imageUpload = async (ctx) => {
                 }
                 const res = await fetch(upload.uploadURI, {
                     method: 'PUT',
-                    body: stream_1.Readable.from((0, fs_1.createReadStream)(path.fullpath(), {
-                        start,
-                        end: start + constants_1.MULTI_PART_CHUNK_SIZE - 1
-                    })),
-                    duplex: 'half'
+                    body
                 });
-                start += constants_1.MULTI_PART_CHUNK_SIZE;
                 if (!res.ok) {
                     const errMsg = `Failed to upload part "${upload.partNumber}", "${await res.text()}"`;
                     throw new Error(errMsg);
@@ -27825,6 +27842,7 @@ const imageUpload = async (ctx) => {
             // etag header
             return { etag: res.headers.get('ETag'), partNumber: upload.partNumber };
         }));
+        fs_1.default.rmSync(tempDir, { recursive: true });
         const fails = responses.filter(r => r.err);
         if (fails.length > 0) {
             core.error('Failed to upload one or more files');
@@ -27843,9 +27861,9 @@ const imageUpload = async (ctx) => {
                     id: image.image.id,
                     confirmation: {
                         uploadId: image.uploadId,
-                        etags: responses.map(r => ({
+                        eTags: responses.map(r => ({
                             partNumber: r.partNumber,
-                            etag: r.etag
+                            eTag: r.etag
                         }))
                     }
                 })
@@ -27918,7 +27936,7 @@ const archiveUpload = async (ctx) => {
         throw e;
     }
     core.endGroup();
-    core.debug(`Created archive: ${JSON.stringify(pkg)}`);
+    core.debug(`Created archive: ${JSON.stringify(pkg, null, 2)}`);
     core.info(`Package Id: ${pkg.package.id}`);
     // upload image using returned URL
     const upload = uploadFile(pkg.uploadURI);
@@ -27992,7 +28010,7 @@ const packageUpload = async (ctx) => {
         }
         throw e;
     }
-    core.debug(`Created package: ${JSON.stringify(pkg)}`);
+    core.debug(`Created package: ${JSON.stringify(pkg, null, 2)}`);
     core.info(`Package Id: ${pkg.package.id}`);
     // upload image using returned URL
     const upload = uploadFile(pkg.uploadURI);

@@ -8,7 +8,6 @@ import { BACKOFF_CONFIG } from './constants'
 export const createRunContext = async () => {
   core.startGroup('Validating configuration')
   const config = getConfig()
-  console.log(config)
   core.endGroup()
   core.startGroup('Validating environment')
   const env = getEnv()
