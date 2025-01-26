@@ -14,7 +14,7 @@ example-pkg-upload:
     - name: Checkout
       id: checkout
       uses: actions/checkout@v4
-    - name: Chassy package upload
+    - name: Upload Image to Chassy
       id: test-action
       uses: chassyflow/actions-upload
       with:
@@ -24,7 +24,6 @@ example-pkg-upload:
         type: 'IMAGE'
         path: '**/release.img'
         classification: 'RFSIMAGE'
-        mode: 'INFO'
 ```
 
 ## Authentication with Chassy
