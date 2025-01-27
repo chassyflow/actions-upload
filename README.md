@@ -159,7 +159,7 @@ The valid values for image are:
 
 #### Archive
 
-The only valid value for archive is `BUNDLE`.
+The only valid value for archive is `BUNDLE` and thus it is optional.
 
 #### File and Firmware
 
