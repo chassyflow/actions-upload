@@ -27340,16 +27340,22 @@ const imageSchema = v.intersect([
     }, 'image malformed'),
     v.union([v.object({})])
 ]);
-const packageSchema = v.object({
-    type: v.union([v.literal('FILE'), v.literal('ARCHIVE'), v.literal('FIRMWARE')], 'type must be FILE, ARCHIVE, or FIRMWARE'),
-    classification: v.union([
-        v.literal('EXECUTABLE'),
-        v.literal('CONFIG'),
-        v.literal('DATA'),
-        v.literal('BUNDLE')
-    ], 'classification must be EXECUTABLE, CONFIG, DATA, or BUNDLE'),
-    version: v.string('version must be string')
+const archiveSchema = v.object({
+    type: v.literal('ARCHIVE'),
+    classification: v.optional(v.literal('BUNDLE'), 'BUNDLE')
 });
+const packageSchema = v.intersect([
+    v.union([
+        archiveSchema,
+        v.object({
+            type: v.union([v.literal('FILE'), v.literal('FIRMWARE')], 'type must be FILE or FIRMWARE'),
+            classification: v.union([v.literal('EXECUTABLE'), v.literal('CONFIG'), v.literal('DATA')], 'classification must be EXECUTABLE, CONFIG, or DATA')
+        })
+    ]),
+    v.object({
+        version: v.string('version must be string')
+    })
+]);
 const compatibilitySchema = v.object({
     architecture: architectureSchema,
     os: v.string('os must be string'),
