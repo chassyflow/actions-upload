@@ -8,6 +8,7 @@ const undefinedIfEmpty = (value: string) => (value === '' ? undefined : value)
 export const entrypointSchema = v.pipe(
   v.string('entrypoint must be provided as a multiline string'),
   v.trim(),
+  v.minLength(1, 'entrypoint must have at least 1 character'),
   v.transform((e: string) => e.split('\n')),
   v.array(v.string()),
   v.minLength(1, 'entrypoint must have at least 1 element')

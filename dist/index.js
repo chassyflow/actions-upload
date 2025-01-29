@@ -27332,7 +27332,7 @@ const v = __importStar(__nccwpck_require__(8275));
 const core = __importStar(__nccwpck_require__(7484));
 const fs_1 = __nccwpck_require__(9896);
 const undefinedIfEmpty = (value) => (value === '' ? undefined : value);
-exports.entrypointSchema = v.pipe(v.string('entrypoint must be provided as a multiline string'), v.trim(), v.transform((e) => e.split('\n')), v.array(v.string()), v.minLength(1, 'entrypoint must have at least 1 element'));
+exports.entrypointSchema = v.pipe(v.string('entrypoint must be provided as a multiline string'), v.trim(), v.minLength(1, 'entrypoint must have at least 1 character'), v.transform((e) => e.split('\n')), v.array(v.string()), v.minLength(1, 'entrypoint must have at least 1 element'));
 const architectureSchema = v.union([
     v.literal('AMD64'),
     v.literal('ARM64'),

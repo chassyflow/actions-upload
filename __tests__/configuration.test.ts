@@ -56,6 +56,9 @@ describe('archive parsing', () => {
       '   javac\nsomearg\nsomeOtherArg '
     )
     expect(entrypoint).toStrictEqual(['javac', 'somearg', 'someOtherArg'])
+    expect(() => v.parse(entrypointSchema, '')).toThrow()
+    expect(() => v.parse(entrypointSchema, '\n')).toThrow()
+    expect(() => v.parse(entrypointSchema, '\n\n')).toThrow()
   })
 })
 
