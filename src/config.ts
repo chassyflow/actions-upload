@@ -35,25 +35,22 @@ const imagePartitionSchema = v.object({
   partitionType: v.string('partitionType must be string')
 })
 
-const imageSchema = v.intersect([
-  v.object(
-    {
-      type: v.literal('IMAGE'),
-      classification: v.union(
-        [v.literal('RFSIMAGE'), v.literal('YOCTO')],
-        'classification must be RFSIMAGE or YOCTO'
-      ),
-      partitions: v.optional(v.string('partitions (path) must be string')),
-      compressionScheme: v.optional(
-        v.union([v.literal('NONE'), v.literal('ZIP'), v.literal('TGZ')]),
-        'NONE'
-      ),
-      rawDiskScheme: v.union([v.literal('IMG'), v.literal('ISO')])
-    },
-    'image malformed'
-  ),
-  v.union([v.object({})])
-])
+const imageSchema = v.object(
+  {
+    type: v.literal('IMAGE'),
+    classification: v.union(
+      [v.literal('RFSIMAGE'), v.literal('YOCTO')],
+      'classification must be RFSIMAGE or YOCTO'
+    ),
+    partitions: v.optional(v.string('partitions (path) must be string')),
+    compressionScheme: v.optional(
+      v.union([v.literal('NONE'), v.literal('ZIP'), v.literal('TGZ')]),
+      'NONE'
+    ),
+    rawDiskScheme: v.union([v.literal('IMG'), v.literal('ISO')])
+  },
+  'image malformed'
+)
 
 const archiveSchema = v.object({
   type: v.literal('ARCHIVE'),
@@ -103,7 +100,19 @@ export const baseSchema = v.object({
     v.string('path must be string'),
     v.minLength(1, 'path must be at least 1 character')
   ),
-  compatibility: compatibilitySchema
+  compatibility: compatibilitySchema,
+  access: v.optional(
+    v.pipe(
+      v.string('access must be string'),
+      v.trim(),
+      v.toUpperCase(),
+      v.union(
+        [v.literal('PUBLIC'), v.literal('PRIVATE')],
+        'access must be PUBLIC or PRIVATE'
+      )
+    ),
+    'PUBLIC'
+  )
 })
 
 export const configSchema = v.intersect(
@@ -143,7 +152,8 @@ export const getConfig = () =>
       rawDiskScheme: core.getInput('raw_disk_scheme'),
       version: core.getInput('version'),
       type: core.getInput('type'),
-      classification: core.getInput('classification')
+      classification: core.getInput('classification'),
+      access: undefinedIfEmpty(core.getInput('access'))
     })
   )
 

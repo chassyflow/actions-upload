@@ -18,9 +18,31 @@ example-pkg-upload:
       id: test-action
       uses: chassyflow/actions-upload
       with:
+        name: 'example-package'
         architecture: 'ARM64'
         os: 'ubuntu'
         os_version: '22.04'
+        version: '1.0.0'
+        type: 'IMAGE'
+        path: '**/release.img'
+        classification: 'RFSIMAGE'
+example-image-upload:
+  name: Example Image Upload
+  runs-on: ubuntu-latest
+  env: CHASSY_TOKEN
+  steps:
+    - name: Checkout
+      id: checkout
+      uses: actions/checkout@v4
+    - name: Upload Image to Chassy
+      id: test-action
+      uses: chassyflow/actions-upload
+      with:
+        name: 'example-image'
+        architecture: 'ARM64'
+        os: 'ubuntu'
+        os_version: '22.04'
+        raw_disk_scheme: 'IMG'
         type: 'IMAGE'
         path: '**/release.img'
         classification: 'RFSIMAGE'

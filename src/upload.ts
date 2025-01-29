@@ -9,7 +9,7 @@ import { createImageSchema, CreatePackage, CreateImage } from './api'
 import { glob, Path } from 'glob'
 import fs from 'fs'
 import { isArchive, zipBundle } from './archives'
-import { computeChecksum } from './checksum'
+import { computeChecksum, computeChecksumOfBlob } from './checksum'
 import { BACKOFF_CONFIG, MULTI_PART_CHUNK_SIZE } from './constants'
 import { Partition, readPartitionConfig } from './config'
 
@@ -272,6 +272,12 @@ export const archiveUpload = async (ctx: RunContext) => {
   // create image in Chassy Index
   const createUrl = `${getBackendUrl(ctx.env).apiBaseUrl}/package`
 
+  const blobbed = !bundled ? await zipBundle(ctx, paths) : undefined
+
+  const hash = !bundled
+    ? await computeChecksumOfBlob(blobbed as Blob, 'sha256')
+    : await computeChecksum(path.fullpath(), 'sha256')
+
   core.startGroup('Create Archive in Chassy Index')
   let pkg: CreatePackage
   try {
@@ -291,7 +297,8 @@ export const archiveUpload = async (ctx: RunContext) => {
         },
         version: ctx.config.version,
         provenanceURI: getActionRunURL(),
-        packageClass: ctx.config.classification
+        packageClass: ctx.config.classification,
+        sha256: hash
       })
     })
     if (!res.ok)
@@ -317,7 +324,7 @@ export const archiveUpload = async (ctx: RunContext) => {
 
   let res
   if (!bundled) {
-    const blob = await zipBundle(ctx, paths)
+    const blob = blobbed as Blob
 
     res = await fetch(pkg.uploadURI, {
       method: 'PUT',
@@ -354,6 +361,11 @@ export const packageUpload = async (ctx: RunContext) => {
     throw new Error(
       `Too many files found: ${paths.map(i => `"${i.fullpath()}"`).join(',')}`
     )
+  if (ctx.config.type === 'FIRMWARE') {
+    console.log(ctx.config.classification)
+  }
+
+  const hash = await computeChecksum(paths[0].fullpath(), 'sha256')
 
   // create image in Chassy Index
   const createUrl = `${getBackendUrl(ctx.env).apiBaseUrl}/package`
@@ -376,7 +388,8 @@ export const packageUpload = async (ctx: RunContext) => {
         },
         version: ctx.config.version,
         provenanceURI: getActionRunURL(),
-        packageClass: ctx.config.classification
+        packageClass: ctx.config.classification,
+        sha256: hash
       })
     })
     if (!res.ok)

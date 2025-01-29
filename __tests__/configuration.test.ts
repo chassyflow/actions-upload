@@ -2,10 +2,22 @@ import * as core from '@actions/core'
 
 import { getConfig } from '../src/config'
 
-const mockInput = (input: Record<string, string>) => {
+export const mockInput = (input: Record<string, string>) => {
   const getInputMock = jest.spyOn(core, 'getInput').mockImplementation()
   getInputMock.mockImplementation(property => input[property])
   return getInputMock
+}
+
+const assertType = <
+  T extends ReturnType<typeof getConfig>,
+  K extends ReturnType<typeof getConfig>['type']
+>(
+  cfg: T,
+  type: K
+): Extract<T, { type: K }> => {
+  expect(cfg.type).toStrictEqual(type)
+  if (cfg.type !== type) throw new Error('Type is not ' + type)
+  return cfg as Extract<T, { type: K }>
 }
 
 describe('archive parsing', () => {
@@ -49,11 +61,10 @@ describe('package parsing', () => {
   it('file parses correctly', () => {
     mockInput({
       name: 'test',
-      path: 'src/*.ts',
+      path: 'src/api.ts',
       architecture: 'ARM64',
       os: 'ubuntu',
       os_version: '20.04',
-      entrypoint: 'javac',
       version: '1.0.0',
       type: 'FILE',
       classification: 'EXECUTABLE'
@@ -78,19 +89,102 @@ describe('package parsing', () => {
     })
 
     const cfg = getConfig()
-    expect(cfg.type).toStrictEqual('FIRMWARE')
+    if (cfg.type !== 'FIRMWARE') throw new Error('Type is not FIRMWARE')
     expect(cfg.classification).toStrictEqual('EXECUTABLE')
   })
 })
 
 describe('image parsing', () => {
   it('basic image parses correctly', () => {
-    throw new Error('Not implemented')
+    mockInput({
+      name: 'test',
+      path: 'src/*.ts',
+      architecture: 'ARM64',
+      os: 'ubuntu',
+      os_version: '20.04',
+      raw_disk_scheme: 'IMG',
+      version: '1.0.0',
+      type: 'IMAGE',
+      classification: 'RFSIMAGE'
+    })
+
+    const cfg = assertType(getConfig(), 'IMAGE')
+    expect(cfg.classification).toStrictEqual('RFSIMAGE')
+    expect(cfg.compressionScheme).toStrictEqual('NONE')
   })
   it('image with partitions parses correctly', () => {
-    throw new Error('Not implemented')
+    mockInput({
+      name: 'test',
+      path: 'src/*.ts',
+      architecture: 'ARM64',
+      os: 'ubuntu',
+      os_version: '20.04',
+      partitions: './data/good.partitions.json',
+      compression_scheme: 'ZIP',
+      raw_disk_scheme: 'IMG',
+      version: '1.0.0',
+      type: 'IMAGE',
+      classification: 'RFSIMAGE'
+    })
+
+    const cfg = assertType(getConfig(), 'IMAGE')
+    expect(cfg.classification).toStrictEqual('RFSIMAGE')
   })
   it('image with compression parses correctly', () => {
-    throw new Error('Not implemented')
+    mockInput({
+      name: 'test',
+      path: 'src/*.ts',
+      architecture: 'ARM64',
+      os: 'ubuntu',
+      os_version: '20.04',
+      compression_scheme: 'ZIP',
+      raw_disk_scheme: 'IMG',
+      version: '1.0.0',
+      type: 'IMAGE',
+      classification: 'RFSIMAGE'
+    })
+
+    const cfg = assertType(getConfig(), 'IMAGE')
+    expect(cfg.classification).toStrictEqual('RFSIMAGE')
+  })
+})
+
+describe('base schema testing', () => {
+  it('access defaults to "PUBLIC"', () => {
+    mockInput({
+      name: 'test',
+      path: 'src/*.ts',
+      architecture: 'ARM64',
+      os: 'ubuntu',
+      os_version: '20.04',
+      partitions: './data/good.partitions.json',
+      compression_scheme: 'ZIP',
+      raw_disk_scheme: 'IMG',
+      version: '1.0.0',
+      type: 'IMAGE',
+      classification: 'RFSIMAGE'
+    })
+
+    const cfg = assertType(getConfig(), 'IMAGE')
+    expect(cfg.access).toStrictEqual('PUBLIC')
+  })
+  it('access uppercases', () => {
+    mockInput({
+      name: 'test',
+      path: 'src/*.ts',
+      architecture: 'ARM64',
+      os: 'ubuntu',
+      os_version: '20.04',
+      partitions: './data/good.partitions.json',
+      compression_scheme: 'ZIP',
+      raw_disk_scheme: 'IMG',
+      access: 'private',
+      version: '1.0.0',
+      type: 'IMAGE',
+      classification: 'RFSIMAGE'
+    })
+
+    const cfg = assertType(getConfig(), 'IMAGE')
+    expect(cfg.access).toStrictEqual('PRIVATE')
   })
 })
