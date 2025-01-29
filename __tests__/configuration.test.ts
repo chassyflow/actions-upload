@@ -1,12 +1,6 @@
-import * as core from '@actions/core'
+import { mockInput } from './utils'
 
 import { getConfig } from '../src/config'
-
-export const mockInput = (input: Record<string, string>) => {
-  const getInputMock = jest.spyOn(core, 'getInput').mockImplementation()
-  getInputMock.mockImplementation(property => input[property])
-  return getInputMock
-}
 
 const assertType = <
   T extends ReturnType<typeof getConfig>,
@@ -150,7 +144,7 @@ describe('image parsing', () => {
 })
 
 describe('base schema testing', () => {
-  it('access defaults to "PUBLIC"', () => {
+  it('access defaults to "PRIVATE"', () => {
     mockInput({
       name: 'test',
       path: 'src/*.ts',
@@ -166,7 +160,7 @@ describe('base schema testing', () => {
     })
 
     const cfg = assertType(getConfig(), 'IMAGE')
-    expect(cfg.access).toStrictEqual('PUBLIC')
+    expect(cfg.access).toStrictEqual('PRIVATE')
   })
   it('access uppercases', () => {
     mockInput({

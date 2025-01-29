@@ -77,8 +77,6 @@ const packageSchema = v.intersect([
   })
 ])
 
-type Package = v.InferOutput<typeof packageSchema>
-
 const compatibilitySchema = v.object(
   {
     architecture: architectureSchema,
