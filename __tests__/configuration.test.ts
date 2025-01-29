@@ -1,6 +1,7 @@
 import { mockInput } from './utils'
+import * as v from 'valibot'
 
-import { getConfig } from '../src/config'
+import { entrypointSchema, getConfig } from '../src/config'
 
 const assertType = <
   T extends ReturnType<typeof getConfig>,
@@ -41,13 +42,20 @@ describe('archive parsing', () => {
       version: '1.0.0',
       type: 'ARCHIVE',
       classification: 'BUNDLE',
-      entrypoint: 'javac'
+      entrypoint: 'javac\nsomearg\nsomeOtherArg'
     })
 
-    const cfg = getConfig()
+    const cfg = assertType(getConfig(), 'ARCHIVE')
 
     expect(cfg.type).toStrictEqual('ARCHIVE')
     expect(cfg.classification).toStrictEqual('BUNDLE')
+  })
+  it('entrypoint is parsed correctly', () => {
+    const entrypoint = v.parse(
+      entrypointSchema,
+      '   javac\nsomearg\nsomeOtherArg '
+    )
+    expect(entrypoint).toStrictEqual(['javac', 'somearg', 'someOtherArg'])
   })
 })
 

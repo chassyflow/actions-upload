@@ -64,7 +64,7 @@ example-archive-upload:
         os_version: '22.04'
         type: 'IMAGE'
         path: '**/bundle.zip'
-        entrypoint: "entrypoint.sh"
+        entrypoint: 'entrypoint.sh'
 ```
 
 ## Authentication with Chassy

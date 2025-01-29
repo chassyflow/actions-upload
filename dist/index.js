@@ -27327,11 +27327,12 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.readPartitionConfig = exports.getConfig = exports.configSchema = exports.baseSchema = void 0;
+exports.readPartitionConfig = exports.getConfig = exports.configSchema = exports.baseSchema = exports.entrypointSchema = void 0;
 const v = __importStar(__nccwpck_require__(8275));
 const core = __importStar(__nccwpck_require__(7484));
 const fs_1 = __nccwpck_require__(9896);
 const undefinedIfEmpty = (value) => (value === '' ? undefined : value);
+exports.entrypointSchema = v.pipe(v.string('entrypoint must be provided as a multiline string'), v.trim(), v.transform((e) => e.split('\n')), v.array(v.string()), v.minLength(1, 'entrypoint must have at least 1 element'));
 const architectureSchema = v.union([
     v.literal('AMD64'),
     v.literal('ARM64'),
@@ -27361,8 +27362,8 @@ const imageSchema = v.object({
 }, 'image malformed');
 const archiveSchema = v.object({
     type: v.literal('ARCHIVE'),
-    classification: v.optional(v.literal('BUNDLE'), 'BUNDLE'),
-    entrypoint: v.string('entrypoint must be a set string')
+    classification: v.optional(v.literal('BUNDLE'), 'BUNDLE')
+    //entrypoint: entrypointSchema
 });
 const packageSchema = v.intersect([
     v.union([
@@ -27404,7 +27405,7 @@ const getConfig = () => v.parse(exports.configSchema, {
     },
     partitions: undefinedIfEmpty(core.getInput('partitions')),
     compressionScheme: undefinedIfEmpty(core.getInput('compression_scheme')),
-    entrypoint: undefinedIfEmpty(core.getInput('entrypoint')),
+    //entrypoint: undefinedIfEmpty(core.getInput('entrypoint')),
     rawDiskScheme: core.getInput('raw_disk_scheme'),
     version: core.getInput('version'),
     type: core.getInput('type'),
