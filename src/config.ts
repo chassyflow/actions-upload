@@ -111,7 +111,7 @@ export const baseSchema = v.object({
         'access must be PUBLIC or PRIVATE'
       )
     ),
-    'PUBLIC'
+    'PRIVATE'
   )
 })
 

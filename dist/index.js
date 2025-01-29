@@ -27385,7 +27385,7 @@ exports.baseSchema = v.object({
     name: v.pipe(v.string('name must be string'), v.minLength(1, 'name must be at least 1 character')),
     path: v.pipe(v.string('path must be string'), v.minLength(1, 'path must be at least 1 character')),
     compatibility: compatibilitySchema,
-    access: v.optional(v.pipe(v.string('access must be string'), v.trim(), v.toUpperCase(), v.union([v.literal('PUBLIC'), v.literal('PRIVATE')], 'access must be PUBLIC or PRIVATE')), 'PUBLIC')
+    access: v.optional(v.pipe(v.string('access must be string'), v.trim(), v.toUpperCase(), v.union([v.literal('PUBLIC'), v.literal('PRIVATE')], 'access must be PUBLIC or PRIVATE')), 'PRIVATE')
 });
 exports.configSchema = v.intersect([
     exports.baseSchema,
