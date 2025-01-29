@@ -27791,7 +27791,8 @@ const imageUpload = async (ctx) => {
                             rawDiskScheme
                         },
                         checksum,
-                        sizeInBytes: path.size
+                        sizeInBytes: path.size,
+                        access: ctx.config.access
                     })
                 });
                 if (!res.ok) {
@@ -27960,7 +27961,8 @@ const archiveUpload = async (ctx) => {
                 version: ctx.config.version,
                 provenanceURI: (0, env_1.getActionRunURL)(),
                 packageClass: ctx.config.classification,
-                sha256: hash
+                sha256: hash,
+                access: ctx.config.access
             })
         });
         if (!res.ok)
@@ -28040,7 +28042,8 @@ const packageUpload = async (ctx) => {
                 version: ctx.config.version,
                 provenanceURI: (0, env_1.getActionRunURL)(),
                 packageClass: ctx.config.classification,
-                sha256: hash
+                sha256: hash,
+                access: ctx.config.access
             })
         });
         if (!res.ok)

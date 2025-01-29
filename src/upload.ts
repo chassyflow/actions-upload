@@ -111,7 +111,8 @@ export const imageUpload = async (ctx: RunContext) => {
               rawDiskScheme
             },
             checksum,
-            sizeInBytes: path.size
+            sizeInBytes: path.size,
+            access: ctx.config.access
           })
         })
         if (!res.ok) {
@@ -298,7 +299,8 @@ export const archiveUpload = async (ctx: RunContext) => {
         version: ctx.config.version,
         provenanceURI: getActionRunURL(),
         packageClass: ctx.config.classification,
-        sha256: hash
+        sha256: hash,
+        access: ctx.config.access
       })
     })
     if (!res.ok)
@@ -389,7 +391,8 @@ export const packageUpload = async (ctx: RunContext) => {
         version: ctx.config.version,
         provenanceURI: getActionRunURL(),
         packageClass: ctx.config.classification,
-        sha256: hash
+        sha256: hash,
+        access: ctx.config.access
       })
     })
     if (!res.ok)
