@@ -62,7 +62,7 @@ example-archive-upload:
         architecture: 'ARM64'
         os: 'ubuntu'
         os_version: '22.04'
-        type: 'IMAGE'
+        type: 'ARCHIVE'
         path: '**/bundle.zip'
         entrypoint: 'entrypoint.sh'
 ```
