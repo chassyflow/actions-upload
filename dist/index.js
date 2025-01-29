@@ -27938,9 +27938,10 @@ const archiveUpload = async (ctx) => {
     // create image in Chassy Index
     const createUrl = `${(0, env_1.getBackendUrl)(ctx.env).apiBaseUrl}/package`;
     const blobbed = !bundled ? await (0, archives_1.zipBundle)(ctx, paths) : undefined;
-    const hash = !bundled
-        ? await (0, checksum_1.computeChecksumOfBlob)(blobbed, 'sha256')
-        : await (0, checksum_1.computeChecksum)(path.fullpath(), 'sha256');
+    const hash = 'sha256' +
+        (!bundled
+            ? await (0, checksum_1.computeChecksumOfBlob)(blobbed, 'sha256')
+            : await (0, checksum_1.computeChecksum)(path.fullpath(), 'sha256'));
     core.startGroup('Create Archive in Chassy Index');
     let pkg;
     try {
@@ -28020,7 +28021,7 @@ const packageUpload = async (ctx) => {
     if (ctx.config.type === 'FIRMWARE') {
         console.log(ctx.config.classification);
     }
-    const hash = await (0, checksum_1.computeChecksum)(paths[0].fullpath(), 'sha256');
+    const hash = 'sha256' + (await (0, checksum_1.computeChecksum)(paths[0].fullpath(), 'sha256'));
     // create image in Chassy Index
     const createUrl = `${(0, env_1.getBackendUrl)(ctx.env).apiBaseUrl}/package`;
     let pkg;

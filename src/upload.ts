@@ -275,9 +275,11 @@ export const archiveUpload = async (ctx: RunContext) => {
 
   const blobbed = !bundled ? await zipBundle(ctx, paths) : undefined
 
-  const hash = !bundled
-    ? await computeChecksumOfBlob(blobbed as Blob, 'sha256')
-    : await computeChecksum(path.fullpath(), 'sha256')
+  const hash =
+    'sha256' +
+    (!bundled
+      ? await computeChecksumOfBlob(blobbed as Blob, 'sha256')
+      : await computeChecksum(path.fullpath(), 'sha256'))
 
   core.startGroup('Create Archive in Chassy Index')
   let pkg: CreatePackage
@@ -367,7 +369,7 @@ export const packageUpload = async (ctx: RunContext) => {
     console.log(ctx.config.classification)
   }
 
-  const hash = await computeChecksum(paths[0].fullpath(), 'sha256')
+  const hash = 'sha256' + (await computeChecksum(paths[0].fullpath(), 'sha256'))
 
   // create image in Chassy Index
   const createUrl = `${getBackendUrl(ctx.env).apiBaseUrl}/package`
