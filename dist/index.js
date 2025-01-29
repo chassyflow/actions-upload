@@ -27391,14 +27391,10 @@ exports.configSchema = v.intersect([
     exports.baseSchema,
     v.union([imageSchema, packageSchema], 'config must match image or package schema')
 ], 'malformed configuration');
-const dbg = (x) => {
-    console.log(x);
-    return x;
-};
 /**
  * Get configuration options for environment
  */
-const getConfig = () => v.parse(exports.configSchema, dbg({
+const getConfig = () => v.parse(exports.configSchema, {
     name: core.getInput('name'),
     path: core.getInput('path'),
     compatibility: {
@@ -27414,7 +27410,7 @@ const getConfig = () => v.parse(exports.configSchema, dbg({
     type: core.getInput('type'),
     classification: core.getInput('classification'),
     access: undefinedIfEmpty(core.getInput('access'))
-}));
+});
 exports.getConfig = getConfig;
 const readPartitionConfig = (path) => {
     core.info('reading partition configurations');
@@ -28018,9 +28014,6 @@ const packageUpload = async (ctx) => {
         throw new Error(`No files found in provided path: ${ctx.config.path}`);
     if (paths.length > 1 && ctx.config.type !== 'ARCHIVE')
         throw new Error(`Too many files found: ${paths.map(i => `"${i.fullpath()}"`).join(',')}`);
-    if (ctx.config.type === 'FIRMWARE') {
-        console.log(ctx.config.classification);
-    }
     const hash = 'sha256:' + (await (0, checksum_1.computeChecksum)(paths[0].fullpath(), 'sha256'));
     // create image in Chassy Index
     const createUrl = `${(0, env_1.getBackendUrl)(ctx.env).apiBaseUrl}/package`;

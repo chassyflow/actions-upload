@@ -365,9 +365,6 @@ export const packageUpload = async (ctx: RunContext) => {
     throw new Error(
       `Too many files found: ${paths.map(i => `"${i.fullpath()}"`).join(',')}`
     )
-  if (ctx.config.type === 'FIRMWARE') {
-    console.log(ctx.config.classification)
-  }
 
   const hash =
     'sha256:' + (await computeChecksum(paths[0].fullpath(), 'sha256'))
