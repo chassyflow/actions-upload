@@ -5,6 +5,15 @@ import { Path } from 'glob'
 
 const undefinedIfEmpty = (value: string) => (value === '' ? undefined : value)
 
+export const entrypointSchema = v.pipe(
+  v.string('entrypoint must be provided as a multiline string'),
+  v.trim(),
+  v.minLength(1, 'entrypoint must have at least 1 character'),
+  v.transform((e: string) => e.split('\n')),
+  v.array(v.string()),
+  v.minLength(1, 'entrypoint must have at least 1 element')
+)
+
 const architectureSchema = v.union([
   v.literal('AMD64'),
   v.literal('ARM64'),
@@ -35,42 +44,47 @@ const imagePartitionSchema = v.object({
   partitionType: v.string('partitionType must be string')
 })
 
-const imageSchema = v.intersect([
-  v.object(
-    {
-      type: v.literal('IMAGE'),
-      classification: v.union(
-        [v.literal('RFSIMAGE'), v.literal('YOCTO')],
-        'classification must be RFSIMAGE or YOCTO'
-      ),
-      partitions: v.optional(v.string('partitions (path) must be string')),
-      compressionScheme: v.optional(
-        v.union([v.literal('NONE'), v.literal('ZIP'), v.literal('TGZ')]),
-        'NONE'
-      ),
-      rawDiskScheme: v.union([v.literal('IMG'), v.literal('ISO')])
-    },
-    'image malformed'
-  ),
-  v.union([v.object({})])
-])
+const imageSchema = v.object(
+  {
+    type: v.literal('IMAGE'),
+    classification: v.union(
+      [v.literal('RFSIMAGE'), v.literal('YOCTO')],
+      'classification must be RFSIMAGE or YOCTO'
+    ),
+    partitions: v.optional(v.string('partitions (path) must be string')),
+    compressionScheme: v.optional(
+      v.union([v.literal('NONE'), v.literal('ZIP'), v.literal('TGZ')]),
+      'NONE'
+    ),
+    rawDiskScheme: v.union([v.literal('IMG'), v.literal('ISO')])
+  },
+  'image malformed'
+)
 
-const packageSchema = v.object({
-  type: v.union(
-    [v.literal('FILE'), v.literal('ARCHIVE'), v.literal('FIRMWARE')],
-    'type must be FILE, ARCHIVE, or FIRMWARE'
-  ),
-  classification: v.union(
-    [
-      v.literal('EXECUTABLE'),
-      v.literal('CONFIG'),
-      v.literal('DATA'),
-      v.literal('BUNDLE')
-    ],
-    'classification must be EXECUTABLE, CONFIG, DATA, or BUNDLE'
-  ),
-  version: v.string('version must be string')
+const archiveSchema = v.object({
+  type: v.literal('ARCHIVE'),
+  classification: v.optional(v.literal('BUNDLE'), 'BUNDLE')
+  //entrypoint: entrypointSchema
 })
+
+const packageSchema = v.intersect([
+  v.union([
+    archiveSchema,
+    v.object({
+      type: v.union(
+        [v.literal('FILE'), v.literal('FIRMWARE')],
+        'type must be FILE or FIRMWARE'
+      ),
+      classification: v.union(
+        [v.literal('EXECUTABLE'), v.literal('CONFIG'), v.literal('DATA')],
+        'classification must be EXECUTABLE, CONFIG, or DATA'
+      )
+    })
+  ]),
+  v.object({
+    version: v.string('version must be string')
+  })
+])
 
 const compatibilitySchema = v.object(
   {
@@ -93,7 +107,19 @@ export const baseSchema = v.object({
     v.string('path must be string'),
     v.minLength(1, 'path must be at least 1 character')
   ),
-  compatibility: compatibilitySchema
+  compatibility: compatibilitySchema,
+  access: v.optional(
+    v.pipe(
+      v.string('access must be string'),
+      v.trim(),
+      v.toUpperCase(),
+      v.union(
+        [v.literal('PUBLIC'), v.literal('PRIVATE')],
+        'access must be PUBLIC or PRIVATE'
+      )
+    ),
+    'PRIVATE'
+  )
 })
 
 export const configSchema = v.intersect(
@@ -122,10 +148,12 @@ export const getConfig = () =>
     },
     partitions: undefinedIfEmpty(core.getInput('partitions')),
     compressionScheme: undefinedIfEmpty(core.getInput('compression_scheme')),
+    //entrypoint: undefinedIfEmpty(core.getInput('entrypoint')),
     rawDiskScheme: core.getInput('raw_disk_scheme'),
     version: core.getInput('version'),
     type: core.getInput('type'),
-    classification: core.getInput('classification')
+    classification: core.getInput('classification'),
+    access: undefinedIfEmpty(core.getInput('access'))
   })
 
 export const readPartitionConfig = (path: Path) => {

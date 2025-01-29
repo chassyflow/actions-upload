@@ -36,7 +36,14 @@ inputs:
     required: false
   raw_disk_scheme:
     description: 'for images, specify raw disk scheme (ISO, IMG)'
+    required: true
+  #  entrypoint:
+  #    description: 'for archives, specify entrypoint'
+  #    required: false
+  access:
+    description: 'access level for package or image'
     required: false
+    default: 'PRIVATE'
 outputs:
   id:
     description: 'Id of created package or image'

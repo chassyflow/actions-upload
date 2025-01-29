@@ -1,0 +1,10 @@
+[
+  {
+    "filesystemType": "ext4",
+    "mountPoint": "/",
+    "name": "root",
+    "size": "256",
+    "startSector": 0,
+    "partitionType": "83"
+  }
+]

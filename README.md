@@ -14,16 +14,57 @@ example-pkg-upload:
     - name: Checkout
       id: checkout
       uses: actions/checkout@v4
+    - name: Upload Package to Chassy
+      id: test-action
+      uses: chassyflow/actions-upload
+      with:
+        name: 'example-package'
+        architecture: 'ARM64'
+        os: 'ubuntu'
+        os_version: '22.04'
+        version: '1.0.0'
+        type: 'FILE'
+        path: '**/release.exe'
+        classification: 'EXECUTABLE'
+example-image-upload:
+  name: Example Image Upload
+  runs-on: ubuntu-latest
+  env: CHASSY_TOKEN
+  steps:
+    - name: Checkout
+      id: checkout
+      uses: actions/checkout@v4
     - name: Upload Image to Chassy
       id: test-action
       uses: chassyflow/actions-upload
       with:
+        name: 'example-image'
         architecture: 'ARM64'
         os: 'ubuntu'
         os_version: '22.04'
+        raw_disk_scheme: 'IMG'
         type: 'IMAGE'
         path: '**/release.img'
         classification: 'RFSIMAGE'
+example-archive-upload:
+  name: Example Archive Upload
+  runs-on: ubuntu-latest
+  env: CHASSY_TOKEN
+  steps:
+    - name: Checkout
+      id: checkout
+      uses: actions/checkout@v4
+    - name: Upload Archive to Chassy
+      id: test-action
+      uses: chassyflow/actions-upload
+      with:
+        name: 'example-archive'
+        architecture: 'ARM64'
+        os: 'ubuntu'
+        os_version: '22.04'
+        type: 'ARCHIVE'
+        path: '**/bundle.zip'
+        entrypoint: 'entrypoint.sh'
 ```
 
 ## Authentication with Chassy
@@ -159,7 +200,7 @@ The valid values for image are:
 
 #### Archive
 
-The only valid value for archive is `BUNDLE`.
+The only valid value for archive is `BUNDLE` and thus it is optional.
 
 #### File and Firmware
 

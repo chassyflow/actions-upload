@@ -27230,19 +27230,41 @@ exports.isArchive = isArchive;
 /***/ }),
 
 /***/ 4596:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
 
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.computeChecksum = void 0;
-const crypto_1 = __nccwpck_require__(6982);
+exports.computeChecksum = exports.computeChecksumOfBlob = void 0;
+const crypto_1 = __importDefault(__nccwpck_require__(6982));
 const fs_1 = __nccwpck_require__(9896);
+const computeChecksumOfBlob = async (blob, algorithm) => {
+    switch (algorithm) {
+        case 'md5': {
+            const hash = crypto_1.default
+                .createHash('md5')
+                .update(new DataView(await blob.arrayBuffer()));
+            return hash.digest('hex');
+        }
+        case 'sha256': {
+            const hashBuffer = await crypto_1.default.subtle.digest('SHA-256', await blob.arrayBuffer());
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            const hexHash = hashArray
+                .map(byte => byte.toString(16).padStart(2, '0'))
+                .join('');
+            return hexHash;
+        }
+    }
+};
+exports.computeChecksumOfBlob = computeChecksumOfBlob;
 const computeChecksum = async (path, algorithm) => new Promise((resolve, reject) => {
     const file = (0, fs_1.createReadStream)(path);
     switch (algorithm) {
         case 'md5': {
-            const hash = (0, crypto_1.createHash)('md5');
+            const hash = crypto_1.default.createHash('md5');
             file.on('data', chunk => {
                 hash.update(chunk);
             });
@@ -27255,7 +27277,7 @@ const computeChecksum = async (path, algorithm) => new Promise((resolve, reject)
             break;
         }
         case 'sha256': {
-            const hash = (0, crypto_1.createHash)('sha256');
+            const hash = crypto_1.default.createHash('sha256');
             file.on('data', chunk => {
                 hash.update(chunk);
             });
@@ -27305,11 +27327,12 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.readPartitionConfig = exports.getConfig = exports.configSchema = exports.baseSchema = void 0;
+exports.readPartitionConfig = exports.getConfig = exports.configSchema = exports.baseSchema = exports.entrypointSchema = void 0;
 const v = __importStar(__nccwpck_require__(8275));
 const core = __importStar(__nccwpck_require__(7484));
 const fs_1 = __nccwpck_require__(9896);
 const undefinedIfEmpty = (value) => (value === '' ? undefined : value);
+exports.entrypointSchema = v.pipe(v.string('entrypoint must be provided as a multiline string'), v.trim(), v.minLength(1, 'entrypoint must have at least 1 character'), v.transform((e) => e.split('\n')), v.array(v.string()), v.minLength(1, 'entrypoint must have at least 1 element'));
 const architectureSchema = v.union([
     v.literal('AMD64'),
     v.literal('ARM64'),
@@ -27330,26 +27353,30 @@ const imagePartitionSchema = v.object({
     startSector: v.pipe(v.number('startSector must be number'), v.integer('startSector must be integer'), v.minValue(0, 'startSector must be at least 0')),
     partitionType: v.string('partitionType must be string')
 });
-const imageSchema = v.intersect([
-    v.object({
-        type: v.literal('IMAGE'),
-        classification: v.union([v.literal('RFSIMAGE'), v.literal('YOCTO')], 'classification must be RFSIMAGE or YOCTO'),
-        partitions: v.optional(v.string('partitions (path) must be string')),
-        compressionScheme: v.optional(v.union([v.literal('NONE'), v.literal('ZIP'), v.literal('TGZ')]), 'NONE'),
-        rawDiskScheme: v.union([v.literal('IMG'), v.literal('ISO')])
-    }, 'image malformed'),
-    v.union([v.object({})])
-]);
-const packageSchema = v.object({
-    type: v.union([v.literal('FILE'), v.literal('ARCHIVE'), v.literal('FIRMWARE')], 'type must be FILE, ARCHIVE, or FIRMWARE'),
-    classification: v.union([
-        v.literal('EXECUTABLE'),
-        v.literal('CONFIG'),
-        v.literal('DATA'),
-        v.literal('BUNDLE')
-    ], 'classification must be EXECUTABLE, CONFIG, DATA, or BUNDLE'),
-    version: v.string('version must be string')
+const imageSchema = v.object({
+    type: v.literal('IMAGE'),
+    classification: v.union([v.literal('RFSIMAGE'), v.literal('YOCTO')], 'classification must be RFSIMAGE or YOCTO'),
+    partitions: v.optional(v.string('partitions (path) must be string')),
+    compressionScheme: v.optional(v.union([v.literal('NONE'), v.literal('ZIP'), v.literal('TGZ')]), 'NONE'),
+    rawDiskScheme: v.union([v.literal('IMG'), v.literal('ISO')])
+}, 'image malformed');
+const archiveSchema = v.object({
+    type: v.literal('ARCHIVE'),
+    classification: v.optional(v.literal('BUNDLE'), 'BUNDLE')
+    //entrypoint: entrypointSchema
 });
+const packageSchema = v.intersect([
+    v.union([
+        archiveSchema,
+        v.object({
+            type: v.union([v.literal('FILE'), v.literal('FIRMWARE')], 'type must be FILE or FIRMWARE'),
+            classification: v.union([v.literal('EXECUTABLE'), v.literal('CONFIG'), v.literal('DATA')], 'classification must be EXECUTABLE, CONFIG, or DATA')
+        })
+    ]),
+    v.object({
+        version: v.string('version must be string')
+    })
+]);
 const compatibilitySchema = v.object({
     architecture: architectureSchema,
     os: v.string('os must be string'),
@@ -27358,7 +27385,8 @@ const compatibilitySchema = v.object({
 exports.baseSchema = v.object({
     name: v.pipe(v.string('name must be string'), v.minLength(1, 'name must be at least 1 character')),
     path: v.pipe(v.string('path must be string'), v.minLength(1, 'path must be at least 1 character')),
-    compatibility: compatibilitySchema
+    compatibility: compatibilitySchema,
+    access: v.optional(v.pipe(v.string('access must be string'), v.trim(), v.toUpperCase(), v.union([v.literal('PUBLIC'), v.literal('PRIVATE')], 'access must be PUBLIC or PRIVATE')), 'PRIVATE')
 });
 exports.configSchema = v.intersect([
     exports.baseSchema,
@@ -27377,10 +27405,12 @@ const getConfig = () => v.parse(exports.configSchema, {
     },
     partitions: undefinedIfEmpty(core.getInput('partitions')),
     compressionScheme: undefinedIfEmpty(core.getInput('compression_scheme')),
+    //entrypoint: undefinedIfEmpty(core.getInput('entrypoint')),
     rawDiskScheme: core.getInput('raw_disk_scheme'),
     version: core.getInput('version'),
     type: core.getInput('type'),
-    classification: core.getInput('classification')
+    classification: core.getInput('classification'),
+    access: undefinedIfEmpty(core.getInput('access'))
 });
 exports.getConfig = getConfig;
 const readPartitionConfig = (path) => {
@@ -27758,7 +27788,8 @@ const imageUpload = async (ctx) => {
                             rawDiskScheme
                         },
                         checksum,
-                        sizeInBytes: path.size
+                        sizeInBytes: path.size,
+                        access: ctx.config.access
                     })
                 });
                 if (!res.ok) {
@@ -27903,6 +27934,11 @@ const archiveUpload = async (ctx) => {
     const bundled = path && (0, archives_1.isArchive)(path) && extra.length === 0;
     // create image in Chassy Index
     const createUrl = `${(0, env_1.getBackendUrl)(ctx.env).apiBaseUrl}/package`;
+    const blobbed = !bundled ? await (0, archives_1.zipBundle)(ctx, paths) : undefined;
+    const hash = 'sha256:' +
+        (!bundled
+            ? await (0, checksum_1.computeChecksumOfBlob)(blobbed, 'sha256')
+            : await (0, checksum_1.computeChecksum)(path.fullpath(), 'sha256'));
     core.startGroup('Create Archive in Chassy Index');
     let pkg;
     try {
@@ -27922,7 +27958,9 @@ const archiveUpload = async (ctx) => {
                 },
                 version: ctx.config.version,
                 provenanceURI: (0, env_1.getActionRunURL)(),
-                packageClass: ctx.config.classification
+                packageClass: ctx.config.classification,
+                sha256: hash,
+                access: ctx.config.access
             })
         });
         if (!res.ok)
@@ -27943,7 +27981,7 @@ const archiveUpload = async (ctx) => {
     core.startGroup('Uploading files');
     let res;
     if (!bundled) {
-        const blob = await (0, archives_1.zipBundle)(ctx, paths);
+        const blob = blobbed;
         res = await fetch(pkg.uploadURI, {
             method: 'PUT',
             headers: {
@@ -27977,6 +28015,7 @@ const packageUpload = async (ctx) => {
         throw new Error(`No files found in provided path: ${ctx.config.path}`);
     if (paths.length > 1 && ctx.config.type !== 'ARCHIVE')
         throw new Error(`Too many files found: ${paths.map(i => `"${i.fullpath()}"`).join(',')}`);
+    const hash = 'sha256:' + (await (0, checksum_1.computeChecksum)(paths[0].fullpath(), 'sha256'));
     // create image in Chassy Index
     const createUrl = `${(0, env_1.getBackendUrl)(ctx.env).apiBaseUrl}/package`;
     let pkg;
@@ -27997,7 +28036,9 @@ const packageUpload = async (ctx) => {
                 },
                 version: ctx.config.version,
                 provenanceURI: (0, env_1.getActionRunURL)(),
-                packageClass: ctx.config.classification
+                packageClass: ctx.config.classification,
+                sha256: hash,
+                access: ctx.config.access
             })
         });
         if (!res.ok)
