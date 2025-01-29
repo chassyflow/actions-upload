@@ -14,7 +14,7 @@ example-pkg-upload:
     - name: Checkout
       id: checkout
       uses: actions/checkout@v4
-    - name: Upload Image to Chassy
+    - name: Upload Package to Chassy
       id: test-action
       uses: chassyflow/actions-upload
       with:
@@ -23,9 +23,9 @@ example-pkg-upload:
         os: 'ubuntu'
         os_version: '22.04'
         version: '1.0.0'
-        type: 'IMAGE'
-        path: '**/release.img'
-        classification: 'RFSIMAGE'
+        type: 'FILE'
+        path: '**/release.exe'
+        classification: 'EXECUTABLE'
 example-image-upload:
   name: Example Image Upload
   runs-on: ubuntu-latest
@@ -46,6 +46,25 @@ example-image-upload:
         type: 'IMAGE'
         path: '**/release.img'
         classification: 'RFSIMAGE'
+example-archive-upload:
+  name: Example Archive Upload
+  runs-on: ubuntu-latest
+  env: CHASSY_TOKEN
+  steps:
+    - name: Checkout
+      id: checkout
+      uses: actions/checkout@v4
+    - name: Upload Archive to Chassy
+      id: test-action
+      uses: chassyflow/actions-upload
+      with:
+        name: 'example-archive'
+        architecture: 'ARM64'
+        os: 'ubuntu'
+        os_version: '22.04'
+        type: 'IMAGE'
+        path: '**/bundle.zip'
+        entrypoint: "entrypoint.sh"
 ```
 
 ## Authentication with Chassy
