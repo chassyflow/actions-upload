@@ -43,7 +43,7 @@ inputs:
   access:
     description: 'access level for package or image'
     required: false
-    default: 'PUBLIC'
+    default: 'PRIVATE'
 outputs:
   id:
     description: 'Id of created package or image'
