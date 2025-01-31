@@ -257,3 +257,19 @@ image. The accepted values are:
 
 - `IMG`
 - `ISO`
+
+### Access
+
+Access is a string that specifies the access level of the artifact. The accepted
+values are (although it is case insensitive):
+
+- `PUBLIC`
+- `PRIVATE`
+
+The default value is `PRIVATE`.
+
+### Entrypoint
+
+Entrypoint is a multi-line string specifying the entrypoint of the archive. It
+is similar to a Dockerfile's `ENTRYPOINT` command. Entrypoint is required when
+uploading an archive and is simply ignored otherwise.
