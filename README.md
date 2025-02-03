@@ -65,7 +65,7 @@ example-archive-upload:
         type: 'ARCHIVE'
         path: '**/bundle.zip'
         entrypoint: |-
-          ./entrypoint.sh
+          entrypoint.sh
 ```
 
 ## Authentication with Chassy
