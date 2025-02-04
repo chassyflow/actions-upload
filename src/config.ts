@@ -63,8 +63,8 @@ const imageSchema = v.object(
 
 const archiveSchema = v.object({
   type: v.literal('ARCHIVE'),
-  classification: v.optional(v.literal('BUNDLE'), 'BUNDLE')
-  //entrypoint: entrypointSchema
+  classification: v.optional(v.literal('BUNDLE'), 'BUNDLE'),
+  entrypoint: entrypointSchema
 })
 
 const packageSchema = v.intersect([
@@ -148,7 +148,7 @@ export const getConfig = () =>
     },
     partitions: undefinedIfEmpty(core.getInput('partitions')),
     compressionScheme: undefinedIfEmpty(core.getInput('compression_scheme')),
-    //entrypoint: undefinedIfEmpty(core.getInput('entrypoint')),
+    entrypoint: undefinedIfEmpty(core.getInput('entrypoint')),
     rawDiskScheme: core.getInput('raw_disk_scheme'),
     version: core.getInput('version'),
     type: core.getInput('type'),

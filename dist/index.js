@@ -27362,8 +27362,8 @@ const imageSchema = v.object({
 }, 'image malformed');
 const archiveSchema = v.object({
     type: v.literal('ARCHIVE'),
-    classification: v.optional(v.literal('BUNDLE'), 'BUNDLE')
-    //entrypoint: entrypointSchema
+    classification: v.optional(v.literal('BUNDLE'), 'BUNDLE'),
+    entrypoint: exports.entrypointSchema
 });
 const packageSchema = v.intersect([
     v.union([
@@ -27405,7 +27405,7 @@ const getConfig = () => v.parse(exports.configSchema, {
     },
     partitions: undefinedIfEmpty(core.getInput('partitions')),
     compressionScheme: undefinedIfEmpty(core.getInput('compression_scheme')),
-    //entrypoint: undefinedIfEmpty(core.getInput('entrypoint')),
+    entrypoint: undefinedIfEmpty(core.getInput('entrypoint')),
     rawDiskScheme: core.getInput('raw_disk_scheme'),
     version: core.getInput('version'),
     type: core.getInput('type'),
@@ -27960,6 +27960,7 @@ const archiveUpload = async (ctx) => {
                 provenanceURI: (0, env_1.getActionRunURL)(),
                 packageClass: ctx.config.classification,
                 sha256: hash,
+                entrypoint: ctx.config.entrypoint,
                 access: ctx.config.access
             })
         });

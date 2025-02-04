@@ -302,6 +302,7 @@ export const archiveUpload = async (ctx: RunContext) => {
         provenanceURI: getActionRunURL(),
         packageClass: ctx.config.classification,
         sha256: hash,
+        entrypoint: ctx.config.entrypoint,
         access: ctx.config.access
       })
     })

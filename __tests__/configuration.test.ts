@@ -49,6 +49,7 @@ describe('archive parsing', () => {
 
     expect(cfg.type).toStrictEqual('ARCHIVE')
     expect(cfg.classification).toStrictEqual('BUNDLE')
+    expect(cfg.entrypoint).toStrictEqual(['javac', 'somearg', 'someOtherArg'])
   })
   it('entrypoint is parsed correctly', () => {
     const entrypoint = v.parse(

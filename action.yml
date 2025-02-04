@@ -37,9 +37,9 @@ inputs:
   raw_disk_scheme:
     description: 'for images, specify raw disk scheme (ISO, IMG)'
     required: true
-  #  entrypoint:
-  #    description: 'for archives, specify entrypoint'
-  #    required: false
+  entrypoint:
+    description: 'for archives, specify entrypoint'
+    required: false
   access:
     description: 'access level for package or image'
     required: false
