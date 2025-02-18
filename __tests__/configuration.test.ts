@@ -27,7 +27,7 @@ describe('archive parsing', () => {
       type: 'ARCHIVE',
       entrypoint: 'javac'
     })
-    const cfg = getConfig()
+    const cfg = assertType(getConfig(), 'ARCHIVE')
 
     expect(cfg.type).toStrictEqual('ARCHIVE')
     expect(cfg.classification).toStrictEqual('BUNDLE')

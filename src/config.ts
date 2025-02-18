@@ -64,27 +64,21 @@ const imageSchema = v.object(
 const archiveSchema = v.object({
   type: v.literal('ARCHIVE'),
   classification: v.optional(v.literal('BUNDLE'), 'BUNDLE'),
-  entrypoint: entrypointSchema
+  entrypoint: entrypointSchema,
+  version: v.string('version must be string')
 })
 
-const packageSchema = v.intersect([
-  v.union([
-    archiveSchema,
-    v.object({
-      type: v.union(
-        [v.literal('FILE'), v.literal('FIRMWARE')],
-        'type must be FILE or FIRMWARE'
-      ),
-      classification: v.union(
-        [v.literal('EXECUTABLE'), v.literal('CONFIG'), v.literal('DATA')],
-        'classification must be EXECUTABLE, CONFIG, or DATA'
-      )
-    })
-  ]),
-  v.object({
-    version: v.string('version must be string')
-  })
-])
+const packageSchema = v.object({
+  type: v.union(
+    [v.literal('FILE'), v.literal('FIRMWARE')],
+    'type must be FILE or FIRMWARE'
+  ),
+  classification: v.union(
+    [v.literal('EXECUTABLE'), v.literal('CONFIG'), v.literal('DATA')],
+    'classification must be EXECUTABLE, CONFIG, or DATA'
+  ),
+  version: v.string('version must be string')
+})
 
 const compatibilitySchema = v.object(
   {
@@ -126,7 +120,7 @@ export const configSchema = v.intersect(
   [
     baseSchema,
     v.union(
-      [imageSchema, packageSchema],
+      [imageSchema, archiveSchema, packageSchema],
       'config must match image or package schema'
     )
   ],
@@ -164,3 +158,19 @@ export const readPartitionConfig = (path: Path) => {
 }
 
 export type Partition = v.InferOutput<typeof imagePartitionSchema>
+
+export const assertType = <
+  T extends ReturnType<typeof getConfig>,
+  K extends ReturnType<typeof getConfig>['type']
+>(
+  cfg: T,
+  type: K
+): Extract<T, { type: K }> => {
+  if (cfg.type !== type)
+    throw new Error(
+      `Type assertion failed: received ${cfg.type}, expected ${type}`
+    )
+  return cfg as Extract<T, { type: K }>
+}
+
+export type Archive = Extract<Config, { type: 'ARCHIVE' }>
