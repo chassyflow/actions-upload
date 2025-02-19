@@ -241,7 +241,7 @@ export const imageUpload = async (ctx: RunContext) => {
   } else {
     const upload = uploadFile(image.uploadURI)
 
-    const res = await backOff(() => upload(path), BACKOFF_CONFIG)
+    const res = await backOff(async () => upload(path), BACKOFF_CONFIG)
 
     if (!res.ok) {
       core.error(`Failed to upload file "${path.fullpath()}"`)
@@ -286,7 +286,7 @@ export const archiveUpload = async (ctx: RunContext) => {
   let pkg: CreatePackage
   try {
     const res = await backOff(
-      () =>
+      async () =>
         fetch(createUrl, {
           method: 'POST',
           headers: {
@@ -337,7 +337,7 @@ export const archiveUpload = async (ctx: RunContext) => {
     const blob = blobbed as Blob
 
     res = await backOff(
-      () =>
+      async () =>
         fetch(pkg.uploadURI, {
           method: 'PUT',
           headers: {
@@ -348,7 +348,7 @@ export const archiveUpload = async (ctx: RunContext) => {
         }),
       BACKOFF_CONFIG
     )
-  } else res = await backOff(() => upload(path), BACKOFF_CONFIG)
+  } else res = await backOff(async () => upload(path), BACKOFF_CONFIG)
 
   if (!res.ok) {
     core.error(`Failed to upload file "${path.fullpath()}"`)

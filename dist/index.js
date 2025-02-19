@@ -27906,7 +27906,7 @@ const imageUpload = async (ctx) => {
     }
     else {
         const upload = uploadFile(image.uploadURI);
-        const res = await (0, exponential_backoff_1.backOff)(() => upload(path), constants_1.BACKOFF_CONFIG);
+        const res = await (0, exponential_backoff_1.backOff)(async () => upload(path), constants_1.BACKOFF_CONFIG);
         if (!res.ok) {
             core.error(`Failed to upload file "${path.fullpath()}"`);
             throw new Error(`Failed to upload file "${path.fullpath()}"`);
@@ -27943,7 +27943,7 @@ const archiveUpload = async (ctx) => {
     core.startGroup('Create Archive in Chassy Index');
     let pkg;
     try {
-        const res = await (0, exponential_backoff_1.backOff)(() => fetch(createUrl, {
+        const res = await (0, exponential_backoff_1.backOff)(async () => fetch(createUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -27984,7 +27984,7 @@ const archiveUpload = async (ctx) => {
     let res;
     if (!bundled) {
         const blob = blobbed;
-        res = await (0, exponential_backoff_1.backOff)(() => fetch(pkg.uploadURI, {
+        res = await (0, exponential_backoff_1.backOff)(async () => fetch(pkg.uploadURI, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/octet-stream',
@@ -27994,7 +27994,7 @@ const archiveUpload = async (ctx) => {
         }), constants_1.BACKOFF_CONFIG);
     }
     else
-        res = await (0, exponential_backoff_1.backOff)(() => upload(path), constants_1.BACKOFF_CONFIG);
+        res = await (0, exponential_backoff_1.backOff)(async () => upload(path), constants_1.BACKOFF_CONFIG);
     if (!res.ok) {
         core.error(`Failed to upload file "${path.fullpath()}"`);
         throw new Error(`Failed to upload file "${path.fullpath()}"`);
