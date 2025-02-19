@@ -146,7 +146,7 @@ export const getConfig = () =>
     rawDiskScheme: core.getInput('raw_disk_scheme'),
     version: core.getInput('version'),
     type: core.getInput('type'),
-    classification: core.getInput('classification'),
+    classification: undefinedIfEmpty(core.getInput('classification')),
     access: undefinedIfEmpty(core.getInput('access'))
   })
 
