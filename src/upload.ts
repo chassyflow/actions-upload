@@ -28,6 +28,11 @@ const uploadFile = (url: string) => async (path: Path) => {
   })
 }
 
+const dbg = <T>(v: T) => {
+  core.debug(JSON.stringify(v, null, 2))
+  return v
+}
+
 /**
  * Upload image to Chassy Index
  */
@@ -287,28 +292,31 @@ export const archiveUpload = async (ctx: RunContext) => {
   try {
     const res = await backOff(
       async () =>
-        fetch(createUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: ctx.authToken
-          },
-          body: JSON.stringify({
-            name: config.name,
-            type: config.type,
-            compatibility: {
-              versionID: config.compatibility.version,
-              osID: config.compatibility.os,
-              architecture: config.compatibility.architecture
+        fetch(
+          createUrl,
+          dbg({
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: ctx.authToken
             },
-            version: config.version,
-            provenanceURI: getActionRunURL(),
-            packageClass: ctx.config.classification,
-            sha256: hash,
-            entrypoint: config.entrypoint,
-            access: config.access
+            body: JSON.stringify({
+              name: config.name,
+              type: config.type,
+              compatibility: {
+                versionID: config.compatibility.version,
+                osID: config.compatibility.os,
+                architecture: config.compatibility.architecture
+              },
+              version: config.version,
+              provenanceURI: getActionRunURL(),
+              packageClass: ctx.config.classification,
+              sha256: hash,
+              entrypoint: config.entrypoint,
+              access: config.access
+            })
           })
-        }),
+        ),
       BACKOFF_CONFIG
     )
     if (!res.ok)

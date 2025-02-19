@@ -27712,6 +27712,10 @@ const uploadFile = (url) => async (path) => {
         body: readStream
     });
 };
+const dbg = (v) => {
+    core.debug(JSON.stringify(v, null, 2));
+    return v;
+};
 /**
  * Upload image to Chassy Index
  */
@@ -27943,7 +27947,7 @@ const archiveUpload = async (ctx) => {
     core.startGroup('Create Archive in Chassy Index');
     let pkg;
     try {
-        const res = await (0, exponential_backoff_1.backOff)(async () => fetch(createUrl, {
+        const res = await (0, exponential_backoff_1.backOff)(async () => fetch(createUrl, dbg({
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -27964,7 +27968,7 @@ const archiveUpload = async (ctx) => {
                 entrypoint: config.entrypoint,
                 access: config.access
             })
-        }), constants_1.BACKOFF_CONFIG);
+        })), constants_1.BACKOFF_CONFIG);
         if (!res.ok)
             throw new Error(`Failed to create archive: status: ${res.statusText}, message: ${await res.text()}`);
         pkg = (await res.json());
