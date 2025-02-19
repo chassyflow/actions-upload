@@ -27713,7 +27713,7 @@ const uploadFile = (url) => async (path) => {
     });
 };
 const dbg = (v) => {
-    core.debug(JSON.stringify(v, null, 2));
+    core.info(JSON.stringify(v, null, 2));
     return v;
 };
 /**
