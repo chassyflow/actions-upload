@@ -29,7 +29,7 @@ const uploadFile = (url: string) => async (path: Path) => {
 }
 
 const dbg = <T>(v: T) => {
-  core.debug(JSON.stringify(v, null, 2))
+  core.info(JSON.stringify(v, null, 2))
   return v
 }
 

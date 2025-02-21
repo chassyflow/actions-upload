@@ -61,6 +61,20 @@ describe('archive parsing', () => {
     expect(() => v.parse(entrypointSchema, '\n')).toThrow()
     expect(() => v.parse(entrypointSchema, '\n\n')).toThrow()
   })
+  it('entrypoint is required', () => {
+    mockInput({
+      name: 'test',
+      path: 'src/*.ts',
+      architecture: 'ARM64',
+      os: 'ubuntu',
+      os_version: '20.04',
+      version: '1.0.0',
+      type: 'ARCHIVE',
+      classification: 'BUNDLE'
+      //entrypoint: 'javac\nsomearg\nsomeOtherArg'
+    })
+    expect(() => getConfig()).toThrow()
+  })
 })
 
 describe('package parsing', () => {
