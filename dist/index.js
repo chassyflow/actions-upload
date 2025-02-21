@@ -27327,7 +27327,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.readPartitionConfig = exports.getConfig = exports.configSchema = exports.baseSchema = exports.entrypointSchema = void 0;
+exports.assertType = exports.readPartitionConfig = exports.getConfig = exports.configSchema = exports.baseSchema = exports.entrypointSchema = void 0;
 const v = __importStar(__nccwpck_require__(8275));
 const core = __importStar(__nccwpck_require__(7484));
 const fs_1 = __nccwpck_require__(9896);
@@ -27363,20 +27363,14 @@ const imageSchema = v.object({
 const archiveSchema = v.object({
     type: v.literal('ARCHIVE'),
     classification: v.optional(v.literal('BUNDLE'), 'BUNDLE'),
-    entrypoint: exports.entrypointSchema
+    entrypoint: exports.entrypointSchema,
+    version: v.string('version must be string')
 });
-const packageSchema = v.intersect([
-    v.union([
-        archiveSchema,
-        v.object({
-            type: v.union([v.literal('FILE'), v.literal('FIRMWARE')], 'type must be FILE or FIRMWARE'),
-            classification: v.union([v.literal('EXECUTABLE'), v.literal('CONFIG'), v.literal('DATA')], 'classification must be EXECUTABLE, CONFIG, or DATA')
-        })
-    ]),
-    v.object({
-        version: v.string('version must be string')
-    })
-]);
+const packageSchema = v.object({
+    type: v.union([v.literal('FILE'), v.literal('FIRMWARE')], 'type must be FILE or FIRMWARE'),
+    classification: v.union([v.literal('EXECUTABLE'), v.literal('CONFIG'), v.literal('DATA')], 'classification must be EXECUTABLE, CONFIG, or DATA'),
+    version: v.string('version must be string')
+});
 const compatibilitySchema = v.object({
     architecture: architectureSchema,
     os: v.string('os must be string'),
@@ -27390,7 +27384,7 @@ exports.baseSchema = v.object({
 });
 exports.configSchema = v.intersect([
     exports.baseSchema,
-    v.union([imageSchema, packageSchema], 'config must match image or package schema')
+    v.union([imageSchema, archiveSchema, packageSchema], 'config must match image or package schema')
 ], 'malformed configuration');
 /**
  * Get configuration options for environment
@@ -27409,7 +27403,7 @@ const getConfig = () => v.parse(exports.configSchema, {
     rawDiskScheme: core.getInput('raw_disk_scheme'),
     version: core.getInput('version'),
     type: core.getInput('type'),
-    classification: core.getInput('classification'),
+    classification: undefinedIfEmpty(core.getInput('classification')),
     access: undefinedIfEmpty(core.getInput('access'))
 });
 exports.getConfig = getConfig;
@@ -27420,6 +27414,12 @@ const readPartitionConfig = (path) => {
     return v.parse(v.array(imagePartitionSchema), JSON.parse(file.toString()));
 };
 exports.readPartitionConfig = readPartitionConfig;
+const assertType = (cfg, type) => {
+    if (cfg.type !== type)
+        throw new Error(`Type assertion failed: received ${cfg.type}, expected ${type}`);
+    return cfg;
+};
+exports.assertType = assertType;
 
 
 /***/ }),
@@ -27712,6 +27712,10 @@ const uploadFile = (url) => async (path) => {
         body: readStream
     });
 };
+const dbg = (v) => {
+    core.info(JSON.stringify(v, null, 2));
+    return v;
+};
 /**
  * Upload image to Chassy Index
  */
@@ -27906,7 +27910,7 @@ const imageUpload = async (ctx) => {
     }
     else {
         const upload = uploadFile(image.uploadURI);
-        const res = await upload(path);
+        const res = await (0, exponential_backoff_1.backOff)(async () => upload(path), constants_1.BACKOFF_CONFIG);
         if (!res.ok) {
             core.error(`Failed to upload file "${path.fullpath()}"`);
             throw new Error(`Failed to upload file "${path.fullpath()}"`);
@@ -27932,6 +27936,7 @@ const archiveUpload = async (ctx) => {
     if (!path)
         throw new Error(`No files found in provided path: ${ctx.config.path}`);
     const bundled = path && (0, archives_1.isArchive)(path) && extra.length === 0;
+    const config = (0, config_1.assertType)((0, config_1.getConfig)(), 'ARCHIVE');
     // create image in Chassy Index
     const createUrl = `${(0, env_1.getBackendUrl)(ctx.env).apiBaseUrl}/package`;
     const blobbed = !bundled ? await (0, archives_1.zipBundle)(ctx, paths) : undefined;
@@ -27942,28 +27947,28 @@ const archiveUpload = async (ctx) => {
     core.startGroup('Create Archive in Chassy Index');
     let pkg;
     try {
-        const res = await fetch(createUrl, {
+        const res = await (0, exponential_backoff_1.backOff)(async () => fetch(createUrl, dbg({
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 Authorization: ctx.authToken
             },
             body: JSON.stringify({
-                name: ctx.config.name,
-                type: ctx.config.type,
+                name: config.name,
+                type: config.type,
                 compatibility: {
-                    versionID: ctx.config.compatibility.version,
-                    osID: ctx.config.compatibility.os,
-                    architecture: ctx.config.compatibility.architecture
+                    versionID: config.compatibility.version,
+                    osID: config.compatibility.os,
+                    architecture: config.compatibility.architecture
                 },
-                version: ctx.config.version,
+                version: config.version,
                 provenanceURI: (0, env_1.getActionRunURL)(),
                 packageClass: ctx.config.classification,
                 sha256: hash,
-                entrypoint: ctx.config.entrypoint,
-                access: ctx.config.access
+                entrypoint: config.entrypoint,
+                access: config.access
             })
-        });
+        })), constants_1.BACKOFF_CONFIG);
         if (!res.ok)
             throw new Error(`Failed to create archive: status: ${res.statusText}, message: ${await res.text()}`);
         pkg = (await res.json());
@@ -27983,17 +27988,17 @@ const archiveUpload = async (ctx) => {
     let res;
     if (!bundled) {
         const blob = blobbed;
-        res = await fetch(pkg.uploadURI, {
+        res = await (0, exponential_backoff_1.backOff)(async () => fetch(pkg.uploadURI, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/octet-stream',
                 'Content-Length': blob.size.toString()
             },
             body: blob
-        });
+        }), constants_1.BACKOFF_CONFIG);
     }
     else
-        res = await upload(path);
+        res = await (0, exponential_backoff_1.backOff)(async () => upload(path), constants_1.BACKOFF_CONFIG);
     if (!res.ok) {
         core.error(`Failed to upload file "${path.fullpath()}"`);
         throw new Error(`Failed to upload file "${path.fullpath()}"`);

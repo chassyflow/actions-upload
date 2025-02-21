@@ -11,7 +11,7 @@ import fs from 'fs'
 import { isArchive, zipBundle } from './archives'
 import { computeChecksum, computeChecksumOfBlob } from './checksum'
 import { BACKOFF_CONFIG, MULTI_PART_CHUNK_SIZE } from './constants'
-import { Partition, readPartitionConfig } from './config'
+import { assertType, getConfig, Partition, readPartitionConfig } from './config'
 
 const uploadFile = (url: string) => async (path: Path) => {
   const readStream = fs.readFileSync(path.fullpath())
@@ -26,6 +26,11 @@ const uploadFile = (url: string) => async (path: Path) => {
     },
     body: readStream
   })
+}
+
+const dbg = <T>(v: T) => {
+  core.info(JSON.stringify(v, null, 2))
+  return v
 }
 
 /**
@@ -241,7 +246,7 @@ export const imageUpload = async (ctx: RunContext) => {
   } else {
     const upload = uploadFile(image.uploadURI)
 
-    const res = await upload(path)
+    const res = await backOff(async () => upload(path), BACKOFF_CONFIG)
 
     if (!res.ok) {
       core.error(`Failed to upload file "${path.fullpath()}"`)
@@ -269,6 +274,7 @@ export const archiveUpload = async (ctx: RunContext) => {
   if (!path)
     throw new Error(`No files found in provided path: ${ctx.config.path}`)
   const bundled = path && isArchive(path) && extra.length === 0
+  const config = assertType(getConfig(), 'ARCHIVE')
 
   // create image in Chassy Index
   const createUrl = `${getBackendUrl(ctx.env).apiBaseUrl}/package`
@@ -284,28 +290,35 @@ export const archiveUpload = async (ctx: RunContext) => {
   core.startGroup('Create Archive in Chassy Index')
   let pkg: CreatePackage
   try {
-    const res = await fetch(createUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: ctx.authToken
-      },
-      body: JSON.stringify({
-        name: ctx.config.name,
-        type: ctx.config.type,
-        compatibility: {
-          versionID: ctx.config.compatibility.version,
-          osID: ctx.config.compatibility.os,
-          architecture: ctx.config.compatibility.architecture
-        },
-        version: ctx.config.version,
-        provenanceURI: getActionRunURL(),
-        packageClass: ctx.config.classification,
-        sha256: hash,
-        entrypoint: ctx.config.entrypoint,
-        access: ctx.config.access
-      })
-    })
+    const res = await backOff(
+      async () =>
+        fetch(
+          createUrl,
+          dbg({
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: ctx.authToken
+            },
+            body: JSON.stringify({
+              name: config.name,
+              type: config.type,
+              compatibility: {
+                versionID: config.compatibility.version,
+                osID: config.compatibility.os,
+                architecture: config.compatibility.architecture
+              },
+              version: config.version,
+              provenanceURI: getActionRunURL(),
+              packageClass: ctx.config.classification,
+              sha256: hash,
+              entrypoint: config.entrypoint,
+              access: config.access
+            })
+          })
+        ),
+      BACKOFF_CONFIG
+    )
     if (!res.ok)
       throw new Error(
         `Failed to create archive: status: ${res.statusText}, message: ${await res.text()}`
@@ -331,15 +344,19 @@ export const archiveUpload = async (ctx: RunContext) => {
   if (!bundled) {
     const blob = blobbed as Blob
 
-    res = await fetch(pkg.uploadURI, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/octet-stream',
-        'Content-Length': blob.size.toString()
-      },
-      body: blob
-    })
-  } else res = await upload(path)
+    res = await backOff(
+      async () =>
+        fetch(pkg.uploadURI, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/octet-stream',
+            'Content-Length': blob.size.toString()
+          },
+          body: blob
+        }),
+      BACKOFF_CONFIG
+    )
+  } else res = await backOff(async () => upload(path), BACKOFF_CONFIG)
 
   if (!res.ok) {
     core.error(`Failed to upload file "${path.fullpath()}"`)
