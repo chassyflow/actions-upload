@@ -27860,6 +27860,9 @@ const fileUpload = async (ctx) => {
     if (paths.length === 0)
         throw new Error(`No files found in provided path: ${config.path}`);
     const isMany = paths.length > 1;
+    if (isMany && config.name) {
+        core.warning(`Found multiple files and a name was provided. Ignoring name and using file names`);
+    }
     // create package in Chassy Index
     const createUrl = `${(0, env_1.getBackendUrl)(ctx.env).apiBaseUrl}/package`;
     const responses = paths
