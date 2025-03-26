@@ -126,6 +126,22 @@ describe('package parsing', () => {
     if (cfg.type !== 'FIRMWARE') throw new Error('Type is not FIRMWARE')
     expect(cfg.classification).toStrictEqual('EXECUTABLE')
   })
+
+  it('firmware classification is optional', () => {
+    mockInput({
+      name: 'test',
+      path: 'src/*.ts',
+      architecture: 'ARM64',
+      os: 'ubuntu',
+      os_version: '20.04',
+      entrypoint: 'javac',
+      version: '1.0.0',
+      type: 'FIRMWARE'
+    })
+
+    const cfg = assertType(getConfig(), 'FIRMWARE')
+    expect(cfg.classification).toStrictEqual('EXECUTABLE')
+  })
 })
 
 describe('image parsing', () => {
