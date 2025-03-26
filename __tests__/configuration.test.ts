@@ -95,6 +95,20 @@ describe('package parsing', () => {
     expect(cfg.classification).toStrictEqual('EXECUTABLE')
   })
 
+  it('globbing executables works', () => {
+    mockInput({
+      path: 'target/release/*.exe',
+      architecture: 'ARM64',
+      os: 'ubuntu',
+      os_version: '20.04',
+      version: '1.0.0',
+      type: 'FILE',
+      classification: 'EXECUTABLE'
+    })
+    const cfg = assertType(getConfig(), 'FILE')
+    expect(cfg.classification).toStrictEqual('EXECUTABLE')
+  })
+
   it('firmware parses correctly', () => {
     mockInput({
       name: 'test',

@@ -1,8 +1,12 @@
 import * as core from '@actions/core'
 import { createRunContext } from './context'
-import { archiveUpload, imageUpload, packageUpload } from './upload'
+import {
+  archiveUpload,
+  imageUpload,
+  fileUpload,
+  firmwareUpload
+} from './uploads'
 import { ValiError } from 'valibot'
-import { Image, Package } from './api'
 
 /**
  * The main function for the action.
@@ -14,15 +18,32 @@ export async function run(): Promise<void> {
     const ctx = await createRunContext()
     core.debug(`Config: ${JSON.stringify(ctx, null, 2)}`)
 
-    let output: Image | Package
-    if (ctx.config.type === 'IMAGE') {
-      output = await imageUpload(ctx)
-    } else if (ctx.config.type === 'ARCHIVE') {
-      output = await archiveUpload(ctx)
-    } else {
-      output = await packageUpload(ctx)
+    switch (ctx.config.type) {
+      case 'IMAGE': {
+        const output = await imageUpload(ctx)
+        core.setOutput('id', output.id)
+        break
+      }
+      case 'ARCHIVE': {
+        const output = await archiveUpload(ctx)
+        core.setOutput('id', output.id)
+        break
+      }
+      case 'FILE': {
+        const result = await fileUpload(ctx)
+        result.forEach(data => {
+          core.setOutput(data.name, data.pkg.package.id)
+        })
+        break
+      }
+      case 'FIRMWARE': {
+        const output = await firmwareUpload(ctx)
+        core.setOutput('id', output.id)
+        break
+      }
+      default:
+        throw new Error(`Unrecognized configuration type: ${ctx.config}`)
     }
-    core.setOutput('id', output.id)
   } catch (error) {
     if (error instanceof ValiError) core.setFailed(error)
     // Fail the workflow run if an error occurs

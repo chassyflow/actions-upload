@@ -5,6 +5,15 @@ import { Path } from 'glob'
 
 const undefinedIfEmpty = (value: string) => (value === '' ? undefined : value)
 
+const classifications = {
+  yocto: v.literal('YOCTO', 'classification must be YOCTO'),
+  rfs: v.literal('RFSIMAGE', 'classification must be RFSIMAGE'),
+  bundle: v.literal('BUNDLE', 'classification must be BUNDLE'),
+  executable: v.literal('EXECUTABLE', 'classification must be EXECUTABLE'),
+  config: v.literal('CONFIG', 'classification must be CONFIG'),
+  data: v.literal('DATA', 'classification must be DATA')
+} as const
+
 export const entrypointSchema = v.pipe(
   v.string('entrypoint must be provided as a multiline string'),
   v.trim(),
@@ -22,6 +31,18 @@ const architectureSchema = v.union([
   v.literal('RISCV'),
   v.literal('UNKNOWN')
 ])
+
+const compatibilitySchema = v.object(
+  {
+    architecture: architectureSchema,
+    os: v.string('os must be string'),
+    version: v.pipe(
+      v.string('version must be string'),
+      v.minLength(3, 'version must be at least 3 characters')
+    )
+  },
+  'compatibility malformed, must have architecture, os, and version'
+)
 
 const imagePartitionSchema = v.object({
   filesystemType: v.string('filesystemType must be string'),
@@ -44,55 +65,7 @@ const imagePartitionSchema = v.object({
   partitionType: v.string('partitionType must be string')
 })
 
-const imageSchema = v.object(
-  {
-    type: v.literal('IMAGE'),
-    classification: v.union(
-      [v.literal('RFSIMAGE'), v.literal('YOCTO')],
-      'classification must be RFSIMAGE or YOCTO'
-    ),
-    partitions: v.optional(v.string('partitions (path) must be string')),
-    compressionScheme: v.optional(
-      v.union([v.literal('NONE'), v.literal('ZIP'), v.literal('TGZ')]),
-      'NONE'
-    ),
-    rawDiskScheme: v.union([v.literal('IMG'), v.literal('ISO')])
-  },
-  'image malformed'
-)
-
-const archiveSchema = v.object({
-  type: v.literal('ARCHIVE'),
-  classification: v.optional(v.literal('BUNDLE'), 'BUNDLE'),
-  entrypoint: entrypointSchema,
-  version: v.string('version must be string')
-})
-
-const packageSchema = v.object({
-  type: v.union(
-    [v.literal('FILE'), v.literal('FIRMWARE')],
-    'type must be FILE or FIRMWARE'
-  ),
-  classification: v.union(
-    [v.literal('EXECUTABLE'), v.literal('CONFIG'), v.literal('DATA')],
-    'classification must be EXECUTABLE, CONFIG, or DATA'
-  ),
-  version: v.string('version must be string')
-})
-
-const compatibilitySchema = v.object(
-  {
-    architecture: architectureSchema,
-    os: v.string('os must be string'),
-    version: v.pipe(
-      v.string('version must be string'),
-      v.minLength(3, 'version must be at least 3 characters')
-    )
-  },
-  'compatibility malformed, must have architecture, os, and version'
-)
-
-export const baseSchema = v.object({
+export const baseSchema = {
   name: v.pipe(
     v.string('name must be string'),
     v.minLength(1, 'name must be at least 1 character')
@@ -114,17 +87,56 @@ export const baseSchema = v.object({
     ),
     'PRIVATE'
   )
+}
+
+const imageSchema = v.object(
+  {
+    ...baseSchema,
+    type: v.literal('IMAGE'),
+    classification: v.union(
+      [v.literal('RFSIMAGE'), v.literal('YOCTO')],
+      'classification must be RFSIMAGE or YOCTO'
+    ),
+    partitions: v.optional(v.string('partitions (path) must be string')),
+    compressionScheme: v.optional(
+      v.union([v.literal('NONE'), v.literal('ZIP'), v.literal('TGZ')]),
+      'NONE'
+    ),
+    rawDiskScheme: v.union([v.literal('IMG'), v.literal('ISO')])
+  },
+  'image malformed'
+)
+
+const archiveSchema = v.object({
+  ...baseSchema,
+  type: v.literal('ARCHIVE'),
+  classification: v.optional(classifications.bundle, 'BUNDLE'),
+  entrypoint: entrypointSchema,
+  version: v.string('version must be string')
 })
 
-export const configSchema = v.intersect(
-  [
-    baseSchema,
-    v.union(
-      [imageSchema, archiveSchema, packageSchema],
-      'config must match image or package schema'
-    )
-  ],
-  'malformed configuration'
+const firmwareSchema = v.object({
+  ...baseSchema,
+  type: v.literal('FIRMWARE', 'type must be FILE or FIRMWARE'),
+  classification: v.optional(classifications.executable, 'EXECUTABLE'),
+  version: v.string('version must be string')
+})
+
+const fileSchema = v.object({
+  ...baseSchema,
+  // override name to allow empty string for files when globbing
+  name: v.optional(v.pipe(v.string(), v.trim())),
+  type: v.literal('FILE', 'type must be FILE'),
+  classification: v.union(
+    [classifications.executable, classifications.config, classifications.data],
+    'classification must be EXECUTABLE, CONFIG, or DATA'
+  ),
+  version: v.string('version must be string')
+})
+
+export const configSchema = v.union(
+  [imageSchema, archiveSchema, firmwareSchema, fileSchema],
+  'config must match image, archive, file, or firmware schema'
 )
 export type Config = v.InferOutput<typeof configSchema>
 
@@ -174,3 +186,6 @@ export const assertType = <
 }
 
 export type Archive = Extract<Config, { type: 'ARCHIVE' }>
+export type Image = Extract<Config, { type: 'IMAGE' }>
+export type Firmware = Extract<Config, { type: 'FIRMWARE' }>
+export type File = Extract<Config, { type: 'FILE' }>
