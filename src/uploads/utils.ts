@@ -5,7 +5,7 @@ import { BACKOFF_CONFIG } from '../constants'
 import { backOff } from 'exponential-backoff'
 
 export const uploadFileWithBackoff =
-  (url: string, backoffOptions = BACKOFF_CONFIG) =>
+  (url: RequestInfo | URL, backoffOptions = BACKOFF_CONFIG) =>
   async (path: Path) => {
     const readStream = fs.readFileSync(path.fullpath())
 
@@ -26,7 +26,7 @@ export const uploadFileWithBackoff =
   }
 
 export const fetchWithBackoff = async (
-  url: string,
+  url: RequestInfo | URL,
   options: RequestInit,
   backoffOptions = BACKOFF_CONFIG
 ) => backOff(async () => fetch(url, options), backoffOptions)
