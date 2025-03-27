@@ -11,7 +11,7 @@ import fs from 'fs'
 import { computeChecksum } from '../checksum'
 import { BACKOFF_CONFIG, MULTI_PART_CHUNK_SIZE } from '../constants'
 import { Partition, readPartitionConfig } from '../config'
-import { uploadFile } from './utils'
+import { fetchWithBackoff, uploadFileWithBackoff } from './utils'
 
 /**
  * Upload image to Chassy Index
@@ -73,46 +73,31 @@ export const imageUpload = async (ctx: RunContext) => {
   core.startGroup('Create Image in Chassy Index')
   let image: CreateImage
   try {
-    const res = await backOff(async () => {
-      try {
-        const res = await fetch(createUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: ctx.authToken
-          },
-          body: JSON.stringify({
-            name: ctx.config.name,
-            type: ctx.config.classification,
-            compatibility: {
-              versionID: ctx.config.compatibility.version,
-              osID: ctx.config.compatibility.os,
-              architecture: ctx.config.compatibility.architecture
-            },
-            provenanceURI: getActionRunURL(),
-            partitions,
-            storageFormat: {
-              compressionScheme,
-              rawDiskScheme
-            },
-            checksum,
-            sizeInBytes: path.size,
-            access: ctx.config.access
-          })
-        })
-        if (!res.ok) {
-          throw new Error(
-            `Failed to create image: status: ${res.statusText}, message: ${await res.text()}`
-          )
-        }
-        return res
-      } catch (e: unknown) {
-        if (e instanceof Error) {
-          core.error(`Failed to create new image: ${e.message}`)
-        }
-        throw e
-      }
-    }, BACKOFF_CONFIG)
+    const res = await fetchWithBackoff(createUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: ctx.authToken
+      },
+      body: JSON.stringify({
+        name: ctx.config.name,
+        type: ctx.config.classification,
+        compatibility: {
+          versionID: ctx.config.compatibility.version,
+          osID: ctx.config.compatibility.os,
+          architecture: ctx.config.compatibility.architecture
+        },
+        provenanceURI: getActionRunURL(),
+        partitions,
+        storageFormat: {
+          compressionScheme,
+          rawDiskScheme
+        },
+        checksum,
+        sizeInBytes: path.size,
+        access: ctx.config.access
+      })
+    })
     if (!res.ok)
       throw new Error(
         `Failed to create image: status: ${res.statusText}, message: ${await res.text()}`
@@ -201,32 +186,27 @@ export const imageUpload = async (ctx: RunContext) => {
       throw new Error(`Failed to upload files: (${errMsgs.join(',')})`)
     }
     // send confirmations
-    await backOff(async () => {
-      const res = await fetch(`${getBackendUrl(ctx.env).apiBaseUrl}/image`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: ctx.authToken
-        },
-        body: JSON.stringify({
-          id: image.image.id,
-          confirmation: {
-            uploadId: image.uploadId,
-            eTags: responses.map(r => ({
-              partNumber: r.partNumber,
-              eTag: r.etag
-            }))
-          }
-        })
+    await fetchWithBackoff(`${getBackendUrl(ctx.env).apiBaseUrl}/image`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: ctx.authToken
+      },
+      body: JSON.stringify({
+        id: image.image.id,
+        confirmation: {
+          uploadId: image.uploadId,
+          eTags: responses.map(r => ({
+            partNumber: r.partNumber,
+            eTag: r.etag
+          }))
+        }
       })
-      if (!res.ok)
-        throw new Error(`Failed to confirm upload: ${await res.text()}`)
-      return res
-    }, BACKOFF_CONFIG)
+    })
   } else {
-    const upload = uploadFile(image.uploadURI)
+    const upload = uploadFileWithBackoff(image.uploadURI)
 
-    const res = await backOff(async () => upload(path), BACKOFF_CONFIG)
+    const res = await upload(path)
 
     if (!res.ok) {
       core.error(`Failed to upload file "${path.fullpath()}"`)

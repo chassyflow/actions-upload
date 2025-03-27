@@ -1,14 +1,12 @@
 import { RunContext } from '../context'
 import * as core from '@actions/core'
-import { backOff } from 'exponential-backoff'
 import { getActionRunURL, getBackendUrl } from '../env'
 import { CreatePackage } from '../api'
 import { glob } from 'glob'
 import { isArchive, zipBundle } from '../archives'
 import { computeChecksum, computeChecksumOfBlob } from '../checksum'
-import { BACKOFF_CONFIG } from '../constants'
 import { assertType } from '../config'
-import { uploadFile, dbg } from './utils'
+import { uploadFileWithBackoff, dbg, fetchWithBackoff } from './utils'
 
 /**
  * Upload archive package to Chassy Index
@@ -37,34 +35,30 @@ export const archiveUpload = async (ctx: RunContext) => {
   core.startGroup('Create Archive in Chassy Index')
   let pkg: CreatePackage
   try {
-    const res = await backOff(
-      async () =>
-        fetch(
-          createUrl,
-          dbg({
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: ctx.authToken
-            },
-            body: JSON.stringify({
-              name: config.name,
-              type: config.type,
-              compatibility: {
-                versionID: config.compatibility.version,
-                osID: config.compatibility.os,
-                architecture: config.compatibility.architecture
-              },
-              version: config.version,
-              provenanceURI: getActionRunURL(),
-              packageClass: config.classification,
-              sha256: hash,
-              entrypoint: config.entrypoint,
-              access: config.access
-            })
-          })
-        ),
-      BACKOFF_CONFIG
+    const res = await fetchWithBackoff(
+      createUrl,
+      dbg({
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: ctx.authToken
+        },
+        body: JSON.stringify({
+          name: config.name,
+          type: config.type,
+          compatibility: {
+            versionID: config.compatibility.version,
+            osID: config.compatibility.os,
+            architecture: config.compatibility.architecture
+          },
+          version: config.version,
+          provenanceURI: getActionRunURL(),
+          packageClass: config.classification,
+          sha256: hash,
+          entrypoint: config.entrypoint,
+          access: config.access
+        })
+      })
     )
     if (!res.ok)
       throw new Error(
@@ -83,7 +77,7 @@ export const archiveUpload = async (ctx: RunContext) => {
   core.info(`Package Id: ${pkg.package.id}`)
 
   // upload image using returned URL
-  const upload = uploadFile(pkg.uploadURI)
+  const upload = uploadFileWithBackoff(pkg.uploadURI)
 
   core.startGroup('Uploading files')
 
@@ -91,19 +85,15 @@ export const archiveUpload = async (ctx: RunContext) => {
   if (!bundled) {
     const blob = blobbed as Blob
 
-    res = await backOff(
-      async () =>
-        fetch(pkg.uploadURI, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/octet-stream',
-            'Content-Length': blob.size.toString()
-          },
-          body: blob
-        }),
-      BACKOFF_CONFIG
-    )
-  } else res = await backOff(async () => upload(path), BACKOFF_CONFIG)
+    res = await fetchWithBackoff(pkg.uploadURI, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/octet-stream',
+        'Content-Length': blob.size.toString()
+      },
+      body: blob
+    })
+  } else res = await upload(path)
 
   if (!res.ok) {
     core.error(`Failed to upload file "${path.fullpath()}"`)

@@ -5,9 +5,7 @@ import { CreatePackage } from '../api'
 import { glob } from 'glob'
 import { computeChecksum } from '../checksum'
 import { assertType } from '../config'
-import { uploadFile } from './utils'
-import { backOff } from 'exponential-backoff'
-import { BACKOFF_CONFIG } from '../constants'
+import { fetchWithBackoff, uploadFileWithBackoff } from './utils'
 
 /**
  * Upload file to Chassy Index
@@ -39,31 +37,27 @@ export const fileUpload = async (ctx: RunContext) => {
       const name = isMany ? path.name : (config.name ?? path.name)
       let pkg: CreatePackage
       try {
-        const res = await backOff(
-          async () =>
-            fetch(createUrl, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                Authorization: ctx.authToken
-              },
-              body: JSON.stringify({
-                name,
-                type: config.type,
-                compatibility: {
-                  versionID: config.compatibility.version,
-                  osID: config.compatibility.os,
-                  architecture: config.compatibility.architecture
-                },
-                version: config.version,
-                provenanceURI: getActionRunURL(),
-                packageClass: config.classification,
-                sha256: hash,
-                access: config.access
-              })
-            }),
-          BACKOFF_CONFIG
-        )
+        const res = await fetchWithBackoff(createUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: ctx.authToken
+          },
+          body: JSON.stringify({
+            name,
+            type: config.type,
+            compatibility: {
+              versionID: config.compatibility.version,
+              osID: config.compatibility.os,
+              architecture: config.compatibility.architecture
+            },
+            version: config.version,
+            provenanceURI: getActionRunURL(),
+            packageClass: config.classification,
+            sha256: hash,
+            access: config.access
+          })
+        })
         if (!res.ok)
           throw new Error(
             `Failed to create package: status: ${res.statusText}, message: ${await res.text()}`
@@ -87,9 +81,9 @@ export const fileUpload = async (ctx: RunContext) => {
     })
     .map(async data => {
       const { pkg, path, name } = await data
-      const upload = uploadFile(pkg.uploadURI)
+      const upload = uploadFileWithBackoff(pkg.uploadURI)
       return {
-        res: await backOff(async () => upload(path), BACKOFF_CONFIG),
+        res: await upload(path),
         pkg,
         name
       }

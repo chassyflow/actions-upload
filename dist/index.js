@@ -27716,12 +27716,10 @@ var __importStar = (this && this.__importStar) || function (mod) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.archiveUpload = void 0;
 const core = __importStar(__nccwpck_require__(7484));
-const exponential_backoff_1 = __nccwpck_require__(1675);
 const env_1 = __nccwpck_require__(8204);
 const glob_1 = __nccwpck_require__(1363);
 const archives_1 = __nccwpck_require__(6792);
 const checksum_1 = __nccwpck_require__(4596);
-const constants_1 = __nccwpck_require__(7242);
 const config_1 = __nccwpck_require__(2973);
 const utils_1 = __nccwpck_require__(9467);
 /**
@@ -27747,7 +27745,7 @@ const archiveUpload = async (ctx) => {
     core.startGroup('Create Archive in Chassy Index');
     let pkg;
     try {
-        const res = await (0, exponential_backoff_1.backOff)(async () => fetch(createUrl, (0, utils_1.dbg)({
+        const res = await (0, utils_1.fetchWithBackoff)(createUrl, (0, utils_1.dbg)({
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -27768,7 +27766,7 @@ const archiveUpload = async (ctx) => {
                 entrypoint: config.entrypoint,
                 access: config.access
             })
-        })), constants_1.BACKOFF_CONFIG);
+        }));
         if (!res.ok)
             throw new Error(`Failed to create archive: status: ${res.statusText}, message: ${await res.text()}`);
         pkg = (await res.json());
@@ -27783,22 +27781,22 @@ const archiveUpload = async (ctx) => {
     core.debug(`Created archive: ${JSON.stringify(pkg, null, 2)}`);
     core.info(`Package Id: ${pkg.package.id}`);
     // upload image using returned URL
-    const upload = (0, utils_1.uploadFile)(pkg.uploadURI);
+    const upload = (0, utils_1.uploadFileWithBackoff)(pkg.uploadURI);
     core.startGroup('Uploading files');
     let res;
     if (!bundled) {
         const blob = blobbed;
-        res = await (0, exponential_backoff_1.backOff)(async () => fetch(pkg.uploadURI, {
+        res = await (0, utils_1.fetchWithBackoff)(pkg.uploadURI, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/octet-stream',
                 'Content-Length': blob.size.toString()
             },
             body: blob
-        }), constants_1.BACKOFF_CONFIG);
+        });
     }
     else
-        res = await (0, exponential_backoff_1.backOff)(async () => upload(path), constants_1.BACKOFF_CONFIG);
+        res = await upload(path);
     if (!res.ok) {
         core.error(`Failed to upload file "${path.fullpath()}"`);
         throw new Error(`Failed to upload file "${path.fullpath()}"`);
@@ -27847,8 +27845,6 @@ const glob_1 = __nccwpck_require__(1363);
 const checksum_1 = __nccwpck_require__(4596);
 const config_1 = __nccwpck_require__(2973);
 const utils_1 = __nccwpck_require__(9467);
-const exponential_backoff_1 = __nccwpck_require__(1675);
-const constants_1 = __nccwpck_require__(7242);
 /**
  * Upload file to Chassy Index
  */
@@ -27871,7 +27867,7 @@ const fileUpload = async (ctx) => {
         const name = isMany ? path.name : (config.name ?? path.name);
         let pkg;
         try {
-            const res = await (0, exponential_backoff_1.backOff)(async () => fetch(createUrl, {
+            const res = await (0, utils_1.fetchWithBackoff)(createUrl, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -27891,7 +27887,7 @@ const fileUpload = async (ctx) => {
                     sha256: hash,
                     access: config.access
                 })
-            }), constants_1.BACKOFF_CONFIG);
+            });
             if (!res.ok)
                 throw new Error(`Failed to create package: status: ${res.statusText}, message: ${await res.text()}`);
             pkg = (await res.json());
@@ -27913,9 +27909,9 @@ const fileUpload = async (ctx) => {
     })
         .map(async (data) => {
         const { pkg, path, name } = await data;
-        const upload = (0, utils_1.uploadFile)(pkg.uploadURI);
+        const upload = (0, utils_1.uploadFileWithBackoff)(pkg.uploadURI);
         return {
-            res: await (0, exponential_backoff_1.backOff)(async () => upload(path), constants_1.BACKOFF_CONFIG),
+            res: await upload(path),
             pkg,
             name
         };
@@ -27970,8 +27966,6 @@ const glob_1 = __nccwpck_require__(1363);
 const checksum_1 = __nccwpck_require__(4596);
 const config_1 = __nccwpck_require__(2973);
 const utils_1 = __nccwpck_require__(9467);
-const exponential_backoff_1 = __nccwpck_require__(1675);
-const constants_1 = __nccwpck_require__(7242);
 /**
  * Upload firmware to Chassy Index
  */
@@ -27987,7 +27981,7 @@ const firmwareUpload = async (ctx) => {
     const createUrl = `${(0, env_1.getBackendUrl)(ctx.env).apiBaseUrl}/package`;
     let pkg;
     try {
-        const res = await (0, exponential_backoff_1.backOff)(async () => fetch(createUrl, {
+        const res = await (0, utils_1.fetchWithBackoff)(createUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -28007,7 +28001,7 @@ const firmwareUpload = async (ctx) => {
                 sha256: hash,
                 access: config.access
             })
-        }));
+        });
         if (!res.ok)
             throw new Error(`Failed to create package: status: ${res.statusText}, message: ${await res.text()}`);
         pkg = (await res.json());
@@ -28021,8 +28015,8 @@ const firmwareUpload = async (ctx) => {
     core.debug(`Created package: ${JSON.stringify(pkg, null, 2)}`);
     core.info(`Package Id: ${pkg.package.id}`);
     // upload image using returned URL
-    const upload = (0, utils_1.uploadFile)(pkg.uploadURI);
-    const files = await Promise.all(paths.map(async (path) => (0, exponential_backoff_1.backOff)(async () => upload(path), constants_1.BACKOFF_CONFIG)));
+    const upload = (0, utils_1.uploadFileWithBackoff)(pkg.uploadURI);
+    const files = await Promise.all(paths.map(async (path) => upload(path)));
     const failures = files.filter(f => !f.ok);
     if (failures.length > 0) {
         core.error('Failed to upload one or more files');
@@ -28135,45 +28129,31 @@ const imageUpload = async (ctx) => {
     core.startGroup('Create Image in Chassy Index');
     let image;
     try {
-        const res = await (0, exponential_backoff_1.backOff)(async () => {
-            try {
-                const res = await fetch(createUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        Authorization: ctx.authToken
-                    },
-                    body: JSON.stringify({
-                        name: ctx.config.name,
-                        type: ctx.config.classification,
-                        compatibility: {
-                            versionID: ctx.config.compatibility.version,
-                            osID: ctx.config.compatibility.os,
-                            architecture: ctx.config.compatibility.architecture
-                        },
-                        provenanceURI: (0, env_1.getActionRunURL)(),
-                        partitions,
-                        storageFormat: {
-                            compressionScheme,
-                            rawDiskScheme
-                        },
-                        checksum,
-                        sizeInBytes: path.size,
-                        access: ctx.config.access
-                    })
-                });
-                if (!res.ok) {
-                    throw new Error(`Failed to create image: status: ${res.statusText}, message: ${await res.text()}`);
-                }
-                return res;
-            }
-            catch (e) {
-                if (e instanceof Error) {
-                    core.error(`Failed to create new image: ${e.message}`);
-                }
-                throw e;
-            }
-        }, constants_1.BACKOFF_CONFIG);
+        const res = await (0, utils_1.fetchWithBackoff)(createUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: ctx.authToken
+            },
+            body: JSON.stringify({
+                name: ctx.config.name,
+                type: ctx.config.classification,
+                compatibility: {
+                    versionID: ctx.config.compatibility.version,
+                    osID: ctx.config.compatibility.os,
+                    architecture: ctx.config.compatibility.architecture
+                },
+                provenanceURI: (0, env_1.getActionRunURL)(),
+                partitions,
+                storageFormat: {
+                    compressionScheme,
+                    rawDiskScheme
+                },
+                checksum,
+                sizeInBytes: path.size,
+                access: ctx.config.access
+            })
+        });
         if (!res.ok)
             throw new Error(`Failed to create image: status: ${res.statusText}, message: ${await res.text()}`);
         image = (0, valibot_1.parse)(api_1.createImageSchema, await res.json());
@@ -28251,32 +28231,27 @@ const imageUpload = async (ctx) => {
             throw new Error(`Failed to upload files: (${errMsgs.join(',')})`);
         }
         // send confirmations
-        await (0, exponential_backoff_1.backOff)(async () => {
-            const res = await fetch(`${(0, env_1.getBackendUrl)(ctx.env).apiBaseUrl}/image`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: ctx.authToken
-                },
-                body: JSON.stringify({
-                    id: image.image.id,
-                    confirmation: {
-                        uploadId: image.uploadId,
-                        eTags: responses.map(r => ({
-                            partNumber: r.partNumber,
-                            eTag: r.etag
-                        }))
-                    }
-                })
-            });
-            if (!res.ok)
-                throw new Error(`Failed to confirm upload: ${await res.text()}`);
-            return res;
-        }, constants_1.BACKOFF_CONFIG);
+        await (0, utils_1.fetchWithBackoff)(`${(0, env_1.getBackendUrl)(ctx.env).apiBaseUrl}/image`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: ctx.authToken
+            },
+            body: JSON.stringify({
+                id: image.image.id,
+                confirmation: {
+                    uploadId: image.uploadId,
+                    eTags: responses.map(r => ({
+                        partNumber: r.partNumber,
+                        eTag: r.etag
+                    }))
+                }
+            })
+        });
     }
     else {
-        const upload = (0, utils_1.uploadFile)(image.uploadURI);
-        const res = await (0, exponential_backoff_1.backOff)(async () => upload(path), constants_1.BACKOFF_CONFIG);
+        const upload = (0, utils_1.uploadFileWithBackoff)(image.uploadURI);
+        const res = await upload(path);
         if (!res.ok) {
             core.error(`Failed to upload file "${path.fullpath()}"`);
             throw new Error(`Failed to upload file "${path.fullpath()}"`);
@@ -28341,22 +28316,26 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.dbg = exports.uploadFile = void 0;
+exports.dbg = exports.fetchWithBackoff = exports.uploadFileWithBackoff = void 0;
 const core = __importStar(__nccwpck_require__(7484));
 const fs_1 = __importDefault(__nccwpck_require__(9896));
-const uploadFile = (url) => async (path) => {
+const constants_1 = __nccwpck_require__(7242);
+const exponential_backoff_1 = __nccwpck_require__(1675);
+const uploadFileWithBackoff = (url, backoffOptions = constants_1.BACKOFF_CONFIG) => async (path) => {
     const readStream = fs_1.default.readFileSync(path.fullpath());
     core.debug(`Uploading file: ${path.fullpath()}`);
-    return fetch(url, {
+    return (0, exports.fetchWithBackoff)(url, {
         method: 'PUT',
         headers: {
             'Content-Type': 'application/octet-stream',
             'Content-Length': fs_1.default.statSync(path.fullpath()).size.toString()
         },
         body: readStream
-    });
+    }, backoffOptions);
 };
-exports.uploadFile = uploadFile;
+exports.uploadFileWithBackoff = uploadFileWithBackoff;
+const fetchWithBackoff = async (url, options, backoffOptions = constants_1.BACKOFF_CONFIG) => (0, exponential_backoff_1.backOff)(async () => fetch(url, options), backoffOptions);
+exports.fetchWithBackoff = fetchWithBackoff;
 const dbg = (v) => {
     core.info(JSON.stringify(v, null, 2));
     return v;
