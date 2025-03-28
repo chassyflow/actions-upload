@@ -27332,6 +27332,14 @@ const v = __importStar(__nccwpck_require__(8275));
 const core = __importStar(__nccwpck_require__(7484));
 const fs_1 = __nccwpck_require__(9896);
 const undefinedIfEmpty = (value) => (value === '' ? undefined : value);
+const classifications = {
+    yocto: v.literal('YOCTO', 'classification must be YOCTO'),
+    rfs: v.literal('RFSIMAGE', 'classification must be RFSIMAGE'),
+    bundle: v.literal('BUNDLE', 'classification must be BUNDLE'),
+    executable: v.literal('EXECUTABLE', 'classification must be EXECUTABLE'),
+    config: v.literal('CONFIG', 'classification must be CONFIG'),
+    data: v.literal('DATA', 'classification must be DATA')
+};
 exports.entrypointSchema = v.pipe(v.string('entrypoint must be provided as a multiline string'), v.trim(), v.minLength(1, 'entrypoint must have at least 1 character'), v.transform((e) => e.split('\n')), v.array(v.string()), v.minLength(1, 'entrypoint must have at least 1 element'));
 const architectureSchema = v.union([
     v.literal('AMD64'),
@@ -27341,6 +27349,11 @@ const architectureSchema = v.union([
     v.literal('RISCV'),
     v.literal('UNKNOWN')
 ]);
+const compatibilitySchema = v.object({
+    architecture: architectureSchema,
+    os: v.string('os must be string'),
+    version: v.pipe(v.string('version must be string'), v.minLength(3, 'version must be at least 3 characters'))
+}, 'compatibility malformed, must have architecture, os, and version');
 const imagePartitionSchema = v.object({
     filesystemType: v.string('filesystemType must be string'),
     mountPoint: v.string('mountPoint must be string'),
@@ -27353,7 +27366,14 @@ const imagePartitionSchema = v.object({
     startSector: v.pipe(v.number('startSector must be number'), v.integer('startSector must be integer'), v.minValue(0, 'startSector must be at least 0')),
     partitionType: v.string('partitionType must be string')
 });
+exports.baseSchema = {
+    name: v.pipe(v.string('name must be string'), v.minLength(1, 'name must be at least 1 character')),
+    path: v.pipe(v.string('path must be string'), v.minLength(1, 'path must be at least 1 character')),
+    compatibility: compatibilitySchema,
+    access: v.optional(v.pipe(v.string('access must be string'), v.trim(), v.toUpperCase(), v.union([v.literal('PUBLIC'), v.literal('PRIVATE')], 'access must be PUBLIC or PRIVATE')), 'PRIVATE')
+};
 const imageSchema = v.object({
+    ...exports.baseSchema,
     type: v.literal('IMAGE'),
     classification: v.union([v.literal('RFSIMAGE'), v.literal('YOCTO')], 'classification must be RFSIMAGE or YOCTO'),
     partitions: v.optional(v.string('partitions (path) must be string')),
@@ -27361,31 +27381,27 @@ const imageSchema = v.object({
     rawDiskScheme: v.union([v.literal('IMG'), v.literal('ISO')])
 }, 'image malformed');
 const archiveSchema = v.object({
+    ...exports.baseSchema,
     type: v.literal('ARCHIVE'),
-    classification: v.optional(v.literal('BUNDLE'), 'BUNDLE'),
+    classification: v.optional(classifications.bundle, 'BUNDLE'),
     entrypoint: exports.entrypointSchema,
     version: v.string('version must be string')
 });
-const packageSchema = v.object({
-    type: v.union([v.literal('FILE'), v.literal('FIRMWARE')], 'type must be FILE or FIRMWARE'),
-    classification: v.union([v.literal('EXECUTABLE'), v.literal('CONFIG'), v.literal('DATA')], 'classification must be EXECUTABLE, CONFIG, or DATA'),
+const firmwareSchema = v.object({
+    ...exports.baseSchema,
+    type: v.literal('FIRMWARE', 'type must be FILE or FIRMWARE'),
+    classification: v.optional(classifications.executable, 'EXECUTABLE'),
     version: v.string('version must be string')
 });
-const compatibilitySchema = v.object({
-    architecture: architectureSchema,
-    os: v.string('os must be string'),
-    version: v.pipe(v.string('version must be string'), v.minLength(3, 'version must be at least 3 characters'))
-}, 'compatibility malformed, must have architecture, os, and version');
-exports.baseSchema = v.object({
-    name: v.pipe(v.string('name must be string'), v.minLength(1, 'name must be at least 1 character')),
-    path: v.pipe(v.string('path must be string'), v.minLength(1, 'path must be at least 1 character')),
-    compatibility: compatibilitySchema,
-    access: v.optional(v.pipe(v.string('access must be string'), v.trim(), v.toUpperCase(), v.union([v.literal('PUBLIC'), v.literal('PRIVATE')], 'access must be PUBLIC or PRIVATE')), 'PRIVATE')
+const fileSchema = v.object({
+    ...exports.baseSchema,
+    // override name to allow empty string for files when globbing
+    name: v.optional(v.pipe(v.string(), v.trim())),
+    type: v.literal('FILE', 'type must be FILE'),
+    classification: v.union([classifications.executable, classifications.config, classifications.data], 'classification must be EXECUTABLE, CONFIG, or DATA'),
+    version: v.string('version must be string')
 });
-exports.configSchema = v.intersect([
-    exports.baseSchema,
-    v.union([imageSchema, archiveSchema, packageSchema], 'config must match image or package schema')
-], 'malformed configuration');
+exports.configSchema = v.union([imageSchema, archiveSchema, firmwareSchema, fileSchema], 'config must match image, archive, file, or firmware schema');
 /**
  * Get configuration options for environment
  */
@@ -27619,7 +27635,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.run = run;
 const core = __importStar(__nccwpck_require__(7484));
 const context_1 = __nccwpck_require__(788);
-const upload_1 = __nccwpck_require__(1550);
+const uploads_1 = __nccwpck_require__(5910);
 const valibot_1 = __nccwpck_require__(8275);
 /**
  * The main function for the action.
@@ -27630,17 +27646,32 @@ async function run() {
         // get context
         const ctx = await (0, context_1.createRunContext)();
         core.debug(`Config: ${JSON.stringify(ctx, null, 2)}`);
-        let output;
-        if (ctx.config.type === 'IMAGE') {
-            output = await (0, upload_1.imageUpload)(ctx);
+        switch (ctx.config.type) {
+            case 'IMAGE': {
+                const output = await (0, uploads_1.imageUpload)(ctx);
+                core.setOutput('id', output.id);
+                break;
+            }
+            case 'ARCHIVE': {
+                const output = await (0, uploads_1.archiveUpload)(ctx);
+                core.setOutput('id', output.id);
+                break;
+            }
+            case 'FILE': {
+                const result = await (0, uploads_1.fileUpload)(ctx);
+                result.forEach(data => {
+                    core.setOutput(data.name, data.pkg.package.id);
+                });
+                break;
+            }
+            case 'FIRMWARE': {
+                const output = await (0, uploads_1.firmwareUpload)(ctx);
+                core.setOutput('id', output.id);
+                break;
+            }
+            default:
+                throw new Error(`Unrecognized configuration type: ${ctx.config}`);
         }
-        else if (ctx.config.type === 'ARCHIVE') {
-            output = await (0, upload_1.archiveUpload)(ctx);
-        }
-        else {
-            output = await (0, upload_1.packageUpload)(ctx);
-        }
-        core.setOutput('id', output.id);
     }
     catch (error) {
         if (error instanceof valibot_1.ValiError)
@@ -27654,7 +27685,352 @@ async function run() {
 
 /***/ }),
 
-/***/ 1550:
+/***/ 1359:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.archiveUpload = void 0;
+const core = __importStar(__nccwpck_require__(7484));
+const env_1 = __nccwpck_require__(8204);
+const glob_1 = __nccwpck_require__(1363);
+const archives_1 = __nccwpck_require__(6792);
+const checksum_1 = __nccwpck_require__(4596);
+const config_1 = __nccwpck_require__(2973);
+const utils_1 = __nccwpck_require__(9467);
+/**
+ * Upload archive package to Chassy Index
+ */
+const archiveUpload = async (ctx) => {
+    // it must be archive
+    const config = (0, config_1.assertType)(ctx.config, 'ARCHIVE');
+    // validate that files exist
+    const paths = await (0, glob_1.glob)(config.path, { withFileTypes: true });
+    core.info(`Found files: ${paths.map(f => f.fullpath()).join(',')}`);
+    const [path, ...extra] = paths;
+    if (!path)
+        throw new Error(`No files found in provided path: ${config.path}`);
+    const bundled = path && (0, archives_1.isArchive)(path) && extra.length === 0;
+    // create image in Chassy Index
+    const createUrl = `${(0, env_1.getBackendUrl)(ctx.env).apiBaseUrl}/package`;
+    const blobbed = !bundled ? await (0, archives_1.zipBundle)(ctx, paths) : undefined;
+    const hash = 'sha256:' +
+        (!bundled
+            ? await (0, checksum_1.computeChecksumOfBlob)(blobbed, 'sha256')
+            : await (0, checksum_1.computeChecksum)(path.fullpath(), 'sha256'));
+    core.startGroup('Create Archive in Chassy Index');
+    let pkg;
+    try {
+        const res = await (0, utils_1.fetchWithBackoff)(createUrl, (0, utils_1.dbg)({
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: ctx.authToken
+            },
+            body: JSON.stringify({
+                name: config.name,
+                type: config.type,
+                compatibility: {
+                    versionID: config.compatibility.version,
+                    osID: config.compatibility.os,
+                    architecture: config.compatibility.architecture
+                },
+                version: config.version,
+                provenanceURI: (0, env_1.getActionRunURL)(),
+                packageClass: config.classification,
+                sha256: hash,
+                entrypoint: config.entrypoint,
+                access: config.access
+            })
+        }));
+        if (!res.ok)
+            throw new Error(`Failed to create archive: status: ${res.statusText}, message: ${await res.text()}`);
+        pkg = (await res.json());
+    }
+    catch (e) {
+        if (e instanceof Error) {
+            core.error(`Failed to create new archive: ${e.message}`);
+        }
+        throw e;
+    }
+    core.endGroup();
+    core.debug(`Created archive: ${JSON.stringify(pkg, null, 2)}`);
+    core.info(`Package Id: ${pkg.package.id}`);
+    // upload image using returned URL
+    const upload = (0, utils_1.uploadFileWithBackoff)(pkg.uploadURI);
+    core.startGroup('Uploading files');
+    let res;
+    if (!bundled) {
+        const blob = blobbed;
+        res = await (0, utils_1.fetchWithBackoff)(pkg.uploadURI, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/octet-stream',
+                'Content-Length': blob.size.toString()
+            },
+            body: blob
+        });
+    }
+    else
+        res = await upload(path);
+    if (!res.ok) {
+        core.error(`Failed to upload file "${path.fullpath()}"`);
+        throw new Error(`Failed to upload file "${path.fullpath()}"`);
+    }
+    core.endGroup();
+    return pkg.package;
+};
+exports.archiveUpload = archiveUpload;
+
+
+/***/ }),
+
+/***/ 2437:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.fileUpload = void 0;
+const core = __importStar(__nccwpck_require__(7484));
+const env_1 = __nccwpck_require__(8204);
+const glob_1 = __nccwpck_require__(1363);
+const checksum_1 = __nccwpck_require__(4596);
+const config_1 = __nccwpck_require__(2973);
+const utils_1 = __nccwpck_require__(9467);
+/**
+ * Upload file to Chassy Index
+ */
+const fileUpload = async (ctx) => {
+    const config = (0, config_1.assertType)(ctx.config, 'FILE');
+    // validate that files exist
+    const paths = await (0, glob_1.glob)(config.path, { withFileTypes: true });
+    core.info(`Found files: ${paths.map(f => f.fullpath()).join(',')}`);
+    if (paths.length === 0)
+        throw new Error(`No files found in provided path: ${config.path}`);
+    const isMany = paths.length > 1;
+    if (isMany && config.name) {
+        core.warning(`Found multiple files and a name was provided. Ignoring name and using file names`);
+    }
+    // create package in Chassy Index
+    const createUrl = `${(0, env_1.getBackendUrl)(ctx.env).apiBaseUrl}/package`;
+    const responses = paths
+        .map(async (path) => {
+        const hash = 'sha256:' + (await (0, checksum_1.computeChecksum)(path.fullpath(), 'sha256'));
+        const name = isMany ? path.name : (config.name ?? path.name);
+        let pkg;
+        try {
+            const res = await (0, utils_1.fetchWithBackoff)(createUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: ctx.authToken
+                },
+                body: JSON.stringify({
+                    name,
+                    type: config.type,
+                    compatibility: {
+                        versionID: config.compatibility.version,
+                        osID: config.compatibility.os,
+                        architecture: config.compatibility.architecture
+                    },
+                    version: config.version,
+                    provenanceURI: (0, env_1.getActionRunURL)(),
+                    packageClass: config.classification,
+                    sha256: hash,
+                    access: config.access
+                })
+            });
+            if (!res.ok)
+                throw new Error(`Failed to create package: status: ${res.statusText}, message: ${await res.text()}`);
+            pkg = (await res.json());
+        }
+        catch (e) {
+            if (e instanceof Error) {
+                core.error(`Failed to create new package: ${e.message}`);
+            }
+            throw e;
+        }
+        core.debug(`Created package: ${JSON.stringify(pkg, null, 2)}`);
+        core.info(`Package Id: ${pkg.package.id}`);
+        // upload image using returned URL
+        return {
+            pkg,
+            path,
+            name
+        };
+    })
+        .map(async (data) => {
+        const { pkg, path, name } = await data;
+        const upload = (0, utils_1.uploadFileWithBackoff)(pkg.uploadURI);
+        return {
+            res: await upload(path),
+            pkg,
+            name
+        };
+    });
+    const files = await Promise.all(responses);
+    const failures = files.filter(f => !f.res.ok);
+    if (failures.length > 0) {
+        core.error('Failed to upload one or more files');
+        const errMsgs = await Promise.all(failures.map(async (f) => `[${f.res.statusText}, ${await f.res.text()}]`));
+        throw new Error(`Failed to upload files: (${errMsgs.join(',')})`);
+    }
+    return files.map(f => ({ pkg: f.pkg, name: f.name }));
+};
+exports.fileUpload = fileUpload;
+
+
+/***/ }),
+
+/***/ 5056:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.firmwareUpload = void 0;
+const core = __importStar(__nccwpck_require__(7484));
+const env_1 = __nccwpck_require__(8204);
+const glob_1 = __nccwpck_require__(1363);
+const checksum_1 = __nccwpck_require__(4596);
+const config_1 = __nccwpck_require__(2973);
+const utils_1 = __nccwpck_require__(9467);
+/**
+ * Upload firmware to Chassy Index
+ */
+const firmwareUpload = async (ctx) => {
+    const config = (0, config_1.assertType)(ctx.config, 'FIRMWARE');
+    // validate that files exist
+    const paths = await (0, glob_1.glob)(config.path, { withFileTypes: true });
+    core.info(`Found files: ${paths.map(f => f.fullpath()).join(',')}`);
+    if (paths.length === 0)
+        throw new Error(`No files found in provided path: ${config.path}`);
+    const hash = 'sha256:' + (await (0, checksum_1.computeChecksum)(paths[0].fullpath(), 'sha256'));
+    // create image in Chassy Index
+    const createUrl = `${(0, env_1.getBackendUrl)(ctx.env).apiBaseUrl}/package`;
+    let pkg;
+    try {
+        const res = await (0, utils_1.fetchWithBackoff)(createUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: ctx.authToken
+            },
+            body: JSON.stringify({
+                name: config.name,
+                type: config.type,
+                compatibility: {
+                    versionID: config.compatibility.version,
+                    osID: config.compatibility.os,
+                    architecture: config.compatibility.architecture
+                },
+                version: config.version,
+                provenanceURI: (0, env_1.getActionRunURL)(),
+                packageClass: config.classification,
+                sha256: hash,
+                access: config.access
+            })
+        });
+        if (!res.ok)
+            throw new Error(`Failed to create package: status: ${res.statusText}, message: ${await res.text()}`);
+        pkg = (await res.json());
+    }
+    catch (e) {
+        if (e instanceof Error) {
+            core.error(`Failed to create new package: ${e.message}`);
+        }
+        throw e;
+    }
+    core.debug(`Created package: ${JSON.stringify(pkg, null, 2)}`);
+    core.info(`Package Id: ${pkg.package.id}`);
+    // upload image using returned URL
+    const upload = (0, utils_1.uploadFileWithBackoff)(pkg.uploadURI);
+    const files = await Promise.all(paths.map(async (path) => upload(path)));
+    const failures = files.filter(f => !f.ok);
+    if (failures.length > 0) {
+        core.error('Failed to upload one or more files');
+        const errMsgs = await Promise.all(failures.map(async (f) => `[${f.statusText}, ${await f.text()}]`));
+        throw new Error(`Failed to upload files: (${errMsgs.join(',')})`);
+    }
+    return pkg.package;
+};
+exports.firmwareUpload = firmwareUpload;
+
+
+/***/ }),
+
+/***/ 5838:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
@@ -27686,7 +28062,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.packageUpload = exports.archiveUpload = exports.imageUpload = void 0;
+exports.imageUpload = void 0;
 const core = __importStar(__nccwpck_require__(7484));
 const os_1 = __importDefault(__nccwpck_require__(857));
 const path_1 = __nccwpck_require__(6928);
@@ -27696,26 +28072,10 @@ const env_1 = __nccwpck_require__(8204);
 const api_1 = __nccwpck_require__(6879);
 const glob_1 = __nccwpck_require__(1363);
 const fs_1 = __importDefault(__nccwpck_require__(9896));
-const archives_1 = __nccwpck_require__(6792);
 const checksum_1 = __nccwpck_require__(4596);
 const constants_1 = __nccwpck_require__(7242);
 const config_1 = __nccwpck_require__(2973);
-const uploadFile = (url) => async (path) => {
-    const readStream = fs_1.default.readFileSync(path.fullpath());
-    core.debug(`Uploading file: ${path.fullpath()}`);
-    return fetch(url, {
-        method: 'PUT',
-        headers: {
-            'Content-Type': 'application/octet-stream',
-            'Content-Length': fs_1.default.statSync(path.fullpath()).size.toString()
-        },
-        body: readStream
-    });
-};
-const dbg = (v) => {
-    core.info(JSON.stringify(v, null, 2));
-    return v;
-};
+const utils_1 = __nccwpck_require__(9467);
 /**
  * Upload image to Chassy Index
  */
@@ -27769,45 +28129,31 @@ const imageUpload = async (ctx) => {
     core.startGroup('Create Image in Chassy Index');
     let image;
     try {
-        const res = await (0, exponential_backoff_1.backOff)(async () => {
-            try {
-                const res = await fetch(createUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        Authorization: ctx.authToken
-                    },
-                    body: JSON.stringify({
-                        name: ctx.config.name,
-                        type: ctx.config.classification,
-                        compatibility: {
-                            versionID: ctx.config.compatibility.version,
-                            osID: ctx.config.compatibility.os,
-                            architecture: ctx.config.compatibility.architecture
-                        },
-                        provenanceURI: (0, env_1.getActionRunURL)(),
-                        partitions,
-                        storageFormat: {
-                            compressionScheme,
-                            rawDiskScheme
-                        },
-                        checksum,
-                        sizeInBytes: path.size,
-                        access: ctx.config.access
-                    })
-                });
-                if (!res.ok) {
-                    throw new Error(`Failed to create image: status: ${res.statusText}, message: ${await res.text()}`);
-                }
-                return res;
-            }
-            catch (e) {
-                if (e instanceof Error) {
-                    core.error(`Failed to create new image: ${e.message}`);
-                }
-                throw e;
-            }
-        }, constants_1.BACKOFF_CONFIG);
+        const res = await (0, utils_1.fetchWithBackoff)(createUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: ctx.authToken
+            },
+            body: JSON.stringify({
+                name: ctx.config.name,
+                type: ctx.config.classification,
+                compatibility: {
+                    versionID: ctx.config.compatibility.version,
+                    osID: ctx.config.compatibility.os,
+                    architecture: ctx.config.compatibility.architecture
+                },
+                provenanceURI: (0, env_1.getActionRunURL)(),
+                partitions,
+                storageFormat: {
+                    compressionScheme,
+                    rawDiskScheme
+                },
+                checksum,
+                sizeInBytes: path.size,
+                access: ctx.config.access
+            })
+        });
         if (!res.ok)
             throw new Error(`Failed to create image: status: ${res.statusText}, message: ${await res.text()}`);
         image = (0, valibot_1.parse)(api_1.createImageSchema, await res.json());
@@ -27885,32 +28231,27 @@ const imageUpload = async (ctx) => {
             throw new Error(`Failed to upload files: (${errMsgs.join(',')})`);
         }
         // send confirmations
-        await (0, exponential_backoff_1.backOff)(async () => {
-            const res = await fetch(`${(0, env_1.getBackendUrl)(ctx.env).apiBaseUrl}/image`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: ctx.authToken
-                },
-                body: JSON.stringify({
-                    id: image.image.id,
-                    confirmation: {
-                        uploadId: image.uploadId,
-                        eTags: responses.map(r => ({
-                            partNumber: r.partNumber,
-                            eTag: r.etag
-                        }))
-                    }
-                })
-            });
-            if (!res.ok)
-                throw new Error(`Failed to confirm upload: ${await res.text()}`);
-            return res;
-        }, constants_1.BACKOFF_CONFIG);
+        await (0, utils_1.fetchWithBackoff)(`${(0, env_1.getBackendUrl)(ctx.env).apiBaseUrl}/image`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: ctx.authToken
+            },
+            body: JSON.stringify({
+                id: image.image.id,
+                confirmation: {
+                    uploadId: image.uploadId,
+                    eTags: responses.map(r => ({
+                        partNumber: r.partNumber,
+                        eTag: r.etag
+                    }))
+                }
+            })
+        });
     }
     else {
-        const upload = uploadFile(image.uploadURI);
-        const res = await (0, exponential_backoff_1.backOff)(async () => upload(path), constants_1.BACKOFF_CONFIG);
+        const upload = (0, utils_1.uploadFileWithBackoff)(image.uploadURI);
+        const res = await upload(path);
         if (!res.ok) {
             core.error(`Failed to upload file "${path.fullpath()}"`);
             throw new Error(`Failed to upload file "${path.fullpath()}"`);
@@ -27920,157 +28261,86 @@ const imageUpload = async (ctx) => {
     return image.image;
 };
 exports.imageUpload = imageUpload;
-/**
- * Upload archive package to Chassy Index
- */
-const archiveUpload = async (ctx) => {
-    // it must be archive
-    if (ctx.config.type !== 'ARCHIVE')
-        throw new Error('Attempted to upload non-archive as archive');
-    if (ctx.config.classification !== 'BUNDLE')
-        throw new Error('Archive must have classification `BUNDLE`');
-    // validate that files exist
-    const paths = await (0, glob_1.glob)(ctx.config.path, { withFileTypes: true });
-    core.info(`Found files: ${paths.map(f => f.fullpath()).join(',')}`);
-    const [path, ...extra] = paths;
-    if (!path)
-        throw new Error(`No files found in provided path: ${ctx.config.path}`);
-    const bundled = path && (0, archives_1.isArchive)(path) && extra.length === 0;
-    const config = (0, config_1.assertType)((0, config_1.getConfig)(), 'ARCHIVE');
-    // create image in Chassy Index
-    const createUrl = `${(0, env_1.getBackendUrl)(ctx.env).apiBaseUrl}/package`;
-    const blobbed = !bundled ? await (0, archives_1.zipBundle)(ctx, paths) : undefined;
-    const hash = 'sha256:' +
-        (!bundled
-            ? await (0, checksum_1.computeChecksumOfBlob)(blobbed, 'sha256')
-            : await (0, checksum_1.computeChecksum)(path.fullpath(), 'sha256'));
-    core.startGroup('Create Archive in Chassy Index');
-    let pkg;
-    try {
-        const res = await (0, exponential_backoff_1.backOff)(async () => fetch(createUrl, dbg({
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: ctx.authToken
-            },
-            body: JSON.stringify({
-                name: config.name,
-                type: config.type,
-                compatibility: {
-                    versionID: config.compatibility.version,
-                    osID: config.compatibility.os,
-                    architecture: config.compatibility.architecture
-                },
-                version: config.version,
-                provenanceURI: (0, env_1.getActionRunURL)(),
-                packageClass: ctx.config.classification,
-                sha256: hash,
-                entrypoint: config.entrypoint,
-                access: config.access
-            })
-        })), constants_1.BACKOFF_CONFIG);
-        if (!res.ok)
-            throw new Error(`Failed to create archive: status: ${res.statusText}, message: ${await res.text()}`);
-        pkg = (await res.json());
+
+
+/***/ }),
+
+/***/ 5910:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.firmwareUpload = exports.fileUpload = exports.archiveUpload = exports.imageUpload = void 0;
+var images_1 = __nccwpck_require__(5838);
+Object.defineProperty(exports, "imageUpload", ({ enumerable: true, get: function () { return images_1.imageUpload; } }));
+var archives_1 = __nccwpck_require__(1359);
+Object.defineProperty(exports, "archiveUpload", ({ enumerable: true, get: function () { return archives_1.archiveUpload; } }));
+var files_1 = __nccwpck_require__(2437);
+Object.defineProperty(exports, "fileUpload", ({ enumerable: true, get: function () { return files_1.fileUpload; } }));
+var firmwares_1 = __nccwpck_require__(5056);
+Object.defineProperty(exports, "firmwareUpload", ({ enumerable: true, get: function () { return firmwares_1.firmwareUpload; } }));
+
+
+/***/ }),
+
+/***/ 9467:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
     }
-    catch (e) {
-        if (e instanceof Error) {
-            core.error(`Failed to create new archive: ${e.message}`);
-        }
-        throw e;
-    }
-    core.endGroup();
-    core.debug(`Created archive: ${JSON.stringify(pkg, null, 2)}`);
-    core.info(`Package Id: ${pkg.package.id}`);
-    // upload image using returned URL
-    const upload = uploadFile(pkg.uploadURI);
-    core.startGroup('Uploading files');
-    let res;
-    if (!bundled) {
-        const blob = blobbed;
-        res = await (0, exponential_backoff_1.backOff)(async () => fetch(pkg.uploadURI, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/octet-stream',
-                'Content-Length': blob.size.toString()
-            },
-            body: blob
-        }), constants_1.BACKOFF_CONFIG);
-    }
-    else
-        res = await (0, exponential_backoff_1.backOff)(async () => upload(path), constants_1.BACKOFF_CONFIG);
-    if (!res.ok) {
-        core.error(`Failed to upload file "${path.fullpath()}"`);
-        throw new Error(`Failed to upload file "${path.fullpath()}"`);
-    }
-    core.endGroup();
-    return pkg.package;
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
 };
-exports.archiveUpload = archiveUpload;
-/**
- * Upload package to Chassy Index
- */
-const packageUpload = async (ctx) => {
-    // it must not be image
-    if (ctx.config.type === 'IMAGE')
-        throw new Error('Attempted to upload image as generic package');
-    // validate that files exist
-    const paths = await (0, glob_1.glob)(ctx.config.path, { withFileTypes: true });
-    core.info(`Found files: ${paths.map(f => f.fullpath()).join(',')}`);
-    if (paths.length === 0)
-        throw new Error(`No files found in provided path: ${ctx.config.path}`);
-    if (paths.length > 1 && ctx.config.type !== 'ARCHIVE')
-        throw new Error(`Too many files found: ${paths.map(i => `"${i.fullpath()}"`).join(',')}`);
-    const hash = 'sha256:' + (await (0, checksum_1.computeChecksum)(paths[0].fullpath(), 'sha256'));
-    // create image in Chassy Index
-    const createUrl = `${(0, env_1.getBackendUrl)(ctx.env).apiBaseUrl}/package`;
-    let pkg;
-    try {
-        const res = await fetch(createUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: ctx.authToken
-            },
-            body: JSON.stringify({
-                name: ctx.config.name,
-                type: ctx.config.type,
-                compatibility: {
-                    versionID: ctx.config.compatibility.version,
-                    osID: ctx.config.compatibility.os,
-                    architecture: ctx.config.compatibility.architecture
-                },
-                version: ctx.config.version,
-                provenanceURI: (0, env_1.getActionRunURL)(),
-                packageClass: ctx.config.classification,
-                sha256: hash,
-                access: ctx.config.access
-            })
-        });
-        if (!res.ok)
-            throw new Error(`Failed to create package: status: ${res.statusText}, message: ${await res.text()}`);
-        pkg = (await res.json());
-    }
-    catch (e) {
-        if (e instanceof Error) {
-            core.error(`Failed to create new package: ${e.message}`);
-        }
-        throw e;
-    }
-    core.debug(`Created package: ${JSON.stringify(pkg, null, 2)}`);
-    core.info(`Package Id: ${pkg.package.id}`);
-    // upload image using returned URL
-    const upload = uploadFile(pkg.uploadURI);
-    const files = await Promise.all(paths.map(upload));
-    const failures = files.filter(f => !f.ok);
-    if (failures.length > 0) {
-        core.error('Failed to upload one or more files');
-        const errMsgs = await Promise.all(failures.map(async (f) => `[${f.statusText}, ${await f.text()}]`));
-        throw new Error(`Failed to upload files: (${errMsgs.join(',')})`);
-    }
-    return pkg.package;
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
 };
-exports.packageUpload = packageUpload;
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.dbg = exports.fetchWithBackoff = exports.uploadFileWithBackoff = void 0;
+const core = __importStar(__nccwpck_require__(7484));
+const fs_1 = __importDefault(__nccwpck_require__(9896));
+const constants_1 = __nccwpck_require__(7242);
+const exponential_backoff_1 = __nccwpck_require__(1675);
+const uploadFileWithBackoff = (url, backoffOptions = constants_1.BACKOFF_CONFIG) => async (path) => {
+    const readStream = fs_1.default.readFileSync(path.fullpath());
+    core.debug(`Uploading file: ${path.fullpath()}`);
+    return (0, exports.fetchWithBackoff)(url, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/octet-stream',
+            'Content-Length': fs_1.default.statSync(path.fullpath()).size.toString()
+        },
+        body: readStream
+    }, backoffOptions);
+};
+exports.uploadFileWithBackoff = uploadFileWithBackoff;
+const fetchWithBackoff = async (url, options, backoffOptions = constants_1.BACKOFF_CONFIG) => (0, exponential_backoff_1.backOff)(async () => fetch(url, options), backoffOptions);
+exports.fetchWithBackoff = fetchWithBackoff;
+const dbg = (v) => {
+    core.info(JSON.stringify(v, null, 2));
+    return v;
+};
+exports.dbg = dbg;
 
 
 /***/ }),

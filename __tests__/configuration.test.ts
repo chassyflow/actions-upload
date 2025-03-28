@@ -95,6 +95,20 @@ describe('package parsing', () => {
     expect(cfg.classification).toStrictEqual('EXECUTABLE')
   })
 
+  it('globbing executables works', () => {
+    mockInput({
+      path: 'target/release/*.exe',
+      architecture: 'ARM64',
+      os: 'ubuntu',
+      os_version: '20.04',
+      version: '1.0.0',
+      type: 'FILE',
+      classification: 'EXECUTABLE'
+    })
+    const cfg = assertType(getConfig(), 'FILE')
+    expect(cfg.classification).toStrictEqual('EXECUTABLE')
+  })
+
   it('firmware parses correctly', () => {
     mockInput({
       name: 'test',
@@ -110,6 +124,22 @@ describe('package parsing', () => {
 
     const cfg = getConfig()
     if (cfg.type !== 'FIRMWARE') throw new Error('Type is not FIRMWARE')
+    expect(cfg.classification).toStrictEqual('EXECUTABLE')
+  })
+
+  it('firmware classification is optional', () => {
+    mockInput({
+      name: 'test',
+      path: 'src/*.ts',
+      architecture: 'ARM64',
+      os: 'ubuntu',
+      os_version: '20.04',
+      entrypoint: 'javac',
+      version: '1.0.0',
+      type: 'FIRMWARE'
+    })
+
+    const cfg = assertType(getConfig(), 'FIRMWARE')
     expect(cfg.classification).toStrictEqual('EXECUTABLE')
   })
 })
