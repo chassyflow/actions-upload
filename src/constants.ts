@@ -2,9 +2,9 @@ import { BackoffOptions } from 'exponential-backoff'
 
 export const BACKOFF_CONFIG: BackoffOptions = {
   numOfAttempts: 6,
-  timeMultiple: 2,
-  startingDelay: 2,
-  maxDelay: 45
+  timeMultiple: 3,
+  startingDelay: 3,
+  maxDelay: 60
 }
 
 // 500 MB

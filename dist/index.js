@@ -27449,9 +27449,9 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.MULTI_PART_CHUNK_SIZE = exports.BACKOFF_CONFIG = void 0;
 exports.BACKOFF_CONFIG = {
     numOfAttempts: 6,
-    timeMultiple: 2,
-    startingDelay: 2,
-    maxDelay: 45
+    timeMultiple: 3,
+    startingDelay: 3,
+    maxDelay: 60
 };
 // 500 MB
 exports.MULTI_PART_CHUNK_SIZE = 500 * 1024 * 1024;
@@ -28334,7 +28334,14 @@ const uploadFileWithBackoff = (url, backoffOptions = constants_1.BACKOFF_CONFIG)
     }, backoffOptions);
 };
 exports.uploadFileWithBackoff = uploadFileWithBackoff;
-const fetchWithBackoff = async (url, options, backoffOptions = constants_1.BACKOFF_CONFIG) => (0, exponential_backoff_1.backOff)(async () => fetch(url, options), backoffOptions);
+const fetchWithBackoff = async (url, options, backoffOptions = constants_1.BACKOFF_CONFIG) => (0, exponential_backoff_1.backOff)(async () => {
+    const response = await fetch(url, options);
+    if (!response.ok) {
+        core.error(await response.text());
+        throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response;
+}, backoffOptions);
 exports.fetchWithBackoff = fetchWithBackoff;
 const dbg = (v) => {
     core.info(JSON.stringify(v, null, 2));

@@ -29,7 +29,15 @@ export const fetchWithBackoff = async (
   url: RequestInfo | URL,
   options: RequestInit,
   backoffOptions = BACKOFF_CONFIG
-) => backOff(async () => fetch(url, options), backoffOptions)
+) =>
+  backOff(async () => {
+    const response = await fetch(url, options)
+    if (!response.ok) {
+      core.error(await response.text())
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+    return response
+  }, backoffOptions)
 
 export const dbg = <T>(v: T) => {
   core.info(JSON.stringify(v, null, 2))
