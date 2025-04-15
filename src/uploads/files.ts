@@ -73,7 +73,7 @@ export const fileUpload = async (ctx: RunContext) => {
               }))
             })
           })
-          if (res.status !== 200) {
+          if (!res.ok) {
             throw new Error(
               `Failed to create package: status: ${res.statusText}, message: ${await res.text()}`
             )

@@ -27899,7 +27899,7 @@ const fileUpload = async (ctx) => {
                     }))
                 })
             });
-            if (res.status !== 200) {
+            if (!res.ok) {
                 throw new Error(`Failed to create package: status: ${res.statusText}, message: ${await res.text()}`);
             }
             subPkgs = (await res.json());
