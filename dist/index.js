@@ -27931,6 +27931,7 @@ const fileUpload = async (ctx) => {
     })))
         .flat()
         .map(async ({ path, pkg, name }) => {
+        core.info(`Uploading file: ${name}`);
         const upload = (0, utils_1.uploadFileWithBackoff)(pkg.uploadURI);
         return {
             res: await upload(path),

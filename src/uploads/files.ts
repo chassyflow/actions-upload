@@ -115,6 +115,7 @@ export const fileUpload = async (ctx: RunContext) => {
   )
     .flat()
     .map(async ({ path, pkg, name }) => {
+      core.info(`Uploading file: ${name}`)
       const upload = uploadFileWithBackoff(pkg.uploadURI)
       return {
         res: await upload(path),
