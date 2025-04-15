@@ -6,7 +6,7 @@ import { glob } from 'glob'
 import { computeChecksum } from '../checksum'
 import { assertType } from '../config'
 import { chunkArray, fetchWithBackoff, uploadFileWithBackoff } from './utils'
-import { MAX_PACKAGE_BATCH_SIZE } from 'src/constants'
+import { MAX_PACKAGE_BATCH_SIZE } from '../constants'
 
 /**
  * Upload file to Chassy Index
