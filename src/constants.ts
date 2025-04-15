@@ -9,3 +9,6 @@ export const BACKOFF_CONFIG: BackoffOptions = {
 
 // 500 MB
 export const MULTI_PART_CHUNK_SIZE = 500 * 1024 * 1024
+
+// 10 packages
+export const MAX_PACKAGE_BATCH_SIZE = 10

@@ -43,3 +43,17 @@ export const dbg = <T>(v: T) => {
   core.info(JSON.stringify(v, null, 2))
   return v
 }
+
+export const chunkArray = <T>(arr: T[], size: number): T[][] => {
+  if (size < 1) {
+    throw new Error('Size must be greater than 0')
+  }
+  if (Math.round(size) !== size) {
+    throw new Error('Size must be an integer')
+  }
+  const result: T[][] = []
+  for (let i = 0; i < arr.length; i += size) {
+    result.push(arr.slice(i, i + size))
+  }
+  return result
+}

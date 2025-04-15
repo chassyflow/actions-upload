@@ -1,11 +1,12 @@
 import { RunContext } from '../context'
 import * as core from '@actions/core'
 import { getActionRunURL, getBackendUrl } from '../env'
-import { CreatePackage } from '../api'
+import { CreatePackages } from '../api'
 import { glob } from 'glob'
 import { computeChecksum } from '../checksum'
 import { assertType } from '../config'
-import { fetchWithBackoff, uploadFileWithBackoff } from './utils'
+import { chunkArray, fetchWithBackoff, uploadFileWithBackoff } from './utils'
+import { MAX_PACKAGE_BATCH_SIZE } from 'src/constants'
 
 /**
  * Upload file to Chassy Index
@@ -18,6 +19,19 @@ export const fileUpload = async (ctx: RunContext) => {
   if (paths.length === 0)
     throw new Error(`No files found in provided path: ${config.path}`)
 
+  const pathsWithChecksum = await Promise.all(
+    paths.map(async path => {
+      const checksum =
+        'sha256:' + (await computeChecksum(path.fullpath(), 'sha256'))
+      return {
+        path,
+        checksum
+      }
+    })
+  )
+
+  const chunkedPaths = chunkArray(pathsWithChecksum, MAX_PACKAGE_BATCH_SIZE)
+
   const isMany = paths.length > 1
 
   if (isMany && config.name) {
@@ -29,58 +43,78 @@ export const fileUpload = async (ctx: RunContext) => {
   // create package in Chassy Index
   const createUrl = `${getBackendUrl(ctx.env).apiBaseUrl}/package`
 
-  const responses = paths
-    .map(async path => {
-      const hash =
-        'sha256:' + (await computeChecksum(path.fullpath(), 'sha256'))
+  core.startGroup('Create Package in Chassy Index')
 
-      const name = isMany ? path.name : (config.name ?? path.name)
-      let pkg: CreatePackage
-      try {
-        const res = await fetchWithBackoff(createUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: ctx.authToken
-          },
-          body: JSON.stringify({
-            name,
-            type: config.type,
-            compatibility: {
-              versionID: config.compatibility.version,
-              osID: config.compatibility.os,
-              architecture: config.compatibility.architecture
+  const pkgs = (
+    await Promise.all(
+      chunkedPaths.map(async chunk => {
+        let subPkgs: CreatePackages
+        try {
+          const res = await fetchWithBackoff(createUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: ctx.authToken
             },
-            version: config.version,
-            provenanceURI: getActionRunURL(),
-            packageClass: config.classification,
-            sha256: hash,
-            access: config.access
+            body: JSON.stringify({
+              packages: chunk.map(({ checksum, path }) => ({
+                name: isMany ? path.name : (config.name ?? path.name),
+                type: config.type,
+                compatibility: {
+                  versionID: config.compatibility.version,
+                  osID: config.compatibility.os,
+                  architecture: config.compatibility.architecture
+                },
+                version: config.version,
+                provenanceURI: getActionRunURL(),
+                packageClass: config.classification,
+                sha256: checksum,
+                access: config.access
+              }))
+            })
           })
-        })
-        if (!res.ok)
-          throw new Error(
-            `Failed to create package: status: ${res.statusText}, message: ${await res.text()}`
-          )
-        pkg = (await res.json()) as CreatePackage
-      } catch (e: unknown) {
-        if (e instanceof Error) {
-          core.error(`Failed to create new package: ${e.message}`)
+          if (res.status !== 200) {
+            throw new Error(
+              `Failed to create package: status: ${res.statusText}, message: ${await res.text()}`
+            )
+          }
+          subPkgs = (await res.json()) as CreatePackages
+        } catch (e: unknown) {
+          if (e instanceof Error) {
+            core.error(`Failed to create new package: ${e.message}`)
+          }
+          throw e
         }
-        throw e
-      }
-      core.debug(`Created package: ${JSON.stringify(pkg, null, 2)}`)
-      core.info(`Package Id: ${pkg.package.id}`)
 
-      // upload image using returned URL
-      return {
-        pkg,
-        path,
-        name
-      }
-    })
-    .map(async data => {
-      const { pkg, path, name } = await data
+        for (const pkg of subPkgs.packages) {
+          core.debug(`Created package: ${JSON.stringify(pkg, null, 2)}`)
+          core.info(`Package Id: ${pkg.package.id}`)
+        }
+
+        // associate pkgs with paths
+        const associatedPkgs = chunk.map(({ path, checksum }) => {
+          const name = isMany ? path.name : (config.name ?? path.name)
+          const pkg = subPkgs.packages.find(
+            p => p.package.name === path.name && p.package.sha256 === checksum
+          )
+          if (!pkg) {
+            throw new Error(
+              `Failed to find package for path: ${path.fullpath()}`
+            )
+          }
+          return {
+            path,
+            pkg,
+            name
+          }
+        })
+
+        return associatedPkgs
+      })
+    )
+  )
+    .flat()
+    .map(async ({ path, pkg, name }) => {
       const upload = uploadFileWithBackoff(pkg.uploadURI)
       return {
         res: await upload(path),
@@ -88,8 +122,9 @@ export const fileUpload = async (ctx: RunContext) => {
         name
       }
     })
-  const files = await Promise.all(responses)
-  const failures = files.filter(f => !f.res.ok)
+
+  const uploads = await Promise.all(pkgs)
+  const failures = uploads.filter(f => !f.res.ok)
 
   if (failures.length > 0) {
     core.error('Failed to upload one or more files')
@@ -99,5 +134,5 @@ export const fileUpload = async (ctx: RunContext) => {
     throw new Error(`Failed to upload files: (${errMsgs.join(',')})`)
   }
 
-  return files.map(f => ({ pkg: f.pkg, name: f.name }))
+  return uploads.map(f => ({ pkg: f.pkg, name: f.name }))
 }
