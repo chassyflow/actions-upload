@@ -27871,7 +27871,7 @@ const fileUpload = async (ctx) => {
         core.warning(`Found multiple files and a name was provided. Ignoring name and using file names`);
     }
     // create package in Chassy Index
-    const createUrl = `${(0, env_1.getBackendUrl)(ctx.env).apiBaseUrl}/package`;
+    const createUrl = `${(0, env_1.getBackendUrl)(ctx.env).apiBaseUrl}/packages`;
     core.startGroup('Create Package in Chassy Index');
     const pkgs = (await Promise.all(chunkedPaths.map(async (chunk) => {
         let subPkgs;

@@ -41,7 +41,7 @@ export const fileUpload = async (ctx: RunContext) => {
   }
 
   // create package in Chassy Index
-  const createUrl = `${getBackendUrl(ctx.env).apiBaseUrl}/package`
+  const createUrl = `${getBackendUrl(ctx.env).apiBaseUrl}/packages`
 
   core.startGroup('Create Package in Chassy Index')
 
