@@ -27446,15 +27446,17 @@ exports.assertType = assertType;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.MULTI_PART_CHUNK_SIZE = exports.BACKOFF_CONFIG = void 0;
+exports.MAX_PACKAGE_BATCH_SIZE = exports.MULTI_PART_CHUNK_SIZE = exports.BACKOFF_CONFIG = void 0;
 exports.BACKOFF_CONFIG = {
     numOfAttempts: 6,
-    timeMultiple: 2,
-    startingDelay: 2,
-    maxDelay: 45
+    timeMultiple: 3,
+    startingDelay: 3,
+    maxDelay: 60
 };
 // 500 MB
 exports.MULTI_PART_CHUNK_SIZE = 500 * 1024 * 1024;
+// 10 packages
+exports.MAX_PACKAGE_BATCH_SIZE = 10;
 
 
 /***/ }),
@@ -27845,6 +27847,7 @@ const glob_1 = __nccwpck_require__(1363);
 const checksum_1 = __nccwpck_require__(4596);
 const config_1 = __nccwpck_require__(2973);
 const utils_1 = __nccwpck_require__(9467);
+const constants_1 = __nccwpck_require__(7242);
 /**
  * Upload file to Chassy Index
  */
@@ -27855,17 +27858,23 @@ const fileUpload = async (ctx) => {
     core.info(`Found files: ${paths.map(f => f.fullpath()).join(',')}`);
     if (paths.length === 0)
         throw new Error(`No files found in provided path: ${config.path}`);
+    const pathsWithChecksum = await Promise.all(paths.map(async (path) => {
+        const checksum = 'sha256:' + (await (0, checksum_1.computeChecksum)(path.fullpath(), 'sha256'));
+        return {
+            path,
+            checksum
+        };
+    }));
+    const chunkedPaths = (0, utils_1.chunkArray)(pathsWithChecksum, constants_1.MAX_PACKAGE_BATCH_SIZE);
     const isMany = paths.length > 1;
     if (isMany && config.name) {
         core.warning(`Found multiple files and a name was provided. Ignoring name and using file names`);
     }
     // create package in Chassy Index
-    const createUrl = `${(0, env_1.getBackendUrl)(ctx.env).apiBaseUrl}/package`;
-    const responses = paths
-        .map(async (path) => {
-        const hash = 'sha256:' + (await (0, checksum_1.computeChecksum)(path.fullpath(), 'sha256'));
-        const name = isMany ? path.name : (config.name ?? path.name);
-        let pkg;
+    const createUrl = `${(0, env_1.getBackendUrl)(ctx.env).apiBaseUrl}/packages`;
+    core.startGroup('Create Package in Chassy Index');
+    const pkgs = (await Promise.all(chunkedPaths.map(async (chunk) => {
+        let subPkgs;
         try {
             const res = await (0, utils_1.fetchWithBackoff)(createUrl, {
                 method: 'POST',
@@ -27874,23 +27883,26 @@ const fileUpload = async (ctx) => {
                     Authorization: ctx.authToken
                 },
                 body: JSON.stringify({
-                    name,
-                    type: config.type,
-                    compatibility: {
-                        versionID: config.compatibility.version,
-                        osID: config.compatibility.os,
-                        architecture: config.compatibility.architecture
-                    },
-                    version: config.version,
-                    provenanceURI: (0, env_1.getActionRunURL)(),
-                    packageClass: config.classification,
-                    sha256: hash,
-                    access: config.access
+                    packages: chunk.map(({ checksum, path }) => ({
+                        name: isMany ? path.name : (config.name ?? path.name),
+                        type: config.type,
+                        compatibility: {
+                            versionID: config.compatibility.version,
+                            osID: config.compatibility.os,
+                            architecture: config.compatibility.architecture
+                        },
+                        version: config.version,
+                        provenanceURI: (0, env_1.getActionRunURL)(),
+                        packageClass: config.classification,
+                        sha256: checksum,
+                        access: config.access
+                    }))
                 })
             });
-            if (!res.ok)
+            if (!res.ok) {
                 throw new Error(`Failed to create package: status: ${res.statusText}, message: ${await res.text()}`);
-            pkg = (await res.json());
+            }
+            subPkgs = (await res.json());
         }
         catch (e) {
             if (e instanceof Error) {
@@ -27898,17 +27910,28 @@ const fileUpload = async (ctx) => {
             }
             throw e;
         }
-        core.debug(`Created package: ${JSON.stringify(pkg, null, 2)}`);
-        core.info(`Package Id: ${pkg.package.id}`);
-        // upload image using returned URL
-        return {
-            pkg,
-            path,
-            name
-        };
-    })
-        .map(async (data) => {
-        const { pkg, path, name } = await data;
+        for (const pkg of subPkgs.packages) {
+            core.debug(`Created package: ${JSON.stringify(pkg, null, 2)}`);
+            core.info(`Package Id: ${pkg.package.id}`);
+        }
+        // associate pkgs with paths
+        const associatedPkgs = chunk.map(({ path, checksum }) => {
+            const name = isMany ? path.name : (config.name ?? path.name);
+            const pkg = subPkgs.packages.find(p => p.package.name === path.name && p.package.sha256 === checksum);
+            if (!pkg) {
+                throw new Error(`Failed to find package for path: ${path.fullpath()}`);
+            }
+            return {
+                path,
+                pkg,
+                name
+            };
+        });
+        return associatedPkgs;
+    })))
+        .flat()
+        .map(async ({ path, pkg, name }) => {
+        core.info(`Uploading file: ${name}`);
         const upload = (0, utils_1.uploadFileWithBackoff)(pkg.uploadURI);
         return {
             res: await upload(path),
@@ -27916,14 +27939,14 @@ const fileUpload = async (ctx) => {
             name
         };
     });
-    const files = await Promise.all(responses);
-    const failures = files.filter(f => !f.res.ok);
+    const uploads = await Promise.all(pkgs);
+    const failures = uploads.filter(f => !f.res.ok);
     if (failures.length > 0) {
         core.error('Failed to upload one or more files');
         const errMsgs = await Promise.all(failures.map(async (f) => `[${f.res.statusText}, ${await f.res.text()}]`));
         throw new Error(`Failed to upload files: (${errMsgs.join(',')})`);
     }
-    return files.map(f => ({ pkg: f.pkg, name: f.name }));
+    return uploads.map(f => ({ pkg: f.pkg, name: f.name }));
 };
 exports.fileUpload = fileUpload;
 
@@ -28316,7 +28339,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.dbg = exports.fetchWithBackoff = exports.uploadFileWithBackoff = void 0;
+exports.chunkArray = exports.dbg = exports.fetchWithBackoff = exports.uploadFileWithBackoff = void 0;
 const core = __importStar(__nccwpck_require__(7484));
 const fs_1 = __importDefault(__nccwpck_require__(9896));
 const constants_1 = __nccwpck_require__(7242);
@@ -28334,13 +28357,34 @@ const uploadFileWithBackoff = (url, backoffOptions = constants_1.BACKOFF_CONFIG)
     }, backoffOptions);
 };
 exports.uploadFileWithBackoff = uploadFileWithBackoff;
-const fetchWithBackoff = async (url, options, backoffOptions = constants_1.BACKOFF_CONFIG) => (0, exponential_backoff_1.backOff)(async () => fetch(url, options), backoffOptions);
+const fetchWithBackoff = async (url, options, backoffOptions = constants_1.BACKOFF_CONFIG) => (0, exponential_backoff_1.backOff)(async () => {
+    const response = await fetch(url, options);
+    if (!response.ok) {
+        core.error(await response.text());
+        throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response;
+}, backoffOptions);
 exports.fetchWithBackoff = fetchWithBackoff;
 const dbg = (v) => {
     core.info(JSON.stringify(v, null, 2));
     return v;
 };
 exports.dbg = dbg;
+const chunkArray = (arr, size) => {
+    if (size < 1) {
+        throw new Error('Size must be greater than 0');
+    }
+    if (Math.round(size) !== size) {
+        throw new Error('Size must be an integer');
+    }
+    const result = [];
+    for (let i = 0; i < arr.length; i += size) {
+        result.push(arr.slice(i, i + size));
+    }
+    return result;
+};
+exports.chunkArray = chunkArray;
 
 
 /***/ }),

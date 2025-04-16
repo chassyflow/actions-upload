@@ -38,6 +38,10 @@ export type CreateImage = v.InferOutput<typeof createImageSchema>
 
 export type CreatePackage = Upload & { package: Package }
 
+export type CreatePackages = {
+  packages: CreatePackage[]
+}
+
 export type Image = {
   id: string
   // other properties exist but do not matter here
@@ -45,5 +49,7 @@ export type Image = {
 
 export type Package = {
   id: string
+  name: string
+  sha256: string
   // other properties exist but do not matter here
 }
