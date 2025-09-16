@@ -3,11 +3,12 @@ import { Path } from 'glob'
 import fs from 'fs'
 import { BACKOFF_CONFIG } from '../constants'
 import { backOff } from 'exponential-backoff'
+import { Readable } from 'stream'
 
 export const uploadFileWithBackoff =
   (url: RequestInfo | URL, backoffOptions = BACKOFF_CONFIG) =>
   async (path: Path) => {
-    const readStream = fs.readFileSync(path.fullpath())
+    const readStream = fs.createReadStream(path.fullpath())
 
     core.debug(`Uploading file: ${path.fullpath()}`)
 
@@ -19,7 +20,7 @@ export const uploadFileWithBackoff =
           'Content-Type': 'application/octet-stream',
           'Content-Length': fs.statSync(path.fullpath()).size.toString()
         },
-        body: readStream
+        body: Readable.toWeb(readStream) as BodyInit
       },
       backoffOptions
     )
