@@ -28344,8 +28344,9 @@ const core = __importStar(__nccwpck_require__(7484));
 const fs_1 = __importDefault(__nccwpck_require__(9896));
 const constants_1 = __nccwpck_require__(7242);
 const exponential_backoff_1 = __nccwpck_require__(1675);
+const stream_1 = __nccwpck_require__(2203);
 const uploadFileWithBackoff = (url, backoffOptions = constants_1.BACKOFF_CONFIG) => async (path) => {
-    const readStream = fs_1.default.readFileSync(path.fullpath());
+    const readStream = fs_1.default.createReadStream(path.fullpath());
     core.debug(`Uploading file: ${path.fullpath()}`);
     return (0, exports.fetchWithBackoff)(url, {
         method: 'PUT',
@@ -28353,7 +28354,7 @@ const uploadFileWithBackoff = (url, backoffOptions = constants_1.BACKOFF_CONFIG)
             'Content-Type': 'application/octet-stream',
             'Content-Length': fs_1.default.statSync(path.fullpath()).size.toString()
         },
-        body: readStream
+        body: stream_1.Readable.toWeb(readStream)
     }, backoffOptions);
 };
 exports.uploadFileWithBackoff = uploadFileWithBackoff;
