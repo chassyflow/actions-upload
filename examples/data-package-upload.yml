@@ -1,0 +1,25 @@
+name: Build and Upload Data Package
+
+on:
+  pull_request:
+
+jobs:
+  upload-data-package:
+    needs:
+      - version
+    name: GitHub Package upload Test
+    runs-on: ubuntu-latest
+    env:
+      CHASSY_TOKEN: ${{ secrets.CHASSY_TOKEN }}
+    steps:
+      - name: Chassy data package upload
+        uses: chassyflow/actions-upload@v2
+        with:
+          name: "my-package"
+          architecture: "ARM64"
+          os: "ubuntu" # for compatibility checks by chassy
+          os_version: "20.04" # for compatibility checks by chassy
+          version: "test-1234" # arbitrary version information
+          type: "FILE"
+          path: "**/README.md" # supports wildcard based paths
+          classification: "DATA"
