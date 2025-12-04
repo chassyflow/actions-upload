@@ -1,0 +1,42 @@
+name: Build and Upload Jetson Image
+
+on:
+  workflow_dispatch:
+  pull_request:
+
+jobs:
+  download-jetpack-rootfs:
+    env:
+      CHASSY_TOKEN: ${{ secrets.CHASSY_TOKEN }}
+      BACKEND_ENV: DEV
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download NVIDIA Jetpack RootFS
+        run: |
+          # Jetpack 6.0 (L4T r36.3.0) example
+          JETPACK_VERSION="r36.3.0"
+          FILENAME="tegra_linux_sample-root-filesystem_${JETPACK_VERSION}_aarch64.tbz2"
+          URL="https://developer.nvidia.com/downloads/embedded/l4t/r36_release_v3.0/release/${FILENAME}"
+          
+          curl -L -o ${FILENAME} ${URL}
+          
+          # Verify download succeeded
+          if [ -f ${FILENAME} ]; then
+            echo "Download successful: ${FILENAME}"
+            ls -lh ${FILENAME}
+          else
+            echo "Download failed"
+            exit 1
+          fi
+      - name: Upload to Chassy Index
+        uses: chassyflow/actions-upload@v2
+        with:
+          name: "tegra_linux_sample-root-filesystem_r36.3.0"
+          architecture: "ARM64"
+          os: "ubuntu"
+          os_version: "22.04"
+          version: "1.0.0"
+          type: "IMAGE"
+          path: "tegra_linux_sample-root-filesystem_r36.3.0_aarch64.tbz2"
+          classification: "RFSIMAGE"
+          raw_disk_scheme: "ISO"
