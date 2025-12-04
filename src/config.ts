@@ -102,7 +102,7 @@ const imageSchema = v.object(
       v.union([v.literal('NONE'), v.literal('ZIP'), v.literal('TGZ')]),
       'NONE'
     ),
-    rawDiskScheme: v.union([v.literal('IMG'), v.literal('ISO')])
+    rawDiskScheme: v.union([v.literal('IMG'), v.literal('ISO'), v.literal('TAR')])
   },
   'image malformed'
 )
