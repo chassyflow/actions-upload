@@ -1,4 +1,4 @@
-name: Build and Upload Jetson Image
+name: Build and Upload Jetson RFS Image
 
 on:
   workflow_dispatch:
@@ -8,7 +8,6 @@ jobs:
   download-jetpack-rootfs:
     env:
       CHASSY_TOKEN: ${{ secrets.CHASSY_TOKEN }}
-      BACKEND_ENV: DEV
     runs-on: ubuntu-latest
     steps:
       - name: Download NVIDIA Jetpack RootFS
